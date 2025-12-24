@@ -2,44 +2,28 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Camera, BreadcrumbItem } from '@/types';
-import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Play, Square, Trash2, Edit } from 'lucide-vue-next';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Eye, Edit, Trash2 } from 'lucide-vue-next';
 
 defineProps<{
     cameras: Camera[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Cameras',
-        href: '/cameras',
-    },
+    { title: 'Cameras', href: '/cameras' },
 ];
 
-const getStreamUrl = (camera: Camera) => {
-    // Using current hostname with port 8888 for MediaMTX HLS
-    const host = window.location.hostname;
-    // We use xhrSetup in VideoPlayer to inject Basic Auth for 'viewer' user
-    // So we just return the clean URL here (or include viewer:viewer for Safari fallback if needed)
-    // Safari ignores XHR headers for native HLS, so we might need embedded credentials for Safari.
-    // Let's use embedded viewer credentials for simple compatibility across both.
-    return `http://viewer:viewer@${host}:8888/cam_${camera.id}/index.m3u8`;
+const toggleActive = (camera: Camera) => {
+    router.post(`/cameras/${camera.id}/toggle-active`, {}, {
+        preserveScroll: true,
+    });
 };
 
 const deleteCamera = (camera: Camera) => {
     if (confirm('Are you sure you want to delete this camera?')) {
         router.delete(`/cameras/${camera.id}`);
-    }
-};
-
-const toggleStream = (camera: Camera) => {
-    if (camera.is_streaming_to_youtube) {
-        router.post(`/cameras/${camera.id}/stop-stream`);
-    } else {
-        router.post(`/cameras/${camera.id}/stream`);
     }
 };
 </script>
@@ -59,60 +43,61 @@ const toggleStream = (camera: Camera) => {
                 </Button>
             </div>
 
-            <div v-if="cameras.length === 0" class="flex flex-col items-center justify-center p-8 text-muted-foreground border rounded-xl border-dashed">
-                <p>No cameras found.</p>
-            </div>
-
-            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card v-for="camera in cameras" :key="camera.id" class="overflow-hidden">
-                    <CardHeader class="p-4 pb-2">
-                        <div class="flex justify-between items-start">
-                            <CardTitle class="text-lg font-medium truncate" :title="camera.name">{{ camera.name }}</CardTitle>
-                            <Badge :variant="camera.is_active ? 'default' : 'secondary'">
-                                {{ camera.is_active ? 'Active' : 'Inactive' }}
-                            </Badge>
-                        </div>
-                    </CardHeader>
-                    <CardContent class="p-0 aspect-video relative bg-black">
-                        <VideoPlayer 
-                            v-if="camera.is_active" 
-                            :stream-url="getStreamUrl(camera)" 
-                            :autoplay="true"
-                        />
-                        <div v-else class="flex items-center justify-center h-full text-white/50">
-                            Camera Offline
-                        </div>
-                        
-                        <div v-if="camera.is_streaming_to_youtube" class="absolute top-2 left-2">
-                            <Badge variant="destructive" class="animate-pulse">
-                                LIVE on YouTube
-                            </Badge>
-                        </div>
-                    </CardContent>
-                    <CardFooter class="flex justify-between p-4 bg-muted/50">
-                         <div class="flex gap-2">
-                            <Button size="sm" variant="outline" as-child>
-                                <Link :href="`/cameras/${camera.id}/edit`">
-                                    <Edit class="h-4 w-4" />
-                                </Link>
-                            </Button>
-                            <Button size="sm" variant="destructive" @click="deleteCamera(camera)">
-                                <Trash2 class="h-4 w-4" />
-                            </Button>
-                        </div>
-                        
-                        <Button 
-                            size="sm" 
-                            :variant="camera.is_streaming_to_youtube ? 'secondary' : 'default'"
-                            @click="toggleStream(camera)"
-                            :disabled="!camera.is_active || !camera.youtube_url"
-                            :title="!camera.youtube_url ? 'Configure YouTube URL first' : ''"
-                        >
-                            <component :is="camera.is_streaming_to_youtube ? Square : Play" class="mr-2 h-4 w-4" />
-                            {{ camera.is_streaming_to_youtube ? 'Stop Stream' : 'Go Live' }}
-                        </Button>
-                    </CardFooter>
-                </Card>
+            <div class="border rounded-lg overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-muted/50 border-b">
+                        <tr>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">IP Address</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Streaming</th>
+                            <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="cameras.length === 0">
+                            <td colspan="5" class="p-8 text-center text-muted-foreground">
+                                No cameras found.
+                            </td>
+                        </tr>
+                        <tr v-for="camera in cameras" :key="camera.id" class="border-b transition-colors hover:bg-muted/50">
+                            <td class="p-4 align-middle font-medium">{{ camera.name }}</td>
+                            <td class="p-4 align-middle">{{ camera.ip_address }}:{{ camera.port }}</td>
+                            <td class="p-4 align-middle">
+                                <div class="flex items-center gap-2">
+                                    <Switch 
+                                        :checked="camera.is_active"
+                                        @update:checked="toggleActive(camera)"
+                                    />
+                                    <span class="text-xs text-muted-foreground">{{ camera.is_active ? 'On' : 'Off' }}</span>
+                                </div>
+                            </td>
+                            <td class="p-4 align-middle">
+                                <Badge v-if="camera.is_streaming_to_youtube" variant="destructive" class="text-xs animate-pulse">
+                                    LIVE
+                                </Badge>
+                                <span v-else class="text-muted-foreground">-</span>
+                            </td>
+                            <td class="p-4 align-middle text-right">
+                                <div class="flex justify-end gap-2">
+                                    <Button variant="ghost" size="icon" as-child>
+                                        <Link :href="`/cameras/${camera.id}`">
+                                            <Eye class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" as-child>
+                                        <Link :href="`/cameras/${camera.id}/edit`">
+                                            <Edit class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" @click="deleteCamera(camera)">
+                                        <Trash2 class="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </AppLayout>

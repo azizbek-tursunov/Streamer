@@ -60,6 +60,13 @@ class CameraController extends Controller
         return redirect()->route('cameras.index')->with('success', 'Camera created successfully.');
     }
 
+    public function show(Camera $camera)
+    {
+        return Inertia::render('Cameras/Show', [
+            'camera' => $camera,
+        ]);
+    }
+
     public function edit(Camera $camera)
     {
         return Inertia::render('Cameras/Form', [
@@ -142,5 +149,24 @@ class CameraController extends Controller
         }
 
         return back()->with('success', 'Streaming to YouTube stopped.');
+    }
+
+    public function toggleActive(Camera $camera)
+    {
+        $camera->update(['is_active' => !$camera->is_active]);
+
+        try {
+            if ($camera->is_active) {
+                $this->mediaMtx->addPath($camera);
+            } else {
+                $this->mediaMtx->removePath($camera);
+            }
+        } catch (\Exception $e) {
+            // Revert on failure
+             $camera->update(['is_active' => !$camera->is_active]);
+             return back()->with('error', 'Failed to toggle camera status: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Camera status updated.');
     }
 }
