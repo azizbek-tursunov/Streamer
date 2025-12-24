@@ -1,0 +1,59 @@
+###############################################
+# General
+
+# Log level
+logLevel: info
+
+# Destination of the logs
+logDestinations: [stdout]
+
+###############################################
+# API
+
+# Enable the HTTP API
+# Enable the HTTP API
+api: yes
+apiAddress: :9997
+
+authInternalUsers:
+  - user: admin
+    pass: "12345"
+    ips: ["0.0.0.0/0", "::/0"]
+    permissions:
+      - action: api
+      - action: read
+      - action: publish
+  - user: viewer
+    pass: viewer
+    ips: ["0.0.0.0/0", "::/0"]
+    permissions:
+      - action: read
+
+###############################################
+# RTSP
+
+# Enable the RTSP server
+rtsp: yes
+rtspAddress: :8554
+
+###############################################
+# RTMP
+
+# Enable the RTMP server
+rtmp: yes
+rtmpAddress: :1935
+
+###############################################
+# HLS
+
+# Enable the HLS server
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: no
+hlsVariant: lowLatency
+
+###############################################
+# Path settings
+
+paths:
+  all_others:

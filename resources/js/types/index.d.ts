@@ -37,3 +37,17 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export interface Camera {
+    id: number;
+    name: string;
+    username?: string;
+    password?: string;
+    ip_address: string;
+    port: number;
+    stream_path: string;
+    rtsp_url: string; // appended accessor
+    youtube_url?: string;
+    is_active: boolean;
+    is_streaming_to_youtube: boolean;
+}
