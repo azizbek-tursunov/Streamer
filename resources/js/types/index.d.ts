@@ -50,4 +50,5 @@ export interface Camera {
     youtube_url?: string;
     is_active: boolean;
     is_streaming_to_youtube: boolean;
+    rotation: number;
 }

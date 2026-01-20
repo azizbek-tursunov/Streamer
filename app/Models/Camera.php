@@ -19,6 +19,7 @@ class Camera extends Model
         'youtube_url',
         'is_active',
         'is_streaming_to_youtube',
+        'rotation',
     ];
 
     protected $casts = [

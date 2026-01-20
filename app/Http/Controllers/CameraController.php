@@ -39,6 +39,7 @@ class CameraController extends Controller
             'stream_path' => 'nullable|string',
             'youtube_url' => 'nullable|string',
             'is_active' => 'boolean',
+            'rotation' => 'integer|in:0,90,180,270',
         ]);
         
         // Ensure stream_path has default if empty logic or rely on model default if omitted?
@@ -85,6 +86,7 @@ class CameraController extends Controller
             'stream_path' => 'nullable|string',
             'youtube_url' => 'nullable|string',
             'is_active' => 'boolean',
+            'rotation' => 'integer|in:0,90,180,270',
         ]);
         
         if (empty($validated['stream_path'])) {

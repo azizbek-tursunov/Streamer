@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 
 const props = defineProps<{
@@ -21,6 +28,7 @@ const form = useForm({
     stream_path: props.camera?.stream_path ?? '/',
     youtube_url: props.camera?.youtube_url ?? '',
     is_active: props.camera?.is_active ?? true,
+    rotation: String(props.camera?.rotation || 0),
 });
 
 const submit = () => {
@@ -97,6 +105,22 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <div v-if="form.errors.youtube_url" class="text-sm text-destructive">{{ form.errors.youtube_url }}</div>
                         </div>
 
+                        <div class="space-y-2">
+                            <Label for="rotation">Rotation</Label>
+                            <Select v-model="form.rotation" id="rotation">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select rotation" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="0">0° (Normal)</SelectItem>
+                                    <SelectItem value="90">90° (Clockwise)</SelectItem>
+                                    <SelectItem value="180">180° (Upside Down)</SelectItem>
+                                    <SelectItem value="270">270° (Counter-Clockwise)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <div v-if="form.errors.rotation" class="text-sm text-destructive">{{ form.errors.rotation }}</div>
+                        </div>
+                
                         <div class="flex items-center space-x-2 pt-2">
                             <Checkbox id="is_active" :checked="form.is_active" @update:checked="form.is_active = $event" />
                             <Label for="is_active">Active</Label>

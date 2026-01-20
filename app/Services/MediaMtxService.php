@@ -17,32 +17,59 @@ class MediaMtxService
 
     public function addPath(Camera $camera): void
     {
-        // Add the camera as a path in MediaMTX
-        // We use the camera ID as the path name, e.g., "cam_1"
         $pathName = $this->getPathName($camera);
 
+        // We use FFmpeg to pull from the camera and publishing to MediaMTX.
+        // This solves H.265 incompatibility (invalid DeltaPocS0) by transcoding to H.264.
+        // It also ensures a stable connection via TCP.
+        
+        $rtspUrl = $camera->rtsp_url;
+        // Escape the URL for use in shell command
+        // $rtspUrl = escapeshellarg($rtspUrl); // Wait, runOnInit is array or string? API takes string. JSON encoded.
+        // Be careful with quotes in JSON.
+        
+        // Command to transcode to H.264 and publish to local MediaMTX
+        // Note: connecting to localhost:8554 inside the container.
+        // Using `admin:12345` for publishing auth.
+        $publishUrl = "rtsp://admin:12345@localhost:8554/$pathName";
+        
+        // FFmpeg command:
+        // -rtsp_transport tcp: Force TCP for stability
+        // -i ...: Input
+        // -c:v libx264: Transcode to H.264
+        // -preset ultrafast -tune zerolatency: Low latency
+        // -c:a aac: Audio to AAC
+        // -f rtsp ...: Output
+        
+        $filters = '';
+        if ($camera->rotation) {
+            $vf = match ((int)$camera->rotation) {
+                90 => 'transpose=1',
+                180 => 'transpose=1,transpose=1',
+                270 => 'transpose=2',
+                default => null,
+            };
+            if ($vf) {
+                $filters = "-vf \"$vf\"";
+            }
+        }
+        
+        // We use single quotes for the command string in PHP, and double quotes for arguments in the shell command where needed.
+        $ffmpegCmd = "ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i \"$rtspUrl\" $filters -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1000k -c:a aac -f rtsp \"$publishUrl\"";
+
         $payload = [
-            'source' => $camera->rtsp_url,
-            'sourceOnDemand' => false,
+            'source' => 'publisher', // MediaMTX waits for the stream
+            'runOnInit' => $ffmpegCmd, // This creates the stream
+            'runOnInitRestart' => true, // Restart ffmpeg if it crashes
         ];
 
         if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
-            // Add runOnReady command to push to YouTube
-            // MediaMTX uses FFmpeg to restream.
-            // Command to read from the RTSP source (which MediaMTX proxies) and push to RTMP
-            // Note: MediaMTX environment variables are available in runOnReady.
-            // $RTSP_PATH is the path name.
-            
-            // However, a simpler way with MediaMTX is to use 'runOnReady' to start a ffmpeg process that pulls from the LOCAL localhost RTSP feed and pushes to YouTube.
-            // Local RTSP feed for this path: rtsp://localhost:8554/$pathName
-            
-            // IMPORTANT: We need to ensure ffmpeg is installed in the MediaMTX container or use the built-in capability if it acts as a proxy.
-            // The official MediaMTX image contains ffmpeg.
-            
-            // Let's assume we are running inside docker and 'ffmpeg' is available.
-            // For YouTube RTMP, we need to send video and audio.
-            // Using -c copy is efficient if the source codecs are compatible (H264/AAC).
-            // If not, we might need transcoding, but let's start with copy for performance.
+            // If streaming to YouTube, we can ADD another ffmpeg process via runOnReady?
+            // Or chain it?
+            // runOnReady runs when the stream is READY (published).
+            // So we can assume $pathName is ready (thanks to runOnInit).
+            // We use standard input (rtsp://localhost:8554/$pathName) which is now H.264.
+            // YouTube accepts H.264 directly (flv).
             
             $payload['runOnReady'] = "ffmpeg -i rtsp://localhost:8554/$pathName -c copy -f flv \"{$camera->youtube_url}\"";
             $payload['runOnReadyRestart'] = true;
@@ -50,10 +77,9 @@ class MediaMtxService
 
         $response = Http::post("{$this->baseUrl}/config/paths/add/{$pathName}", $payload);
 
-        if ($response->failed() && $response->status() !== 409) { // 409 means already exists
+        if ($response->failed() && $response->status() !== 409) {
              throw new RuntimeException("Failed to add path to MediaMTX: " . $response->body());
         } elseif ($response->status() === 409) {
-            // If it exists, update it to match new config
             $this->updatePath($camera);
         }
     }
@@ -66,36 +92,10 @@ class MediaMtxService
 
     public function updatePath(Camera $camera): void
     {
-        $pathName = $this->getPathName($camera);
-        
-        // It's often easier to replace it than patch it, but v3 api allows replace via POST or PATCH? 
-        // Docs say POST /config/paths/add/{name} adds, DELETE /config/paths/delete/{name} removes.
-        // There is also PATCH /config/paths/patch/{name}
-        
-        // Let's try to patch first, if not delete and add.
-         $payload = [
-            'source' => $camera->rtsp_url,
-        ];
-        
-        if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
-             $payload['runOnReady'] = "ffmpeg -i rtsp://localhost:8554/$pathName -c copy -f flv \"{$camera->youtube_url}\"";
-             $payload['runOnReadyRestart'] = true;
-        } else {
-            // Remove the command by sending null or empty?
-            // MediaMTX config patching might require sending the full config or specific fields.
-            // Safest way is often Delete -> Add to ensure clean state for the sub-process.
-            $this->removePath($camera);
-            $this->addPath($camera);
-            return;
-        }
-
-        $response = Http::patch("{$this->baseUrl}/config/paths/patch/{$pathName}", $payload);
-        
-        if ($response->failed()) {
-             // Fallback to recreate
-            $this->removePath($camera);
-            $this->addPath($camera);
-        }
+        // For simplicity and reliability with runOnInit/runOnReady changes, we Remove then Add.
+        // Patching complex configs with runOnInit changes can be flaky.
+        $this->removePath($camera);
+        $this->addPath($camera);
     }
     
     public function getPathName(Camera $camera): string
