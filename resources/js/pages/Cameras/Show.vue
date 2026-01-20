@@ -6,8 +6,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, Edit, ArrowLeft, RefreshCw, TriangleAlert } from 'lucide-vue-next';
+import { Play, Square, Edit, ArrowLeft } from 'lucide-vue-next';
 
 const props = defineProps<{
     camera: Camera;
@@ -30,10 +29,6 @@ const toggleStream = (camera: Camera) => {
     } else {
         router.post(`/cameras/${camera.id}/stream`);
     }
-};
-
-const analyzeCamera = (camera: Camera) => {
-    router.post(`/cameras/${camera.id}/analyze`);
 };
 </script>
 
@@ -88,31 +83,6 @@ const analyzeCamera = (camera: Camera) => {
                         <CardDescription>Manage YouTube restreaming</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
-                         <div class="space-y-1">
-                            <h3 class="font-medium text-sm">Video Format</h3>
-                            <div class="flex items-center gap-2">
-                                <Badge v-if="camera.video_codec" variant="outline">{{ camera.video_codec }}</Badge>
-                                <span v-else class="text-xs text-muted-foreground">Unknown</span>
-                                <Button size="sm" variant="ghost" @click="analyzeCamera(camera)">
-                                    <RefreshCw class="h-3 w-3 mr-1" /> Check
-                                </Button>
-                            </div>
-                        </div>
-
-                         <Alert v-if="camera.video_codec === 'hevc' || camera.video_codec === 'h265'" variant="destructive">
-                            <TriangleAlert class="h-4 w-4" />
-                            <AlertTitle>Optimization Required</AlertTitle>
-                            <AlertDescription>
-                                This camera is using <strong>H.265</strong>. This causes high CPU usage.
-                                <br/>
-                                Recommendation: Change to <strong>H.264</strong> in camera settings.
-                                <br/>
-                                <a :href="`http://${camera.ip_address}/doc/page/config.asp`" target="_blank" class="underline font-bold">
-                                    Open Camera Settings &rarr;
-                                </a>
-                            </AlertDescription>
-                        </Alert>
-
                         <div class="space-y-1">
                             <h3 class="font-medium text-sm">YouTube URL</h3>
                             <p v-if="camera.youtube_url" class="text-xs text-muted-foreground break-all font-mono bg-muted p-2 rounded">

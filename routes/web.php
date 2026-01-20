@@ -21,7 +21,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('cameras/{camera}/stream', [\App\Http\Controllers\CameraController::class, 'startStream'])->name('cameras.stream.start');
     Route::post('cameras/{camera}/stop-stream', [\App\Http\Controllers\CameraController::class, 'stopStream'])->name('cameras.stream.stop');
     Route::post('cameras/{camera}/toggle-active', [\App\Http\Controllers\CameraController::class, 'toggleActive'])->name('cameras.toggle-active');
-    Route::post('cameras/{camera}/analyze', [\App\Http\Controllers\CameraController::class, 'analyze'])->name('cameras.analyze');
 });
 
 require __DIR__.'/settings.php';

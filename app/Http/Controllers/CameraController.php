@@ -39,7 +39,6 @@ class CameraController extends Controller
             'stream_path' => 'nullable|string',
             'youtube_url' => 'nullable|string',
             'is_active' => 'boolean',
-            'rotation' => 'integer|in:0,90,180,270',
         ]);
         
         // Ensure stream_path has default if empty logic or rely on model default if omitted?
@@ -86,7 +85,6 @@ class CameraController extends Controller
             'stream_path' => 'nullable|string',
             'youtube_url' => 'nullable|string',
             'is_active' => 'boolean',
-            'rotation' => 'integer|in:0,90,180,270',
         ]);
         
         if (empty($validated['stream_path'])) {
@@ -170,16 +168,5 @@ class CameraController extends Controller
         }
 
         return back()->with('success', 'Camera status updated.');
-    }
-
-    public function analyze(Camera $camera)
-    {
-        $codec = $this->mediaMtx->getStreamInfo($camera);
-
-        if ($codec) {
-            return back()->with('success', "Analysis Complete. Codec: $codec");
-        }
-        
-        return back()->with('error', 'Analysis failed. Could not detect codec.');
     }
 }
