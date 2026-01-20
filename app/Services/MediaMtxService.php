@@ -33,17 +33,18 @@ class MediaMtxService
         // Using `admin:12345` for publishing auth.
         $publishUrl = "rtsp://admin:12345@localhost:8554/$pathName";
         
-        // FFmpeg command:
-        // -rtsp_transport tcp: Force TCP for stability
-        // -i ...: Input
-        // -c:v libx264: Transcode to H.264
-        // -preset ultrafast -tune zerolatency: Low latency
-        // -c:a aac: Audio to AAC
-        // -f rtsp ...: Output
+        // Smart Encoding Logic
+        // 1. If Rotation is active -> MUST Transcode (Filters require decoding).
+        // 2. If Codec is NOT H.264 (e.g. HEVC) -> MUST Transcode (Browser/YouTube compatibility).
+        // 3. If Codec IS H.264 AND No Rotation -> DIRECT COPY (Low CPU).
         
+        $shouldTranscode = false;
         $filters = '';
+        
+        // Check Rotation
         if ($camera->rotation) {
-            $vf = match ((int)$camera->rotation) {
+            $shouldTranscode = true;
+             $vf = match ((int)$camera->rotation) {
                 90 => 'transpose=1',
                 180 => 'transpose=1,transpose=1',
                 270 => 'transpose=2',
@@ -54,8 +55,27 @@ class MediaMtxService
             }
         }
         
-        // We use single quotes for the command string in PHP, and double quotes for arguments in the shell command where needed.
-        $ffmpegCmd = "ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i \"$rtspUrl\" $filters -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1000k -c:a aac -f rtsp \"$publishUrl\"";
+        // Check Codec if not already forced to transcode
+        // If codec is unknown (null), we default to transcoding for safety.
+        if (!$shouldTranscode) {
+             // We treat 'h264' (case-insensitive) as safe to copy.
+             // Note: ffprobe usually returns 'h264'.
+             $isH264 = $camera->video_codec && strtolower($camera->video_codec) === 'h264';
+             
+             if (!$isH264) {
+                 $shouldTranscode = true;
+             }
+        }
+
+        // Construct Command
+        if ($shouldTranscode) {
+             // Transcode Mode (High CPU, High Compatibility, Supports Rotation)
+             $ffmpegCmd = "ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i \"$rtspUrl\" $filters -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1000k -c:a aac -f rtsp \"$publishUrl\"";
+        } else {
+             // Copy Mode (Low CPU, Original Quality, No Rotation)
+             // We Copy Video (-c:v copy) but ensure Audio is AAC (-c:a aac) just in case source audio is weird (PCM etc).
+             $ffmpegCmd = "ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i \"$rtspUrl\" -c:v copy -c:a aac -f rtsp \"$publishUrl\"";
+        }
 
         $payload = [
             'source' => 'publisher', // MediaMTX waits for the stream
@@ -101,5 +121,33 @@ class MediaMtxService
     public function getPathName(Camera $camera): string
     {
         return 'cam_' . $camera->id;
+    }
+
+    public function getStreamInfo(Camera $camera): ?string
+    {
+        $rtspUrl = $camera->rtsp_url;
+        // Basic escaping regarding quotes
+        $rtspUrl = str_replace('"', '\"', $rtspUrl);
+        
+        // Run ffprobe in the container
+        // We set a timeout of 10s
+        $command = "docker exec mediamtx ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 \"$rtspUrl\"";
+        
+        try {
+            $result = \Illuminate\Support\Facades\Process::timeout(15)->run($command);
+            
+            if ($result->successful()) {
+                $codec = trim($result->output());
+                // Update camera
+                if ($codec) {
+                    $camera->update(['video_codec' => $codec]);
+                }
+                return $codec;
+            }
+        } catch (\Exception $e) {
+            // Log error?
+        }
+        
+        return null;
     }
 }
