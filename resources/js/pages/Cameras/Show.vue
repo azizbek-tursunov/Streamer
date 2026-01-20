@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Camera, BreadcrumbItem } from '@/types';
@@ -6,11 +7,17 @@ import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Play, Square, Edit, ArrowLeft } from 'lucide-vue-next';
+import CameraDialog from '@/components/CameraDialog.vue';
+import YouTubeDialog from '@/components/YouTubeDialog.vue';
 
 const props = defineProps<{
     camera: Camera;
 }>();
+
+const showDialog = ref(false);
+const showYouTubeDialog = ref(false);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Cameras', href: '/cameras' },
@@ -29,6 +36,12 @@ const toggleStream = (camera: Camera) => {
     } else {
         router.post(`/cameras/${camera.id}/stream`);
     }
+};
+
+const toggleActive = (camera: Camera) => {
+    router.post(`/cameras/${camera.id}/toggle-active`, {}, {
+        preserveScroll: true,
+    });
 };
 </script>
 
@@ -55,11 +68,9 @@ const toggleStream = (camera: Camera) => {
                     </h1>
                     <p class="text-sm text-muted-foreground">{{ camera.ip_address }}:{{ camera.port }}</p>
                 </div>
-                <Button variant="secondary" as-child>
-                    <Link :href="`/cameras/${camera.id}/edit`">
-                        <Edit class="mr-2 h-4 w-4" />
-                        Edit
-                    </Link>
+                <Button variant="secondary" @click="showDialog = true">
+                    <Edit class="mr-2 h-4 w-4" />
+                    Edit
                 </Button>
             </div>
 
@@ -80,18 +91,37 @@ const toggleStream = (camera: Camera) => {
                 <Card>
                     <CardHeader>
                         <CardTitle>Stream Controls</CardTitle>
-                        <CardDescription>Manage YouTube restreaming</CardDescription>
+                        <CardDescription>Manage streaming settings</CardDescription>
                     </CardHeader>
-                    <CardContent class="space-y-4">
-                        <div class="space-y-1">
-                            <h3 class="font-medium text-sm">YouTube URL</h3>
+                    <CardContent class="space-y-6">
+                        <!-- Camera Status Section -->
+                        <div class="space-y-2">
+                             <div class="flex items-center justify-between">
+                                <div class="space-y-0.5">
+                                    <h3 class="font-medium text-sm">Camera Status</h3>
+                                    <p class="text-xs text-muted-foreground">Turn camera connection on/off</p>
+                                </div>
+                                <Switch 
+                                    :checked="camera.is_active"
+                                    @update:checked="toggleActive(camera)"
+                                />
+                            </div>
+                        </div>
+
+                         <div class="space-y-1">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-medium text-sm">YouTube URL</h3>
+                                <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" @click="showYouTubeDialog = true">
+                                    <Edit class="h-3 w-3 mr-1" /> Configure
+                                </Button>
+                            </div>
                             <p v-if="camera.youtube_url" class="text-xs text-muted-foreground break-all font-mono bg-muted p-2 rounded">
                                 {{ camera.youtube_url }}
                             </p>
                             <p v-else class="text-xs text-destructive">Not configured</p>
                         </div>
                         
-                        <div class="pt-4">
+                        <div class="pt-2">
                             <Button 
                                 class="w-full"
                                 :variant="camera.is_streaming_to_youtube ? 'destructive' : 'default'"
@@ -105,6 +135,16 @@ const toggleStream = (camera: Camera) => {
                     </CardContent>
                 </Card>
             </div>
+            
+            <CameraDialog 
+                v-model:open="showDialog"
+                :camera="camera"
+            />
+            
+            <YouTubeDialog
+                v-model:open="showYouTubeDialog"
+                :camera="camera"
+            />
         </div>
     </AppLayout>
 </template>

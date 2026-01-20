@@ -53,11 +53,11 @@ class CameraController extends Controller
             try {
                 $this->mediaMtx->addPath($camera);
             } catch (\Exception $e) {
-                return redirect()->route('cameras.index')->with('error', 'Camera saved but failed to register in MediaMTX: ' . $e->getMessage());
+                return back()->with('error', 'Camera saved but failed to register in MediaMTX: ' . $e->getMessage());
             }
         }
 
-        return redirect()->route('cameras.index')->with('success', 'Camera created successfully.');
+        return back()->with('success', 'Camera created successfully.');
     }
 
     public function show(Camera $camera)
@@ -101,10 +101,10 @@ class CameraController extends Controller
                 $this->mediaMtx->removePath($camera);
             }
         } catch (\Exception $e) {
-             return redirect()->route('cameras.index')->with('error', 'Camera updated but MediaMTX sync failed: ' . $e->getMessage());
+             return back()->with('error', 'Camera updated but MediaMTX sync failed: ' . $e->getMessage());
         }
 
-        return redirect()->route('cameras.index')->with('success', 'Camera updated successfully.');
+        return back()->with('success', 'Camera updated successfully.');
     }
 
     public function destroy(Camera $camera)
@@ -168,5 +168,20 @@ class CameraController extends Controller
         }
 
         return back()->with('success', 'Camera status updated.');
+    }
+
+    public function updateYoutube(Request $request, Camera $camera)
+    {
+        $validated = $request->validate([
+            'youtube_url' => 'nullable|string',
+        ]);
+
+        $camera->update($validated);
+
+        // If streaming is active, we might need to restart it?
+        // For simplicity, if they change the URL while streaming, we stop the stream or update it.
+        // Let's just update the DB. If they are streaming, they need to Stop/Start to pick up new URL.
+        
+        return back()->with('success', 'YouTube settings updated.');
     }
 }
