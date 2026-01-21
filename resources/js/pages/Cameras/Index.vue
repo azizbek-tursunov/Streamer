@@ -30,7 +30,7 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Cameras', href: '/cameras' },
+    { title: 'Kameralar', href: '/cameras' },
 ];
 
 const showDialog = ref(false);
@@ -61,22 +61,22 @@ const openEditModal = (camera: Camera) => {
 };
 
 const deleteCamera = (camera: Camera) => {
-    if (confirm('Are you sure you want to delete this camera?')) {
+    if (confirm('Ushbu kamerani o‘chirishni xohlaysizmi?')) {
         router.delete(`/cameras/${camera.id}`);
     }
 };
 </script>
 
 <template>
-    <Head title="Cameras" />
+    <Head title="Kameralar" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Cameras</h1>
+                <h1 class="text-2xl font-bold">Kameralar</h1>
                 <Button @click="openCreateModal">
                     <Plus class="mr-2 h-4 w-4" />
-                    Add Camera
+                    Kamera Qo'shish
                 </Button>
             </div>
 
@@ -85,18 +85,18 @@ const deleteCamera = (camera: Camera) => {
                     <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                         v-model="search"
-                        placeholder="Search cameras by name or IP..." 
+                        placeholder="Nomi yoki IP bo'yicha qidirish..." 
                         class="pl-8" 
                     />
                 </div>
                 <Select v-model="activeFilter">
                     <SelectTrigger class="w-[180px]">
-                        <SelectValue placeholder="Status" />
+                        <SelectValue placeholder="Holati" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="true">Active</SelectItem>
-                        <SelectItem value="false">Inactive</SelectItem>
+                        <SelectItem value="all">Barchasi</SelectItem>
+                        <SelectItem value="true">Faol</SelectItem>
+                        <SelectItem value="false">Faol Emas</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -105,17 +105,17 @@ const deleteCamera = (camera: Camera) => {
                 <table class="w-full text-sm">
                     <thead class="bg-muted/50 border-b">
                         <tr>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">IP Address</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Streaming</th>
-                            <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Nomi</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">IP Manzil</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Holati</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Efir</th>
+                            <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Amallar</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="cameras.data.length === 0">
                             <td colspan="5" class="p-8 text-center text-muted-foreground">
-                                No cameras found.
+                                Kameralar topilmadi.
                             </td>
                         </tr>
                         <tr v-for="camera in cameras.data" :key="camera.id" class="border-b transition-colors hover:bg-muted/50">
@@ -123,12 +123,12 @@ const deleteCamera = (camera: Camera) => {
                             <td class="p-4 align-middle">{{ camera.ip_address }}:{{ camera.port }}</td>
                             <td class="p-4 align-middle">
                                 <Badge :variant="camera.is_active ? 'default' : 'secondary'">
-                                    {{ camera.is_active ? 'Active' : 'Inactive' }}
+                                    {{ camera.is_active ? 'Faol' : 'Faol Emas' }}
                                 </Badge>
                             </td>
                             <td class="p-4 align-middle">
                                 <Badge v-if="camera.is_streaming_to_youtube" variant="destructive" class="text-xs animate-pulse">
-                                    LIVE
+                                    jonli efir
                                 </Badge>
                                 <span v-else class="text-muted-foreground">-</span>
                             </td>

@@ -55,27 +55,27 @@ const submit = () => {
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>YouTube Configuration</DialogTitle>
+        <DialogTitle>YouTube Sozlamalari</DialogTitle>
         <DialogDescription>
-            Enter your YouTube Stream Key. The RTMP URL will be generated automatically.
+            YouTube Stream kalitini kiriting. RTMP havola avtomatik yaratiladi.
         </DialogDescription>
       </DialogHeader>
       
       <form @submit.prevent="submit" class="grid gap-4 py-4">
         <div class="space-y-2">
-            <Label for="stream_key">YouTube Stream Key</Label>
+            <Label for="stream_key">YouTube Stream Kaliti</Label>
             <div class="flex items-center gap-2">
                 <span class="text-sm text-muted-foreground whitespace-nowrap bg-muted px-3 py-2 rounded-l-md border border-r-0">rtmp://.../live2/</span>
                 <Input id="stream_key" v-model="streamKey" placeholder="abcd-1234-efgh-5678" class="rounded-l-none" />
             </div>
-            <p class="text-[0.8rem] text-muted-foreground">Paste your key from YouTube Studio.</p>
+            <p class="text-[0.8rem] text-muted-foreground">YouTube Studio'dan kalitni nusxalang.</p>
             <div v-if="form.errors.youtube_url" class="text-sm text-destructive">{{ form.errors.youtube_url }}</div>
         </div>
 
         <DialogFooter>
-            <Button type="button" variant="ghost" @click="$emit('update:open', false)">Cancel</Button>
+            <Button type="button" variant="ghost" @click="$emit('update:open', false)">Bekor Qilish</Button>
             <Button type="submit" :disabled="form.processing">
-                {{ form.processing ? 'Save Configuration' : 'Save Configuration' }}
+                {{ form.processing ? 'Saqlanmoqda...' : 'Saqlash' }}
             </Button>
         </DialogFooter>
       </form>

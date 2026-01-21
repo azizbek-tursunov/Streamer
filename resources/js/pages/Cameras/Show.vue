@@ -60,17 +60,17 @@ const toggleActive = (camera: Camera) => {
                     <h1 class="text-2xl font-bold flex items-center gap-3">
                         {{ camera.name }}
                         <Badge :variant="camera.is_active ? 'default' : 'secondary'">
-                            {{ camera.is_active ? 'Active' : 'Inactive' }}
+                            {{ camera.is_active ? 'Faol' : 'Faol Emas' }}
                         </Badge>
                         <Badge v-if="camera.is_streaming_to_youtube" variant="destructive" class="animate-pulse">
-                            LIVE on YouTube
+                            YouTube Jonli Efirda
                         </Badge>
                     </h1>
                     <p class="text-sm text-muted-foreground">{{ camera.ip_address }}:{{ camera.port }}</p>
                 </div>
                 <Button variant="secondary" @click="showDialog = true">
                     <Edit class="mr-2 h-4 w-4" />
-                    Edit
+                    Tahrirlash
                 </Button>
             </div>
 
@@ -83,23 +83,23 @@ const toggleActive = (camera: Camera) => {
                             :autoplay="true"
                         />
                         <div v-else class="flex items-center justify-center h-full text-white/50">
-                            Camera Offline
+                            Kamera O'chirib Qo'yilgan
                         </div>
                     </div>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Stream Controls</CardTitle>
-                        <CardDescription>Manage streaming settings</CardDescription>
+                        <CardTitle>Boshqaruv Paneli</CardTitle>
+                        <CardDescription>Stream va sozlamalarni boshqarish</CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-6">
                         <!-- Camera Status Section -->
                         <div class="space-y-2">
                              <div class="flex items-center justify-between">
                                 <div class="space-y-0.5">
-                                    <h3 class="font-medium text-sm">Camera Status</h3>
-                                    <p class="text-xs text-muted-foreground">Turn camera connection on/off</p>
+                                    <h3 class="font-medium text-sm">Kamera Holati</h3>
+                                    <p class="text-xs text-muted-foreground">Kamerani yoqish yoki o'chirish</p>
                                 </div>
                                 <Switch 
                                     :checked="camera.is_active"
@@ -112,13 +112,13 @@ const toggleActive = (camera: Camera) => {
                             <div class="flex items-center justify-between">
                                 <h3 class="font-medium text-sm">YouTube URL</h3>
                                 <Button variant="ghost" size="sm" class="h-6 px-2 text-xs" @click="showYouTubeDialog = true">
-                                    <Edit class="h-3 w-3 mr-1" /> Configure
+                                    <Edit class="h-3 w-3 mr-1" /> Sozlash
                                 </Button>
                             </div>
                             <p v-if="camera.youtube_url" class="text-xs text-muted-foreground break-all font-mono bg-muted p-2 rounded">
                                 {{ camera.youtube_url }}
                             </p>
-                            <p v-else class="text-xs text-destructive">Not configured</p>
+                            <p v-else class="text-xs text-destructive">Sozlanmagan</p>
                         </div>
                         
                         <div class="pt-2">
@@ -129,7 +129,7 @@ const toggleActive = (camera: Camera) => {
                                 :disabled="!camera.is_active || !camera.youtube_url"
                             >
                                 <component :is="camera.is_streaming_to_youtube ? Square : Play" class="mr-2 h-4 w-4" />
-                                {{ camera.is_streaming_to_youtube ? 'Stop Stream' : 'Start Stream' }}
+                                {{ camera.is_streaming_to_youtube ? 'Efirni To\'xtatish' : 'Efirni Boshlash' }}
                             </Button>
                         </div>
                     </CardContent>

@@ -39,7 +39,7 @@ const getStreamUrl = (camera: Camera) => {
             <div class="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Total Cameras</CardTitle>
+                        <CardTitle class="text-sm font-medium">Jami Kameralar</CardTitle>
                         <CameraIcon class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -48,7 +48,7 @@ const getStreamUrl = (camera: Camera) => {
                 </Card>
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Active Monitoring</CardTitle>
+                        <CardTitle class="text-sm font-medium">Faol Monitoring</CardTitle>
                         <Activity class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -57,7 +57,7 @@ const getStreamUrl = (camera: Camera) => {
                 </Card>
                 <Card>
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">YouTube Live</CardTitle>
+                        <CardTitle class="text-sm font-medium">YouTube Efir</CardTitle>
                         <Youtube class="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -68,7 +68,7 @@ const getStreamUrl = (camera: Camera) => {
 
             <!-- Live Mosaic -->
             <div v-if="activeCameras.length > 0">
-                <h3 class="font-medium mb-4">Live Views</h3>
+                <h3 class="font-medium mb-4">Jonli Ko'rinishlar</h3>
                 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <Card 
                         v-for="camera in activeCameras" 
@@ -86,7 +86,7 @@ const getStreamUrl = (camera: Camera) => {
                             <Link 
                                 :href="`/cameras/${camera.id}`" 
                                 class="absolute inset-0 z-10"
-                                aria-label="View Details"
+                                aria-label="Batafsil ko'rish"
                             ></Link>
                         </div>
                     </Card>
@@ -95,12 +95,12 @@ const getStreamUrl = (camera: Camera) => {
             
             <div v-else class="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
                 <div class="flex flex-col items-center gap-1 text-center">
-                    <h3 class="text-2xl font-bold tracking-tight">No Active Cameras</h3>
+                    <h3 class="text-2xl font-bold tracking-tight">Faol Kameralar Yo'q</h3>
                     <p class="text-sm text-muted-foreground">
-                        Activate cameras to see them here.
+                        Ko'rish uchun kameralarni faollashtiring.
                     </p>
                     <Button class="mt-4" as-child>
-                        <Link href="/cameras">Manage Cameras</Link>
+                        <Link href="/cameras">Kameralarni Boshqarish</Link>
                     </Button>
                 </div>
             </div>

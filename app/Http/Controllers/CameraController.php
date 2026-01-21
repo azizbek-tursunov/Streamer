@@ -55,8 +55,6 @@ class CameraController extends Controller
             'is_active' => 'boolean',
         ]);
         
-        // Ensure stream_path has default if empty logic or rely on model default if omitted?
-        // validated data passed to create doesn't include defaults unless we merge.
         if (empty($validated['stream_path'])) {
              $validated['stream_path'] = '/';
         }
@@ -67,11 +65,11 @@ class CameraController extends Controller
             try {
                 $this->mediaMtx->addPath($camera);
             } catch (\Exception $e) {
-                return back()->with('error', 'Camera saved but failed to register in MediaMTX: ' . $e->getMessage());
+                return back()->with('error', 'Kamera saqlandi, lekin MediaMTXga ulanmadi: ' . $e->getMessage());
             }
         }
 
-        return back()->with('success', 'Camera created successfully.');
+        return back()->with('success', 'Kamera muvaffaqiyatli yaratildi.');
     }
 
     public function show(Camera $camera)
@@ -115,10 +113,10 @@ class CameraController extends Controller
                 $this->mediaMtx->removePath($camera);
             }
         } catch (\Exception $e) {
-             return back()->with('error', 'Camera updated but MediaMTX sync failed: ' . $e->getMessage());
+             return back()->with('error', 'Kamera yangilandi, lekin MediaMTX sinxronizatsiyasi xato berdi: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Camera updated successfully.');
+        return back()->with('success', 'Kamera muvaffaqiyatli yangilandi.');
     }
 
     public function destroy(Camera $camera)
@@ -131,13 +129,13 @@ class CameraController extends Controller
         
         $camera->delete();
 
-        return redirect()->route('cameras.index')->with('success', 'Camera deleted successfully.');
+        return redirect()->route('cameras.index')->with('success', 'Kamera muvaffaqiyatli o\'chirildi.');
     }
 
     public function startStream(Camera $camera)
     {
         if (!$camera->youtube_url) {
-            return back()->with('error', 'No YouTube URL provided.');
+            return back()->with('error', 'YouTube URL ko\'rsatilmagan.');
         }
 
         $camera->update(['is_streaming_to_youtube' => true]);
@@ -146,10 +144,10 @@ class CameraController extends Controller
             $this->mediaMtx->updatePath($camera);
         } catch (\Exception $e) {
              $camera->update(['is_streaming_to_youtube' => false]);
-             return back()->with('error', 'Failed to start stream: ' . $e->getMessage());
+             return back()->with('error', 'Efirni boshlashda xatolik: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Streaming to YouTube started.');
+        return back()->with('success', 'YouTube efiri boshlandi.');
     }
 
     public function stopStream(Camera $camera)
@@ -159,10 +157,10 @@ class CameraController extends Controller
         try {
             $this->mediaMtx->updatePath($camera);
         } catch (\Exception $e) {
-             return back()->with('error', 'Failed to stop stream: ' . $e->getMessage());
+             return back()->with('error', 'Efirni to\'xtatishda xatolik: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Streaming to YouTube stopped.');
+        return back()->with('success', 'YouTube efiri to\'xtatildi.');
     }
 
     public function toggleActive(Camera $camera)
@@ -178,10 +176,10 @@ class CameraController extends Controller
         } catch (\Exception $e) {
             // Revert on failure
              $camera->update(['is_active' => !$camera->is_active]);
-             return back()->with('error', 'Failed to toggle camera status: ' . $e->getMessage());
+             return back()->with('error', 'Kamera holatini o\'zgartirishda xatolik: ' . $e->getMessage());
         }
 
-        return back()->with('success', 'Camera status updated.');
+        return back()->with('success', 'Kamera holati yangilandi.');
     }
 
     public function updateYoutube(Request $request, Camera $camera)
@@ -196,6 +194,6 @@ class CameraController extends Controller
         // For simplicity, if they change the URL while streaming, we stop the stream or update it.
         // Let's just update the DB. If they are streaming, they need to Stop/Start to pick up new URL.
         
-        return back()->with('success', 'YouTube settings updated.');
+        return back()->with('success', 'YouTube sozlamalari yangilandi.');
     }
 }

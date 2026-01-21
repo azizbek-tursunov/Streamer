@@ -25,7 +25,7 @@ const getStreamUrl = (camera: Camera) => {
 </script>
 
 <template>
-    <Head title="Public Streams" />
+    <Head title="Ommaviy Efirlar" />
 
     <div class="min-h-screen bg-background text-foreground flex flex-col">
         <!-- Header -->
@@ -36,7 +36,7 @@ const getStreamUrl = (camera: Camera) => {
                 </div>
                 <nav>
                     <Link href="/login" class="text-sm font-medium hover:underline">
-                        Login
+                        Kirish
                     </Link>
                 </nav>
             </div>
@@ -45,14 +45,14 @@ const getStreamUrl = (camera: Camera) => {
         <!-- Main Content -->
         <main class="flex-1 container mx-auto px-4 py-8">
              <div v-if="cameras.length === 0" class="text-center py-20 text-muted-foreground">
-                <p>No active streams available at the moment.</p>
+                <p>Hozircha faol efirlar mavjud emas.</p>
             </div>
 
             <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-10rem)]">
                 <!-- Column 1: Camera List -->
                 <Card class="lg:col-span-1 h-full flex flex-col overflow-hidden">
                     <div class="p-4 border-b bg-muted/50 font-medium">
-                        Active Cameras
+                        Faol Kameralar
                     </div>
                     <div class="flex-1 overflow-y-auto">
                         <div class="p-2 space-y-2">
@@ -85,7 +85,7 @@ const getStreamUrl = (camera: Camera) => {
                             :autoplay="true"
                         />
                         <div v-else class="text-white/50">
-                            Select a camera to view
+                            Ko'rish uchun kamerani tanlang
                         </div>
                     </Card>
                     
@@ -93,7 +93,7 @@ const getStreamUrl = (camera: Camera) => {
                         <h2 class="text-2xl font-bold">{{ selectedCamera.name }}</h2>
                         <div class="flex items-center gap-2 text-muted-foreground text-sm">
                             <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                            Live Stream
+                            Jonli Efir
                         </div>
                     </div>
                 </div>

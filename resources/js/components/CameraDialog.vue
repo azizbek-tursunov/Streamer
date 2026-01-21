@@ -66,22 +66,22 @@ const submit = () => {
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="sm:max-w-[600px]">
       <DialogHeader>
-        <DialogTitle>{{ camera ? 'Edit Camera' : 'Add New Camera' }}</DialogTitle>
+        <DialogTitle>{{ camera ? 'Kamerani Tahrirlash' : 'Yangi Kamera Qo\'shish' }}</DialogTitle>
         <DialogDescription>
-          {{ camera ? 'Update camera details.' : 'Configure your new RTSP camera.' }}
+          {{ camera ? 'Kamera ma\'lumotlarini yangilang.' : 'Yangi RTSP kamerani sozlang.' }}
         </DialogDescription>
       </DialogHeader>
       
       <form @submit.prevent="submit" class="grid gap-4 py-4">
         <div class="space-y-2">
-            <Label for="name">Camera Name</Label>
-            <Input id="name" v-model="form.name" placeholder="Front Gate Camera" required />
+            <Label for="name">Kamera Nomi</Label>
+            <Input id="name" v-model="form.name" placeholder="Masalan: Kirish Darvozasi" required />
             <div v-if="form.errors.name" class="text-sm text-destructive">{{ form.errors.name }}</div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-                <Label for="ip_address">IP Address</Label>
+                <Label for="ip_address">IP Manzil</Label>
                 <Input id="ip_address" v-model="form.ip_address" placeholder="192.168.1.100" required />
                 <div v-if="form.errors.ip_address" class="text-sm text-destructive">{{ form.errors.ip_address }}</div>
             </div>
@@ -94,21 +94,21 @@ const submit = () => {
 
         <div class="grid grid-cols-2 gap-4">
              <div class="space-y-2">
-                <Label for="username">Username (Optional)</Label>
+                <Label for="username">Foydalanuvchi (Ixtiyoriy)</Label>
                 <Input id="username" v-model="form.username" placeholder="admin" />
                 <div v-if="form.errors.username" class="text-sm text-destructive">{{ form.errors.username }}</div>
             </div>
              <div class="space-y-2">
-                <Label for="password">Password (Optional)</Label>
+                <Label for="password">Parol (Ixtiyoriy)</Label>
                 <Input id="password" type="password" v-model="form.password" placeholder="••••••" />
                 <div v-if="form.errors.password" class="text-sm text-destructive">{{ form.errors.password }}</div>
             </div>
         </div>
         
         <DialogFooter>
-            <Button type="button" variant="ghost" @click="$emit('update:open', false)">Cancel</Button>
+            <Button type="button" variant="ghost" @click="$emit('update:open', false)">Bekor Qilish</Button>
             <Button type="submit" :disabled="form.processing">
-                {{ form.processing ? 'Saving...' : 'Save Camera' }}
+                {{ form.processing ? 'Saqlanmoqda...' : 'Saqlash' }}
             </Button>
         </DialogFooter>
       </form>
