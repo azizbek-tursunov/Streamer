@@ -1,15 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Camera, BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Trash2 } from 'lucide-vue-next';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Plus, Eye, Edit, Trash2, Search } from 'lucide-vue-next';
 import CameraDialog from '@/components/CameraDialog.vue';
+import Pagination from '@/components/Pagination.vue';
+import { debounce } from 'lodash';
 
-defineProps<{
-    cameras: Camera[];
+const props = defineProps<{
+    cameras: {
+        data: Camera[];
+        links: any[];
+    };
+    filters: {
+        search?: string;
+        active?: string;
+    };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -18,6 +35,20 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const showDialog = ref(false);
 const selectedCamera = ref<Camera | null>(null);
+
+const search = ref(props.filters.search || '');
+const activeFilter = ref(props.filters.active ?? 'all');
+
+watch([search, activeFilter], debounce(([newSearch, newActive]: [string, string]) => {
+    router.get('/cameras', {
+        search: newSearch,
+        active: newActive === 'all' ? null : newActive,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}, 300));
 
 const openCreateModal = () => {
     selectedCamera.value = null;
@@ -49,6 +80,27 @@ const deleteCamera = (camera: Camera) => {
                 </Button>
             </div>
 
+            <div class="flex items-center gap-4">
+                <div class="relative w-full max-w-sm">
+                    <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        v-model="search"
+                        placeholder="Search cameras by name or IP..." 
+                        class="pl-8" 
+                    />
+                </div>
+                <Select v-model="activeFilter">
+                    <SelectTrigger class="w-[180px]">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
             <div class="border rounded-lg overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-muted/50 border-b">
@@ -61,12 +113,12 @@ const deleteCamera = (camera: Camera) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="cameras.length === 0">
+                        <tr v-if="cameras.data.length === 0">
                             <td colspan="5" class="p-8 text-center text-muted-foreground">
                                 No cameras found.
                             </td>
                         </tr>
-                        <tr v-for="camera in cameras" :key="camera.id" class="border-b transition-colors hover:bg-muted/50">
+                        <tr v-for="camera in cameras.data" :key="camera.id" class="border-b transition-colors hover:bg-muted/50">
                             <td class="p-4 align-middle font-medium">{{ camera.name }}</td>
                             <td class="p-4 align-middle">{{ camera.ip_address }}:{{ camera.port }}</td>
                             <td class="p-4 align-middle">
@@ -98,6 +150,10 @@ const deleteCamera = (camera: Camera) => {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="mt-4">
+                <Pagination :links="cameras.links" />
             </div>
 
             <CameraDialog 

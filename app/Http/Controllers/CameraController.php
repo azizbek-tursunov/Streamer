@@ -16,10 +16,24 @@ class CameraController extends Controller
         $this->mediaMtx = $mediaMtx;
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $query = Camera::query();
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('ip_address', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->has('active') && $request->active !== null) {
+            $query->where('is_active', filter_var($request->active, FILTER_VALIDATE_BOOLEAN));
+        }
+
         return Inertia::render('Cameras/Index', [
-            'cameras' => Camera::all(),
+            'cameras' => $query->paginate(10)->withQueryString(),
+            'filters' => $request->only(['search', 'active']),
         ]);
     }
 
