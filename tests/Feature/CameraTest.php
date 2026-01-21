@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\Camera;
 use App\Services\MediaMtxService;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('cameras page is displayed', function () {
     $user = User::factory()->create();
@@ -12,12 +13,15 @@ test('cameras page is displayed', function () {
         ->get('/cameras');
 
     $response->assertOk();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('Cameras/Index')
+    );
 });
 
 test('can create camera', function () {
     $user = User::factory()->create();
     
-    // Mock the service to avoid actual API calls during test
+    // Mock the service
     $this->mock(MediaMtxService::class, function ($mock) {
         $mock->shouldReceive('addPath')->once();
     });
@@ -25,12 +29,51 @@ test('can create camera', function () {
     $response = $this
         ->actingAs($user)
         ->post('/cameras', [
-            'name' => 'Test Camera',
-            'rtsp_url' => 'rtsp://test',
-            'youtube_url' => 'rtmp://youtube',
+            'name' => 'New Camera',
+            'ip_address' => '192.168.1.50',
+            'port' => 554,
+            'username' => 'admin',
+            'password' => '12345',
             'is_active' => true,
         ]);
 
-    $response->assertRedirect('/cameras');
-    $this->assertDatabaseHas('cameras', ['name' => 'Test Camera']);
+    $response->assertRedirect();
+    $this->assertDatabaseHas('cameras', ['name' => 'New Camera', 'ip_address' => '192.168.1.50']);
+});
+
+test('can update camera', function () {
+    $user = User::factory()->create();
+    $camera = Camera::factory()->create();
+
+    $this->mock(MediaMtxService::class, function ($mock) {
+        $mock->shouldReceive('updatePath')->once();
+    });
+
+    $response = $this
+        ->actingAs($user)
+        ->put("/cameras/{$camera->id}", [
+            'name' => 'Updated Camera',
+            'ip_address' => '192.168.1.51',
+            'port' => 554,
+            'is_active' => true,
+        ]);
+
+    $response->assertRedirect();
+    $this->assertDatabaseHas('cameras', ['id' => $camera->id, 'name' => 'Updated Camera']);
+});
+
+test('can search cameras', function () {
+    $user = User::factory()->create();
+    Camera::factory()->create(['name' => 'Alpha Cam']);
+    Camera::factory()->create(['name' => 'Beta Cam']);
+
+    $response = $this
+        ->actingAs($user)
+        ->get('/cameras?search=Alpha');
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('Cameras/Index')
+        ->has('cameras.data', 1)
+        ->where('cameras.data.0.name', 'Alpha Cam')
+    );
 });
