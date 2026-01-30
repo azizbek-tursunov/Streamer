@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Camera;
 use App\Services\MediaMtxService;
+use App\Http\Requests\StoreCameraRequest;
+use App\Http\Requests\UpdateCameraRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -42,24 +44,9 @@ class CameraController extends Controller
         return Inertia::render('Cameras/Form');
     }
 
-    public function store(Request $request)
+    public function store(StoreCameraRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'nullable|string',
-            'password' => 'nullable|string',
-            'ip_address' => 'required|string',
-            'port' => 'required|integer',
-            'stream_path' => 'nullable|string',
-            'youtube_url' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
-        
-        if (empty($validated['stream_path'])) {
-             $validated['stream_path'] = '/';
-        }
-
-        $camera = Camera::create($validated);
+        $camera = Camera::create($request->validated());
 
         if ($camera->is_active) {
             try {
@@ -86,24 +73,9 @@ class CameraController extends Controller
         ]);
     }
 
-    public function update(Request $request, Camera $camera)
+    public function update(UpdateCameraRequest $request, Camera $camera)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'nullable|string',
-            'password' => 'nullable|string',
-            'ip_address' => 'required|string',
-            'port' => 'required|integer',
-            'stream_path' => 'nullable|string',
-            'youtube_url' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
-        
-        if (empty($validated['stream_path'])) {
-             $validated['stream_path'] = '/';
-        }
-
-        $camera->update($validated);
+        $camera->update($request->validated());
         
         // Sync with MediaMTX
         try {

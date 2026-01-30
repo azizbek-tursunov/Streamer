@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'mediamtx' => [
+        'host' => env('MEDIAMTX_HOST', 'localhost'),
+        'port' => env('MEDIAMTX_API_PORT', '9997'),
+        'user' => env('MEDIAMTX_USER', 'admin'),
+        'password' => env('MEDIAMTX_PASSWORD', '12345'),
+    ],
+
 ];
