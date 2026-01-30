@@ -39,6 +39,13 @@ class CameraController extends Controller
         ]);
     }
 
+    public function grid()
+    {
+        return Inertia::render('Cameras/Grid', [
+            'cameras' => Camera::where('is_active', true)->get(),
+        ]);
+    }
+
     public function create()
     {
         return Inertia::render('Cameras/Form');

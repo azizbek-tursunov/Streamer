@@ -17,6 +17,7 @@ Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'inde
 Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'index'])->name('public.streams');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('cameras/grid', [\App\Http\Controllers\CameraController::class, 'grid'])->name('cameras.grid');
     Route::resource('cameras', \App\Http\Controllers\CameraController::class);
     Route::post('cameras/{camera}/stream', [\App\Http\Controllers\CameraController::class, 'startStream'])->name('cameras.stream.start');
     Route::post('cameras/{camera}/stop-stream', [\App\Http\Controllers\CameraController::class, 'stopStream'])->name('cameras.stream.stop');

@@ -11,24 +11,40 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { computed } from 'vue';
+import { usePage, Link } from '@inertiajs/vue3';
+import { urlIsActive } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, Camera } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Boshqaruv Paneli',
         href: dashboard(),
         icon: LayoutGrid,
+        isActive: urlIsActive(dashboard().url, page.url),
     },
     {
         title: 'Kameralar',
-        href: '/cameras',
+        href: '#',
         icon: Camera,
+        isActive: ['/cameras', '/cameras/grid'].some(path => urlIsActive(path, page.url)),
+        items: [
+            {
+                title: "Ro'yhat",
+                href: '/cameras',
+            },
+            {
+                title: 'Mozaika',
+                href: '/cameras/grid',
+            },
+        ],
     },
-];
+]);
 
 const footerNavItems: NavItem[] = [];
 </script>
