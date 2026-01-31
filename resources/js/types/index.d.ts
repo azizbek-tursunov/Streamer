@@ -54,7 +54,28 @@ export interface Camera {
     youtube_url?: string;
     is_active: boolean;
     is_streaming_to_youtube: boolean;
+    branch_id?: number;
+    floor_id?: number;
+    faculty_id?: number;
+    branch?: Branch;
+    floor?: Floor;
+    faculty?: Faculty;
     created_at: string;
     updated_at: string;
     snapshot_url?: string | null;
+}
+
+export interface Branch {
+    id: number;
+    name: string;
+}
+
+export interface Floor {
+    id: number;
+    name: string;
+}
+
+export interface Faculty {
+    id: number;
+    name: string;
 }

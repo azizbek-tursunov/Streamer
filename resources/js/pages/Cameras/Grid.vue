@@ -41,7 +41,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                     
                     <!-- Camera Overlay -->
                     <div class="absolute inset-x-0 top-0 bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity flex justify-between items-start pointer-events-none">
-                        <span class="text-white text-xs font-mono bg-black/50 px-1 rounded">{{ camera.name }}</span>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-white text-xs font-mono bg-black/50 px-1 rounded">{{ camera.name }}</span>
+                            <span v-if="camera.branch" class="text-white/80 text-[10px] font-mono bg-black/50 px-1 rounded">{{ camera.branch.name }}</span>
+                        </div>
                         <div class="h-2 w-2 rounded-full bg-red-500 animate-pulse" v-if="camera.is_active" title="Live"></div>
                     </div>
 

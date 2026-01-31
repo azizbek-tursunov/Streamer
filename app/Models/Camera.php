@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Camera extends Model
 {
@@ -19,6 +20,9 @@ class Camera extends Model
         'youtube_url',
         'is_active',
         'is_streaming_to_youtube',
+        'branch_id',
+        'floor_id',
+        'faculty_id',
     ];
 
     protected $casts = [
@@ -27,6 +31,21 @@ class Camera extends Model
     ];
 
     protected $appends = ['rtsp_url'];
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function floor(): BelongsTo
+    {
+        return $this->belongsTo(Floor::class);
+    }
+
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
+    }
 
     public function getRtspUrlAttribute(): string
     {

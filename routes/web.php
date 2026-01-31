@@ -23,6 +23,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('cameras/{camera}/stop-stream', [\App\Http\Controllers\CameraController::class, 'stopStream'])->name('cameras.stream.stop');
     Route::post('cameras/{camera}/toggle-active', [\App\Http\Controllers\CameraController::class, 'toggleActive'])->name('cameras.toggle-active');
     Route::put('cameras/{camera}/youtube', [\App\Http\Controllers\CameraController::class, 'updateYoutube'])->name('cameras.youtube.update');
+    
+    Route::resource('branches', \App\Http\Controllers\BranchController::class);
+    Route::resource('floors', \App\Http\Controllers\FloorController::class);
+    Route::resource('faculties', \App\Http\Controllers\FacultyController::class);
 });
 
 require __DIR__.'/settings.php';

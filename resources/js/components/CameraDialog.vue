@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { Camera } from '@/types';
+import { Camera, Branch, Floor, Faculty } from '@/types';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +24,9 @@ import {
 const props = defineProps<{
     open: boolean;
     camera?: Camera | null;
+    branches: Branch[];
+    floors: Floor[];
+    faculties: Faculty[];
 }>();
 
 const emit = defineEmits(['update:open']);
@@ -29,6 +39,9 @@ const form = useForm({
     port: 554,
     // stream_path removed (handled by default '/')
     is_active: true,
+    branch_id: '',
+    floor_id: '',
+    faculty_id: '',
 });
 
 watch(() => props.open, (isOpen) => {
@@ -40,6 +53,9 @@ watch(() => props.open, (isOpen) => {
             form.ip_address = props.camera.ip_address;
             form.port = props.camera.port;
             form.is_active = Boolean(props.camera.is_active);
+            form.branch_id = props.camera.branch_id?.toString() ?? '';
+            form.floor_id = props.camera.floor_id?.toString() ?? '';
+            form.faculty_id = props.camera.faculty_id?.toString() ?? '';
         } else {
             form.reset();
             form.port = 554;
@@ -50,12 +66,19 @@ watch(() => props.open, (isOpen) => {
 });
 
 const submit = () => {
+    const data = {
+        ...form.data(),
+        branch_id: form.branch_id ? parseInt(form.branch_id) : null,
+        floor_id: form.floor_id ? parseInt(form.floor_id) : null,
+        faculty_id: form.faculty_id ? parseInt(form.faculty_id) : null,
+    };
+
     if (props.camera) {
-        form.put(`/cameras/${props.camera.id}`, {
+        form.transform(() => data).put(`/cameras/${props.camera.id}`, {
             onSuccess: () => emit('update:open', false),
         });
     } else {
-        form.post('/cameras', {
+        form.transform(() => data).post('/cameras', {
             onSuccess: () => emit('update:open', false),
         });
     }
@@ -73,6 +96,54 @@ const submit = () => {
       </DialogHeader>
       
       <form @submit.prevent="submit" class="grid gap-4 py-4">
+        <!-- Category Section -->
+        <div class="grid grid-cols-3 gap-4 pb-4 border-b">
+            <div class="space-y-2">
+                <Label for="branch_id">Filial *</Label>
+                <Select v-model="form.branch_id">
+                    <SelectTrigger>
+                        <SelectValue placeholder="Tanlang" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id.toString()">
+                            {{ branch.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <div v-if="form.errors.branch_id" class="text-sm text-destructive">{{ form.errors.branch_id }}</div>
+            </div>
+            <div class="space-y-2">
+                <Label for="floor_id">Qavat</Label>
+                <Select v-model="form.floor_id">
+                    <SelectTrigger>
+                        <SelectValue placeholder="Tanlang" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">— Tanlanmagan —</SelectItem>
+                        <SelectItem v-for="floor in floors" :key="floor.id" :value="floor.id.toString()">
+                            {{ floor.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <div v-if="form.errors.floor_id" class="text-sm text-destructive">{{ form.errors.floor_id }}</div>
+            </div>
+            <div class="space-y-2">
+                <Label for="faculty_id">Fakultet</Label>
+                <Select v-model="form.faculty_id">
+                    <SelectTrigger>
+                        <SelectValue placeholder="Tanlang" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">— Tanlanmagan —</SelectItem>
+                        <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
+                            {{ faculty.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <div v-if="form.errors.faculty_id" class="text-sm text-destructive">{{ form.errors.faculty_id }}</div>
+            </div>
+        </div>
+
         <div class="space-y-2">
             <Label for="name">Kamera Nomi</Label>
             <Input id="name" v-model="form.name" placeholder="Masalan: Kirish Darvozasi" required />

@@ -50,6 +50,26 @@ const mainNavItems = computed<NavItem[]>(() => [
             },
         ],
     },
+    {
+        title: "Ma'lumotnomalar",
+        href: '#',
+        icon: Folder,
+        isActive: ['/branches', '/floors', '/faculties'].some(path => urlIsActive(path, page.url)),
+        items: [
+            {
+                title: 'Filiallar',
+                href: '/branches',
+            },
+            {
+                title: 'Qavatlar',
+                href: '/floors',
+            },
+            {
+                title: 'Fakultetlar',
+                href: '/faculties',
+            },
+        ],
+    },
 ]);
 
 const footerNavItems: NavItem[] = [];

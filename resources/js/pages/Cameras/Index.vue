@@ -26,7 +26,13 @@ const props = defineProps<{
     filters: {
         search?: string;
         active?: string;
+        branch_id?: string;
+        floor_id?: string;
+        faculty_id?: string;
     };
+    branches: { id: number; name: string }[];
+    floors: { id: number; name: string }[];
+    faculties: { id: number; name: string }[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -38,11 +44,17 @@ const selectedCamera = ref<Camera | null>(null);
 
 const search = ref(props.filters.search || '');
 const activeFilter = ref(props.filters.active ?? 'all');
+const branchFilter = ref(props.filters.branch_id ?? 'all');
+const floorFilter = ref(props.filters.floor_id ?? 'all');
+const facultyFilter = ref(props.filters.faculty_id ?? 'all');
 
-watch([search, activeFilter], debounce(([newSearch, newActive]: [string, string]) => {
+watch([search, activeFilter, branchFilter, floorFilter, facultyFilter], debounce(([newSearch, newActive, newBranch, newFloor, newFaculty]: [string, string, string, string, string]) => {
     router.get('/cameras', {
         search: newSearch,
         active: newActive === 'all' ? null : newActive,
+        branch_id: newBranch === 'all' ? null : newBranch,
+        floor_id: newFloor === 'all' ? null : newFloor,
+        faculty_id: newFaculty === 'all' ? null : newFaculty,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -80,7 +92,7 @@ const deleteCamera = (camera: Camera) => {
                 </Button>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex flex-wrap items-center gap-4">
                 <div class="relative w-full max-w-sm">
                     <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -89,8 +101,41 @@ const deleteCamera = (camera: Camera) => {
                         class="pl-8" 
                     />
                 </div>
+                <Select v-model="branchFilter">
+                    <SelectTrigger class="w-[140px]">
+                        <SelectValue placeholder="Filial" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Barcha filiallar</SelectItem>
+                        <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id.toString()">
+                            {{ branch.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select v-model="floorFilter">
+                    <SelectTrigger class="w-[140px]">
+                        <SelectValue placeholder="Qavat" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Barcha qavatlar</SelectItem>
+                        <SelectItem v-for="floor in floors" :key="floor.id" :value="floor.id.toString()">
+                            {{ floor.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select v-model="facultyFilter">
+                    <SelectTrigger class="w-[140px]">
+                        <SelectValue placeholder="Fakultet" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Barcha fakultetlar</SelectItem>
+                        <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
+                            {{ faculty.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
                 <Select v-model="activeFilter">
-                    <SelectTrigger class="w-[180px]">
+                    <SelectTrigger class="w-[140px]">
                         <SelectValue placeholder="Holati" />
                     </SelectTrigger>
                     <SelectContent>
@@ -106,6 +151,7 @@ const deleteCamera = (camera: Camera) => {
                     <thead class="bg-muted/50 border-b">
                         <tr>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Nomi</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Kategoriya</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">IP Manzil</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Holati</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Efir</th>
@@ -114,12 +160,21 @@ const deleteCamera = (camera: Camera) => {
                     </thead>
                     <tbody>
                         <tr v-if="cameras.data.length === 0">
-                            <td colspan="5" class="p-8 text-center text-muted-foreground">
+                            <td colspan="6" class="p-8 text-center text-muted-foreground">
                                 Kameralar topilmadi.
                             </td>
                         </tr>
                         <tr v-for="camera in cameras.data" :key="camera.id" class="border-b transition-colors hover:bg-muted/50">
                             <td class="p-4 align-middle font-medium">{{ camera.name }}</td>
+                            <td class="p-4 align-middle">
+                                <div class="flex flex-col gap-0.5 text-xs">
+                                    <span v-if="camera.branch" class="font-medium">{{ camera.branch.name }}</span>
+                                    <span v-if="camera.floor || camera.faculty" class="text-muted-foreground">
+                                        {{ [camera.floor?.name, camera.faculty?.name].filter(Boolean).join(' • ') }}
+                                    </span>
+                                    <span v-if="!camera.branch && !camera.floor && !camera.faculty" class="text-muted-foreground">—</span>
+                                </div>
+                            </td>
                             <td class="p-4 align-middle">{{ camera.ip_address }}:{{ camera.port }}</td>
                             <td class="p-4 align-middle">
                                 <Badge :variant="camera.is_active ? 'default' : 'secondary'">
@@ -159,6 +214,9 @@ const deleteCamera = (camera: Camera) => {
             <CameraDialog 
                 v-model:open="showDialog"
                 :camera="selectedCamera"
+                :branches="branches"
+                :floors="floors"
+                :faculties="faculties"
             />
         </div>
     </AppLayout>
