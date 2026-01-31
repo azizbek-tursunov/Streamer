@@ -4,7 +4,6 @@ import { Camera, BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import VideoPlayer from '@/components/VideoPlayer.vue';
 
 defineProps<{
     cameras: Camera[];
@@ -14,11 +13,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Kameralar', href: '/cameras' },
     { title: 'Jonli Mozaika', href: '/cameras/grid' },
 ];
-
-const getStreamUrl = (camera: Camera) => {
-    const host = window.location.hostname;
-    return `http://viewer:viewer@${host}:8888/cam_${camera.id}/index.m3u8`;
-};
 </script>
 
 <template>
@@ -33,11 +27,17 @@ const getStreamUrl = (camera: Camera) => {
                     :key="camera.id"
                     class="relative aspect-video bg-black group overflow-hidden"
                 >
-                    <VideoPlayer 
-                        :stream-url="getStreamUrl(camera)" 
-                        :autoplay="true"
-                        class="h-full w-full object-cover"
-                    />
+                    <div class="relative h-full w-full">
+                        <img 
+                            v-if="camera.snapshot_url"
+                            :src="camera.snapshot_url" 
+                            :alt="camera.name"
+                            class="h-full w-full object-cover"
+                        />
+                        <div v-else class="flex h-full w-full items-center justify-center bg-zinc-800">
+                            <span class="text-xs text-muted-foreground p-4 text-center">Rasm yo'q</span>
+                        </div>
+                    </div>
                     
                     <!-- Camera Overlay -->
                     <div class="absolute inset-x-0 top-0 bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity flex justify-between items-start pointer-events-none">

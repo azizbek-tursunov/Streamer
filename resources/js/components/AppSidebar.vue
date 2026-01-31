@@ -29,6 +29,12 @@ const mainNavItems = computed<NavItem[]>(() => [
         isActive: urlIsActive(dashboard().url, page.url),
     },
     {
+        title: 'Rasmlar',
+        href: '/snapshots', // Manual route for now
+        icon: BookOpen, // Using BookOpen as placeholder for Gallery/History
+        isActive: urlIsActive('/snapshots', page.url),
+    },
+    {
         title: 'Kameralar',
         href: '#',
         icon: Camera,
