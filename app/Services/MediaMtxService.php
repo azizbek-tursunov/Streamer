@@ -27,12 +27,14 @@ class MediaMtxService
         $pathName = $this->getPathName($camera);
         $rtspUrl = $camera->rtsp_url;
         
-        // Publish URL for internal MediaMTX connection
-        $publishUrl = "rtsp://" . config('services.mediamtx.user') . ":" . config('services.mediamtx.password') . "@localhost:8554/{$pathName}";
-        
         // Direct Copy mode for efficiency (near 0% CPU)
         // NOTE: Camera MUST be set to H.264 manually for browser playback
-        $ffmpegCmd = "ffmpeg -hide_banner -loglevel error -rtsp_transport tcp -i \"{$rtspUrl}\" -c:v copy -c:a aac -f rtsp \"{$publishUrl}\"";
+        // Using -c:a aac to ensure audio is supported by browsers (AAC)
+        // Using 127.0.0.1 to avoid IPv6 issues
+        // Wrapped in sh -c to ensure redirection > works. Using single quotes for sh -c.
+        $innerCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i {$rtspUrl} -c:v copy -c:a aac -f rtsp rtsp://" . config('services.mediamtx.user') . ":" . config('services.mediamtx.password') . "@127.0.0.1:8554/{$pathName}";
+        
+        $ffmpegCmd = "sh -c '{$innerCmd} > /tmp/ffmpeg_{$camera->id}.log 2>&1'";
 
         $payload = [
             'source' => 'publisher',
@@ -41,7 +43,8 @@ class MediaMtxService
         ];
 
         if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
-            $payload['runOnReady'] = "ffmpeg -i rtsp://localhost:8554/{$pathName} -c copy -f flv \"{$camera->youtube_url}\"";
+            // Youtube stream
+            $payload['runOnReady'] = "sh -c '/usr/bin/ffmpeg -i rtsp://127.0.0.1:8554/{$pathName} -c copy -f flv \"{$camera->youtube_url}\" >> /tmp/ffmpeg_{$camera->id}.log 2>&1'";
             $payload['runOnReadyRestart'] = true;
         }
 
