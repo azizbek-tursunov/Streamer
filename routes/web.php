@@ -19,7 +19,7 @@ Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'in
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('cameras/grid', [\App\Http\Controllers\CameraController::class, 'grid'])->name('cameras.grid');
     Route::get('cameras/snapshots', [\App\Http\Controllers\CameraController::class, 'snapshots'])->name('cameras.snapshots');
-    Route::resource('cameras', \App\Http\Controllers\CameraController::class);
+    Route::resource('cameras', \App\Http\Controllers\CameraController::class)->except(['create', 'edit']);
     Route::post('cameras/{camera}/stream', [\App\Http\Controllers\CameraController::class, 'startStream'])->name('cameras.stream.start');
     Route::post('cameras/{camera}/stop-stream', [\App\Http\Controllers\CameraController::class, 'stopStream'])->name('cameras.stream.stop');
     Route::post('cameras/{camera}/toggle-active', [\App\Http\Controllers\CameraController::class, 'toggleActive'])->name('cameras.toggle-active');

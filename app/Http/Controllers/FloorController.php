@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Floor;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -10,7 +11,7 @@ class FloorController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Floor::query();
+        $query = Floor::with('branch');
 
         if ($request->search) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -18,6 +19,7 @@ class FloorController extends Controller
 
         return Inertia::render('Floors/Index', [
             'floors' => $query->latest()->paginate(10)->withQueryString(),
+            'branches' => Branch::all(),
             'filters' => $request->only(['search']),
         ]);
     }
@@ -26,9 +28,10 @@ class FloorController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:floors,name',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        Floor::create($request->only('name'));
+        Floor::create($request->only(['name', 'branch_id']));
 
         return back()->with('success', 'Qavat muvaffaqiyatli yaratildi.');
     }
@@ -37,9 +40,10 @@ class FloorController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:floors,name,' . $floor->id,
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        $floor->update($request->only('name'));
+        $floor->update($request->only(['name', 'branch_id']));
 
         return back()->with('success', 'Qavat muvaffaqiyatli yangilandi.');
     }

@@ -73,6 +73,8 @@ export interface Branch {
 export interface Floor {
     id: number;
     name: string;
+    branch_id: number | null;
+    branch?: Branch;
 }
 
 export interface Faculty {

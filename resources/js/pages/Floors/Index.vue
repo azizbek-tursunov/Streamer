@@ -2,12 +2,12 @@
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { BreadcrumbItem, Floor } from '@/types';
+import { BreadcrumbItem, Floor, Branch } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, Edit, Trash2 } from 'lucide-vue-next';
 import Pagination from '@/components/Pagination.vue';
-import ResourceDialog from '@/components/ResourceDialog.vue';
+import FloorDialog from '@/components/FloorDialog.vue';
 import { debounce } from 'lodash';
 
 const props = defineProps<{
@@ -15,6 +15,7 @@ const props = defineProps<{
         data: Floor[];
         links: any[];
     };
+    branches: Branch[];
     filters: {
         search?: string;
     };
@@ -80,18 +81,23 @@ const deleteItem = (item: Floor) => {
                         <tr>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Nomi</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Filial</th>
                             <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Amallar</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="floors.data.length === 0">
-                            <td colspan="3" class="p-8 text-center text-muted-foreground">
+                            <td colspan="4" class="p-8 text-center text-muted-foreground">
                                 Qavatlar topilmadi.
                             </td>
                         </tr>
                         <tr v-for="floor in floors.data" :key="floor.id" class="border-b transition-colors hover:bg-muted/50">
                             <td class="p-4 align-middle font-medium w-16">#{{ floor.id }}</td>
                             <td class="p-4 align-middle font-medium">{{ floor.name }}</td>
+                            <td class="p-4 align-middle">
+                                <span v-if="floor.branch" class="text-muted-foreground">{{ floor.branch.name }}</span>
+                                <span v-else class="text-muted-foreground italic">-</span>
+                            </td>
                             <td class="p-4 align-middle text-right">
                                 <div class="flex justify-end gap-2">
                                     <Button variant="ghost" size="icon" @click="openEditModal(floor)">
@@ -111,12 +117,10 @@ const deleteItem = (item: Floor) => {
                 <Pagination :links="floors.links" />
             </div>
 
-            <ResourceDialog 
+            <FloorDialog 
                 v-model:open="showDialog"
                 :item="selectedItem"
-                title="Qavat"
-                url="/floors"
-                label="Qavat Nomi"
+                :branches="branches"
             />
         </div>
     </AppLayout>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { Camera, Branch, Floor, Faculty } from '@/types';
 import {
@@ -44,6 +44,19 @@ const form = useForm({
     faculty_id: '',
 });
 
+// Filter floors based on selected branch
+const filteredFloors = computed(() => {
+    if (!form.branch_id) {
+        return [];
+    }
+    return props.floors.filter(floor => 
+        floor.branch_id === parseInt(form.branch_id)
+    );
+});
+
+// Track previous branch_id to detect changes
+let previousBranchId: string | undefined;
+
 watch(() => props.open, (isOpen) => {
     if (isOpen) {
         if (props.camera) {
@@ -61,16 +74,25 @@ watch(() => props.open, (isOpen) => {
             form.port = 554;
             form.is_active = true;
         }
+        previousBranchId = form.branch_id;
         form.clearErrors();
     }
+});
+
+// Reset floor selection when branch changes
+watch(() => form.branch_id, (newBranchId) => {
+    if (previousBranchId !== undefined && newBranchId !== previousBranchId) {
+        form.floor_id = '';
+    }
+    previousBranchId = newBranchId;
 });
 
 const submit = () => {
     const data = {
         ...form.data(),
-        branch_id: form.branch_id ? parseInt(form.branch_id) : null,
-        floor_id: form.floor_id ? parseInt(form.floor_id) : null,
-        faculty_id: form.faculty_id ? parseInt(form.faculty_id) : null,
+        branch_id: (form.branch_id && form.branch_id !== 'none') ? parseInt(form.branch_id) : null,
+        floor_id: (form.floor_id && form.floor_id !== 'none') ? parseInt(form.floor_id) : null,
+        faculty_id: (form.faculty_id && form.faculty_id !== 'none') ? parseInt(form.faculty_id) : null,
     };
 
     if (props.camera) {
@@ -114,13 +136,13 @@ const submit = () => {
             </div>
             <div class="space-y-2">
                 <Label for="floor_id">Qavat</Label>
-                <Select v-model="form.floor_id">
+                <Select v-model="form.floor_id" :disabled="!form.branch_id || form.branch_id === 'none'">
                     <SelectTrigger>
-                        <SelectValue placeholder="Tanlang" />
+                        <SelectValue :placeholder="form.branch_id ? 'Tanlang' : 'Avval filial tanlang'" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">— Tanlanmagan —</SelectItem>
-                        <SelectItem v-for="floor in floors" :key="floor.id" :value="floor.id.toString()">
+                        <SelectItem value="none">— Tanlanmagan —</SelectItem>
+                        <SelectItem v-for="floor in filteredFloors" :key="floor.id" :value="floor.id.toString()">
                             {{ floor.name }}
                         </SelectItem>
                     </SelectContent>
@@ -134,7 +156,7 @@ const submit = () => {
                         <SelectValue placeholder="Tanlang" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">— Tanlanmagan —</SelectItem>
+                        <SelectItem value="none">— Tanlanmagan —</SelectItem>
                         <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
                             {{ faculty.name }}
                         </SelectItem>

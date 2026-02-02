@@ -115,14 +115,7 @@ class CameraController extends Controller
         return response()->json($snapshots);
     }
 
-    public function create()
-    {
-        return Inertia::render('Cameras/Form', [
-            'branches' => Branch::all(),
-            'floors' => Floor::all(),
-            'faculties' => Faculty::all(),
-        ]);
-    }
+
 
     public function store(StoreCameraRequest $request)
     {
@@ -143,18 +136,13 @@ class CameraController extends Controller
     {
         return Inertia::render('Cameras/Show', [
             'camera' => $camera,
-        ]);
-    }
-
-    public function edit(Camera $camera)
-    {
-        return Inertia::render('Cameras/Form', [
-            'camera' => $camera->load(['branch', 'floor', 'faculty']),
             'branches' => Branch::all(),
             'floors' => Floor::all(),
             'faculties' => Faculty::all(),
         ]);
     }
+
+
 
     public function update(UpdateCameraRequest $request, Camera $camera)
     {

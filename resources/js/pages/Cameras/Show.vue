@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Camera, BreadcrumbItem } from '@/types';
+import { Camera, BreadcrumbItem, Branch, Floor, Faculty } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
@@ -14,13 +14,16 @@ import YouTubeDialog from '@/components/YouTubeDialog.vue';
 
 const props = defineProps<{
     camera: Camera;
+    branches: Branch[];
+    floors: Floor[];
+    faculties: Faculty[];
 }>();
 
 const showDialog = ref(false);
 const showYouTubeDialog = ref(false);
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Cameras', href: '/cameras' },
+    { title: 'Kameralar', href: '/cameras' },
     { title: props.camera.name, href: '#' },
 ];
 
@@ -139,6 +142,9 @@ const toggleActive = (camera: Camera) => {
             <CameraDialog 
                 v-model:open="showDialog"
                 :camera="camera"
+                :branches="branches"
+                :floors="floors"
+                :faculties="faculties"
             />
             
             <YouTubeDialog
