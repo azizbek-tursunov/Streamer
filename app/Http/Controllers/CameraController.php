@@ -81,7 +81,38 @@ class CameraController extends Controller
 
         return Inertia::render('Cameras/Grid', [
             'cameras' => $cameras,
+            'branches' => Branch::all(),
+            'floors' => Floor::all(),
         ]);
+    }
+
+    /**
+     * Return JSON with latest snapshot info for smart polling.
+     * Frontend calls this every 30 seconds to check for new snapshots.
+     */
+    public function snapshots()
+    {
+        $cameras = Camera::where('is_active', true)->get();
+        
+        $snapshots = [];
+        foreach ($cameras as $camera) {
+            $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
+            
+            if (!empty($files)) {
+                usort($files, function($a, $b) {
+                    return filemtime($b) - filemtime($a);
+                });
+                $latestFile = $files[0];
+                $snapshots[$camera->id] = [
+                    'url' => asset('storage/snapshots/' . basename($latestFile)),
+                    'timestamp' => filemtime($latestFile),
+                ];
+            } else {
+                $snapshots[$camera->id] = null;
+            }
+        }
+        
+        return response()->json($snapshots);
     }
 
     public function create()

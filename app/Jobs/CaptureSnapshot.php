@@ -35,16 +35,24 @@ class CaptureSnapshot implements ShouldQueue
         $filename = "camera_{$this->camera->id}_{$timestamp}.jpg";
         $outputPath = "{$snapshotDir}/{$filename}";
 
+        // Use MediaMTX proxied stream (accessible from Docker network)
+        // This is more reliable than direct camera RTSP which may not be reachable
+        $host = config('services.mediamtx.host', 'mediamtx');
+        $user = config('services.mediamtx.user', 'admin');
+        $pass = config('services.mediamtx.password', '12345');
+        $streamUrl = "rtsp://{$user}:{$pass}@{$host}:8554/cam_{$this->camera->id}";
+
         // FFmpeg command to capture single frame
         // -y: overwrite
+        // -rtsp_transport tcp: use TCP for reliability
         // -i: input url
         // -vframes 1: take 1 frame
         // -q:v 2: high quality jpeg
-        $cmd = "ffmpeg -y -i \"{$this->camera->rtsp_url}\" -vframes 1 -q:v 2 \"{$outputPath}\"";
+        $cmd = "ffmpeg -y -rtsp_transport tcp -i \"{$streamUrl}\" -vframes 1 -q:v 2 \"{$outputPath}\"";
 
         Log::info("Snapshot: Starting for Camera {$this->camera->id}", ['cmd' => $cmd]);
 
-        Process::timeout(30)->run($cmd);
+        Process::timeout(60)->run($cmd);
 
         if (file_exists($outputPath)) {
             Log::info("Snapshot: Success for Camera {$this->camera->id}", ['file' => $filename]);

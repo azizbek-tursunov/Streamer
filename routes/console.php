@@ -12,14 +12,14 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule camera snapshots every 10 minutes
+// Schedule camera snapshots every 5 minutes
 Schedule::call(function () {
     Camera::where('is_active', true)->chunk(10, function ($cameras) {
         foreach ($cameras as $camera) {
             CaptureSnapshot::dispatch($camera);
         }
     });
-})->everyTenMinutes();
+})->everyFiveMinutes();
 
 // Prune old snapshots every hour
 Schedule::job(new PruneSnapshots)->hourly();

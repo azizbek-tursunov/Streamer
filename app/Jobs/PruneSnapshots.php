@@ -31,7 +31,7 @@ class PruneSnapshots implements ShouldQueue
 
         $files = glob("{$snapshotDir}/*.jpg");
         $now = time();
-        $retentionSeconds = 2 * 3600; // 2 hours
+        $retentionSeconds = 30 * 60; // 30 minutes
 
         $deletedCount = 0;
 

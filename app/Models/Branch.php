@@ -9,6 +9,11 @@ class Branch extends Model
 {
     protected $fillable = ['name'];
 
+    public function floors(): HasMany
+    {
+        return $this->hasMany(Floor::class);
+    }
+
     public function cameras(): HasMany
     {
         return $this->hasMany(Camera::class);
