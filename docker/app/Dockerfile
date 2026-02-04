@@ -36,9 +36,20 @@ COPY . /var/www/html
 # Copy existing application directory permissions
 COPY --chown=www:www . /var/www/html
 
+# Copy supervisor config
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy entrypoint script
+COPY start-container.sh /usr/local/bin/start-container
+RUN sed -i 's/\r$//' /usr/local/bin/start-container
+RUN chmod +x /usr/local/bin/start-container
+
+# Create supervisor log directory and permissions (must be done before switching user)
+RUN mkdir -p /var/log/supervisor && chown -R www:www /var/log/supervisor /var/run
+
 # Change current user to www
 USER www
 
-# Expose port 9000 and start php-fpm server
+# Expose port 9000 and start container via entrypoint
 EXPOSE 9000
-CMD ["php-fpm"]
+ENTRYPOINT ["start-container"]
