@@ -16,8 +16,15 @@ import { usePage, Link } from '@inertiajs/vue3';
 import { urlIsActive } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { BookOpen, Folder, LayoutGrid, Camera } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Camera, Shield } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { index as usersIndex } from '@/routes/users';
+import { index as rolesIndex } from '@/routes/roles';
+import { index as permissionsIndex } from '@/routes/permissions';
+import { index as camerasIndex } from '@/routes/cameras';
+import { index as branchesIndex } from '@/routes/branches';
+import { index as floorsIndex } from '@/routes/floors';
+import { index as facultiesIndex } from '@/routes/faculties';
 
 const page = usePage();
 
@@ -58,15 +65,35 @@ const mainNavItems = computed<NavItem[]>(() => [
         items: [
             {
                 title: 'Filiallar',
-                href: '/branches',
+                href: branchesIndex().url,
             },
             {
                 title: 'Qavatlar',
-                href: '/floors',
+                href: floorsIndex().url,
             },
             {
                 title: 'Fakultetlar',
-                href: '/faculties',
+                href: facultiesIndex().url,
+            },
+        ],
+    },
+    {
+        title: "Xavfsizlik",
+        href: '#',
+        icon: Shield,
+        isActive: [usersIndex().url, rolesIndex().url, permissionsIndex().url].some(path => urlIsActive(path, page.url)),
+        items: [
+            {
+                title: 'Foydalanuvchilar',
+                href: usersIndex().url,
+            },
+            {
+                title: 'Rollar',
+                href: rolesIndex().url,
+            },
+            {
+                title: 'Ruxsatnomalar',
+                href: permissionsIndex().url,
             },
         ],
     },

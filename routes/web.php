@@ -27,7 +27,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::resource('branches', \App\Http\Controllers\BranchController::class);
     Route::resource('floors', \App\Http\Controllers\FloorController::class);
+    Route::resource('branches', \App\Http\Controllers\BranchController::class);
+    Route::resource('floors', \App\Http\Controllers\FloorController::class);
     Route::resource('faculties', \App\Http\Controllers\FacultyController::class);
+
+    Route::middleware(['role:super-admin|admin'])->group(function () {
+        Route::resource('users', \App\Http\Controllers\UserController::class);
+        Route::resource('roles', \App\Http\Controllers\RoleController::class);
+        Route::resource('permissions', \App\Http\Controllers\PermissionController::class);
+    });
 });
 
 require __DIR__.'/settings.php';
