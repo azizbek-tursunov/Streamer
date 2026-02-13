@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -51,7 +51,7 @@ class RoleController extends Controller
     public function edit(Role $role)
     {
         $role->load('permissions');
-        
+
         return Inertia::render('Security/Roles/Form', [
             'role' => $role,
             'permissions' => Permission::all(),
@@ -78,6 +78,7 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         $role->delete();
+
         return redirect()->back()->with('success', 'Roll o\'chirildi.');
     }
 }

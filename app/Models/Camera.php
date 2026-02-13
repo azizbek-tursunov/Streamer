@@ -57,9 +57,9 @@ class Camera extends Model
             }
             $auth .= '@';
         }
-        
+
         $path = ltrim($this->stream_path, '/');
-        
+
         return "rtsp://{$auth}{$this->ip_address}:{$this->port}/{$path}";
     }
 }

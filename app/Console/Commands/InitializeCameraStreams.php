@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Camera;
 use App\Services\MediaMtxService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class InitializeCameraStreams extends Command
@@ -34,6 +34,7 @@ class InitializeCameraStreams extends Command
 
         if ($cameras->isEmpty()) {
             $this->info('No active cameras found.');
+
             return;
         }
 
@@ -42,10 +43,10 @@ class InitializeCameraStreams extends Command
                 $this->info("Initializing stream for camera: {$camera->name} (ID: {$camera->id})");
                 $mediaMtxService->addPath($camera);
             } catch (\Exception $e) {
-                $this->error("Failed to initialize camera {$camera->id}: " . $e->getMessage());
-                Log::error("Failed to initialize camera stream on startup", [
+                $this->error("Failed to initialize camera {$camera->id}: ".$e->getMessage());
+                Log::error('Failed to initialize camera stream on startup', [
                     'camera_id' => $camera->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }

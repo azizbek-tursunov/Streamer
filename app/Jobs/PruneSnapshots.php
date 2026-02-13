@@ -24,8 +24,8 @@ class PruneSnapshots implements ShouldQueue
     public function handle(): void
     {
         $snapshotDir = storage_path('app/public/snapshots');
-        
-        if (!file_exists($snapshotDir)) {
+
+        if (! file_exists($snapshotDir)) {
             return;
         }
 

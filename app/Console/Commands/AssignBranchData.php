@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Branch;
-use App\Models\Floor;
 use App\Models\Camera;
+use App\Models\Floor;
+use Illuminate\Console\Command;
 
 class AssignBranchData extends Command
 {
@@ -16,17 +16,18 @@ class AssignBranchData extends Command
     public function handle(): int
     {
         $branch = Branch::where('name', 'like', '%Yuksalish%')->first();
-        
-        if (!$branch) {
+
+        if (! $branch) {
             $this->error('Yuksalish branch not found!');
+
             return Command::FAILURE;
         }
-        
+
         $floorsUpdated = Floor::query()->update(['branch_id' => $branch->id]);
         $camerasUpdated = Camera::query()->update(['branch_id' => $branch->id]);
-        
+
         $this->info("Updated {$floorsUpdated} floors and {$camerasUpdated} cameras to branch: {$branch->name}");
-        
+
         return Command::SUCCESS;
     }
 }

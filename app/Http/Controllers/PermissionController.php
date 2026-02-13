@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
-use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller
 {
@@ -62,6 +62,7 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         $permission->delete();
+
         return redirect()->back()->with('success', 'Ruxsatnoma o\'chirildi.');
     }
 }

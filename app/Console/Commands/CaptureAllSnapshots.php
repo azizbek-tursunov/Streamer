@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\Camera;
 use App\Jobs\CaptureSnapshot;
+use App\Models\Camera;
+use Illuminate\Console\Command;
 
 class CaptureAllSnapshots extends Command
 {
@@ -28,16 +28,16 @@ class CaptureAllSnapshots extends Command
     public function handle(): int
     {
         $cameras = Camera::where('is_active', true)->get();
-        
+
         $this->info("Capturing snapshots for {$cameras->count()} active cameras...");
-        
+
         foreach ($cameras as $camera) {
             $this->line("  → Camera {$camera->id}: {$camera->name}");
             CaptureSnapshot::dispatchSync($camera);
         }
-        
+
         $this->info('Done!');
-        
+
         return Command::SUCCESS;
     }
 }

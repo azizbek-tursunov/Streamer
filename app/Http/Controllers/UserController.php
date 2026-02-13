@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
-use Inertia\Inertia;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -60,7 +59,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $user->load('roles');
-        
+
         return Inertia::render('Security/Users/Form', [
             'user' => $user,
             'roles' => Role::all(),
@@ -98,8 +97,9 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'O\'zingizni o\'chira olmaysiz.');
         }
-        
+
         $user->delete();
+
         return redirect()->back()->with('success', 'Foydalanuvchi o\'chirildi.');
     }
 }

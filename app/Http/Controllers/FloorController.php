@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Floor;
 use App\Models\Branch;
+use App\Models\Floor;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,7 +14,7 @@ class FloorController extends Controller
         $query = Floor::with('branch');
 
         if ($request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         return Inertia::render('Floors/Index', [
@@ -39,7 +39,7 @@ class FloorController extends Controller
     public function update(Request $request, Floor $floor)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:floors,name,' . $floor->id,
+            'name' => 'required|string|max:255|unique:floors,name,'.$floor->id,
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
@@ -51,7 +51,7 @@ class FloorController extends Controller
     public function destroy(Floor $floor)
     {
         if ($floor->cameras()->exists()) {
-             return back()->with('error', 'Ushbu qavatda kameralar mavjud. Oldin ularni o\'chiring yoki boshqa qavatga o\'tkazing.');
+            return back()->with('error', 'Ushbu qavatda kameralar mavjud. Oldin ularni o\'chiring yoki boshqa qavatga o\'tkazing.');
         }
 
         $floor->delete();

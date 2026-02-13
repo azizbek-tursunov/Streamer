@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\Camera;
+use App\Models\User;
 use App\Services\MediaMtxService;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -20,7 +20,7 @@ test('cameras page is displayed', function () {
 
 test('can create camera', function () {
     $user = User::factory()->create();
-    
+
     // Mock the service
     $this->mock(MediaMtxService::class, function ($mock) {
         $mock->shouldReceive('addPath')->once();

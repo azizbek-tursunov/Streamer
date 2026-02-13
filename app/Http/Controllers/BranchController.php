@@ -13,7 +13,7 @@ class BranchController extends Controller
         $query = Branch::query();
 
         if ($request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         return Inertia::render('Branches/Index', [
@@ -36,7 +36,7 @@ class BranchController extends Controller
     public function update(Request $request, Branch $branch)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:branches,name,' . $branch->id,
+            'name' => 'required|string|max:255|unique:branches,name,'.$branch->id,
         ]);
 
         $branch->update($request->only('name'));
@@ -47,7 +47,7 @@ class BranchController extends Controller
     public function destroy(Branch $branch)
     {
         if ($branch->cameras()->exists()) {
-             return back()->with('error', 'Ushbu filialda kameralar mavjud. Oldin ularni o\'chiring yoki boshqa filialga o\'tkazing.');
+            return back()->with('error', 'Ushbu filialda kameralar mavjud. Oldin ularni o\'chiring yoki boshqa filialga o\'tkazing.');
         }
 
         $branch->delete();

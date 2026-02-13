@@ -13,7 +13,7 @@ class FacultyController extends Controller
         $query = Faculty::query();
 
         if ($request->search) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         return Inertia::render('Faculties/Index', [
@@ -36,7 +36,7 @@ class FacultyController extends Controller
     public function update(Request $request, Faculty $faculty)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:faculties,name,' . $faculty->id,
+            'name' => 'required|string|max:255|unique:faculties,name,'.$faculty->id,
         ]);
 
         $faculty->update($request->only('name'));
@@ -47,7 +47,7 @@ class FacultyController extends Controller
     public function destroy(Faculty $faculty)
     {
         if ($faculty->cameras()->exists()) {
-             return back()->with('error', 'Ushbu fakultetda kameralar mavjud. Oldin ularni o\'chiring yoki boshqa fakultetga o\'tkazing.');
+            return back()->with('error', 'Ushbu fakultetda kameralar mavjud. Oldin ularni o\'chiring yoki boshqa fakultetga o\'tkazing.');
         }
 
         $faculty->delete();

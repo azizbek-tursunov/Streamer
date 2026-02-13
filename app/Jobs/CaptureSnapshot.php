@@ -2,11 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Models\Camera;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use App\Models\Camera;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class CaptureSnapshot implements ShouldQueue
 {
@@ -26,8 +26,8 @@ class CaptureSnapshot implements ShouldQueue
     public function handle(): void
     {
         $snapshotDir = storage_path('app/public/snapshots');
-        
-        if (!file_exists($snapshotDir)) {
+
+        if (! file_exists($snapshotDir)) {
             mkdir($snapshotDir, 0755, true);
         }
 

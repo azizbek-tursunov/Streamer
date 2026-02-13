@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCameraRequest;
+use App\Http\Requests\UpdateCameraRequest;
 use App\Models\Branch;
 use App\Models\Camera;
 use App\Models\Faculty;
 use App\Models\Floor;
 use App\Services\MediaMtxService;
-use App\Http\Requests\StoreCameraRequest;
-use App\Http\Requests\UpdateCameraRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -27,8 +27,8 @@ class CameraController extends Controller
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('ip_address', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('ip_address', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -63,17 +63,17 @@ class CameraController extends Controller
             // Find latest snapshot
             $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
             $latestFile = null;
-            
-            if (!empty($files)) {
+
+            if (! empty($files)) {
                 // Sort by name desc (timestamp is in name) or filemtime
-                usort($files, function($a, $b) {
+                usort($files, function ($a, $b) {
                     return filemtime($b) - filemtime($a);
                 });
                 $latestFile = $files[0];
             }
 
-            $camera->snapshot_url = $latestFile 
-                ? asset('storage/snapshots/' . basename($latestFile)) 
+            $camera->snapshot_url = $latestFile
+                ? asset('storage/snapshots/'.basename($latestFile))
                 : null; // Or a placeholder URL
 
             return $camera;
@@ -93,29 +93,27 @@ class CameraController extends Controller
     public function snapshots()
     {
         $cameras = Camera::where('is_active', true)->get();
-        
+
         $snapshots = [];
         foreach ($cameras as $camera) {
             $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
-            
-            if (!empty($files)) {
-                usort($files, function($a, $b) {
+
+            if (! empty($files)) {
+                usort($files, function ($a, $b) {
                     return filemtime($b) - filemtime($a);
                 });
                 $latestFile = $files[0];
                 $snapshots[$camera->id] = [
-                    'url' => asset('storage/snapshots/' . basename($latestFile)),
+                    'url' => asset('storage/snapshots/'.basename($latestFile)),
                     'timestamp' => filemtime($latestFile),
                 ];
             } else {
                 $snapshots[$camera->id] = null;
             }
         }
-        
+
         return response()->json($snapshots);
     }
-
-
 
     public function store(StoreCameraRequest $request)
     {
@@ -125,7 +123,7 @@ class CameraController extends Controller
             try {
                 $this->mediaMtx->addPath($camera);
             } catch (\Exception $e) {
-                return back()->with('error', 'Kamera saqlandi, lekin MediaMTXga ulanmadi: ' . $e->getMessage());
+                return back()->with('error', 'Kamera saqlandi, lekin MediaMTXga ulanmadi: '.$e->getMessage());
             }
         }
 
@@ -142,12 +140,10 @@ class CameraController extends Controller
         ]);
     }
 
-
-
     public function update(UpdateCameraRequest $request, Camera $camera)
     {
         $camera->update($request->validated());
-        
+
         // Sync with MediaMTX
         try {
             if ($camera->is_active) {
@@ -156,7 +152,7 @@ class CameraController extends Controller
                 $this->mediaMtx->removePath($camera);
             }
         } catch (\Exception $e) {
-             return back()->with('error', 'Kamera yangilandi, lekin MediaMTX sinxronizatsiyasi xato berdi: ' . $e->getMessage());
+            return back()->with('error', 'Kamera yangilandi, lekin MediaMTX sinxronizatsiyasi xato berdi: '.$e->getMessage());
         }
 
         return back()->with('success', 'Kamera muvaffaqiyatli yangilandi.');
@@ -169,7 +165,7 @@ class CameraController extends Controller
         } catch (\Exception $e) {
             // ignore if not found
         }
-        
+
         $camera->delete();
 
         return redirect()->route('cameras.index')->with('success', 'Kamera muvaffaqiyatli o\'chirildi.');
@@ -177,7 +173,7 @@ class CameraController extends Controller
 
     public function startStream(Camera $camera)
     {
-        if (!$camera->youtube_url) {
+        if (! $camera->youtube_url) {
             return back()->with('error', 'YouTube URL ko\'rsatilmagan.');
         }
 
@@ -186,8 +182,9 @@ class CameraController extends Controller
         try {
             $this->mediaMtx->updatePath($camera);
         } catch (\Exception $e) {
-             $camera->update(['is_streaming_to_youtube' => false]);
-             return back()->with('error', 'Efirni boshlashda xatolik: ' . $e->getMessage());
+            $camera->update(['is_streaming_to_youtube' => false]);
+
+            return back()->with('error', 'Efirni boshlashda xatolik: '.$e->getMessage());
         }
 
         return back()->with('success', 'YouTube efiri boshlandi.');
@@ -200,7 +197,7 @@ class CameraController extends Controller
         try {
             $this->mediaMtx->updatePath($camera);
         } catch (\Exception $e) {
-             return back()->with('error', 'Efirni to\'xtatishda xatolik: ' . $e->getMessage());
+            return back()->with('error', 'Efirni to\'xtatishda xatolik: '.$e->getMessage());
         }
 
         return back()->with('success', 'YouTube efiri to\'xtatildi.');
@@ -208,7 +205,7 @@ class CameraController extends Controller
 
     public function toggleActive(Camera $camera)
     {
-        $camera->update(['is_active' => !$camera->is_active]);
+        $camera->update(['is_active' => ! $camera->is_active]);
 
         try {
             if ($camera->is_active) {
@@ -218,8 +215,9 @@ class CameraController extends Controller
             }
         } catch (\Exception $e) {
             // Revert on failure
-             $camera->update(['is_active' => !$camera->is_active]);
-             return back()->with('error', 'Kamera holatini o\'zgartirishda xatolik: ' . $e->getMessage());
+            $camera->update(['is_active' => ! $camera->is_active]);
+
+            return back()->with('error', 'Kamera holatini o\'zgartirishda xatolik: '.$e->getMessage());
         }
 
         return back()->with('success', 'Kamera holati yangilandi.');
@@ -236,7 +234,7 @@ class CameraController extends Controller
         // If streaming is active, we might need to restart it?
         // For simplicity, if they change the URL while streaming, we stop the stream or update it.
         // Let's just update the DB. If they are streaming, they need to Stop/Start to pick up new URL.
-        
+
         return back()->with('success', 'YouTube sozlamalari yangilandi.');
     }
 }

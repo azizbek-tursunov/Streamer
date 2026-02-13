@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -44,7 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Super-Admin role
         $role = Role::firstOrCreate(['name' => 'super-admin']);
-        // Super admin gets all permissions via Gate::before rule usually, but explicit assignment is fine too 
+        // Super admin gets all permissions via Gate::before rule usually, but explicit assignment is fine too
         // or just give all permissions
         $role->givePermissionTo(Permission::all());
 
@@ -52,7 +51,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $email = 'azizbektursunovofficial@gmail.com';
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             $user = User::create([
                 'name' => 'Azizbek Tursunov',
                 'email' => $email,
