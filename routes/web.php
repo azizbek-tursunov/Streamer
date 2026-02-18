@@ -24,12 +24,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('cameras/{camera}/stop-stream', [\App\Http\Controllers\CameraController::class, 'stopStream'])->name('cameras.stream.stop');
     Route::post('cameras/{camera}/toggle-active', [\App\Http\Controllers\CameraController::class, 'toggleActive'])->name('cameras.toggle-active');
     Route::put('cameras/{camera}/youtube', [\App\Http\Controllers\CameraController::class, 'updateYoutube'])->name('cameras.youtube.update');
-    
+
     Route::resource('branches', \App\Http\Controllers\BranchController::class);
     Route::resource('floors', \App\Http\Controllers\FloorController::class);
     Route::resource('branches', \App\Http\Controllers\BranchController::class);
     Route::resource('floors', \App\Http\Controllers\FloorController::class);
-    Route::resource('faculties', \App\Http\Controllers\FacultyController::class);
+    Route::get('faculties', [\App\Http\Controllers\FacultyController::class, 'index'])->name('faculties.index');
+    Route::post('faculties/sync', [\App\Http\Controllers\FacultyController::class, 'sync'])->name('faculties.sync');
+
+    Route::get('auditoriums', [\App\Http\Controllers\AuditoriumController::class, 'index'])->name('auditoriums.index');
+    Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->name('auditoriums.sync');
 
     Route::middleware(['role:super-admin|admin'])->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class);

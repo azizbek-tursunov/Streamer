@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Faculty;
+use App\Models\Hemis\Auditorium;
 use App\Services\HemisIntegrations\HemisApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class FacultyController extends Controller
+class AuditoriumController extends Controller
 {
     public function __construct(
         private readonly HemisApiService $hemisApi,
@@ -17,23 +17,23 @@ class FacultyController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Faculty::query();
+        $query = Auditorium::query();
 
         if ($request->search) {
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
-        return Inertia::render('Faculties/Index', [
-            'faculties' => $query->orderBy('name')->get(),
+        return Inertia::render('Auditoriums/Index', [
+            'auditoriums' => $query->orderBy('building_name')->orderBy('name')->get(),
             'filters' => $request->only(['search']),
-            'lastSyncedAt' => Faculty::whereNotNull('hemis_id')->max('updated_at'),
+            'lastSyncedAt' => Auditorium::max('updated_at'),
         ]);
     }
 
     public function sync(): RedirectResponse
     {
-        $count = $this->hemisApi->syncFaculties();
+        $count = $this->hemisApi->syncAuditoriums();
 
-        return back()->with('success', "$count ta fakultet muvaffaqiyatli sinxronlashtirildi.");
+        return back()->with('success', "$count ta auditoriya muvaffaqiyatli sinxronlashtirildi.");
     }
 }

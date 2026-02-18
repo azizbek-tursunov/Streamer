@@ -1,123 +1,153 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { BreadcrumbItem, Faculty } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Edit, Trash2 } from 'lucide-vue-next';
-import Pagination from '@/components/Pagination.vue';
-import ResourceDialog from '@/components/ResourceDialog.vue';
+import { Search, Building2, RefreshCw, CheckCircle } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 
 const props = defineProps<{
-    faculties: {
-        data: Faculty[];
-        links: any[];
-    };
+    faculties: Faculty[];
     filters: {
         search?: string;
     };
+    lastSyncedAt: string | null;
 }>();
+
+const page = usePage();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: "Ma'lumotnomalar", href: '#' },
     { title: 'Fakultetlar', href: '/faculties' },
 ];
 
-const showDialog = ref(false);
-const selectedItem = ref<Faculty | null>(null);
 const search = ref(props.filters.search || '');
+const syncing = ref(false);
 
 watch(search, debounce((value: string) => {
     router.get('/faculties', { search: value }, { preserveState: true, replace: true });
 }, 300));
 
-const openCreateModal = () => {
-    selectedItem.value = null;
-    showDialog.value = true;
+const syncFromApi = () => {
+    syncing.value = true;
+    router.post('/faculties/sync', {}, {
+        preserveState: false,
+        onFinish: () => {
+            syncing.value = false;
+        },
+    });
 };
 
-const openEditModal = (item: Faculty) => {
-    selectedItem.value = item;
-    showDialog.value = true;
+const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return 'Hali sinxronlanmagan';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('uz-UZ', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
 };
 
-const deleteItem = (item: Faculty) => {
-    if (confirm(`"${item.name}" fakultetini o'chirishni xohlaysizmi?`)) {
-        router.delete(`/faculties/${item.id}`);
-    }
-};
+const successMessage = computed(() => (page.props.flash as Record<string, string> | undefined)?.success);
 </script>
 
 <template>
     <Head title="Fakultetlar" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 p-4">
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Fakultetlar</h1>
-                <Button @click="openCreateModal">
-                    <Plus class="mr-2 h-4 w-4" />
-                    Fakultet Qo'shish
-                </Button>
+        <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold tracking-tight">Fakultetlar</h1>
+                    <div class="flex items-center gap-3">
+                        <span v-if="lastSyncedAt" class="hidden text-xs text-muted-foreground sm:inline">
+                            Oxirgi sinxron: {{ formatDate(lastSyncedAt) }}
+                        </span>
+                        <Button
+                            @click="syncFromApi"
+                            :disabled="syncing"
+                            variant="outline"
+                            size="sm"
+                        >
+                            <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />
+                            {{ syncing ? 'Sinxronlanmoqda...' : 'HEMIS dan sinxronlash' }}
+                        </Button>
+                    </div>
+                </div>
+                <p class="text-sm text-muted-foreground">HEMIS tizimidan sinxronlangan fakultetlar</p>
+            </div>
+
+            <!-- Success Toast -->
+            <div
+                v-if="successMessage"
+                class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+            >
+                <CheckCircle class="h-4 w-4 shrink-0" />
+                {{ successMessage }}
             </div>
 
             <div class="flex items-center gap-4">
                 <div class="relative w-full max-w-sm">
-                    <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
+                    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
                         v-model="search"
-                        placeholder="Nomi bo'yicha qidirish..." 
-                        class="pl-8" 
+                        placeholder="Nomi bo'yicha qidirish..."
+                        class="pl-9"
                     />
                 </div>
             </div>
 
-            <div class="border rounded-lg overflow-hidden">
+            <!-- Empty State -->
+            <div v-if="faculties.length === 0" class="flex flex-col items-center justify-center gap-4 py-16 text-center">
+                <div class="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <Building2 class="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div>
+                    <p class="font-medium">Fakultetlar topilmadi</p>
+                    <p class="text-sm text-muted-foreground mb-4">
+                        HEMIS tizimidan ma'lumotlarni sinxronlang
+                    </p>
+                    <Button @click="syncFromApi" :disabled="syncing">
+                        <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />
+                        {{ syncing ? 'Sinxronlanmoqda...' : 'Sinxronlash' }}
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div v-else class="border rounded-lg overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-muted/50 border-b">
                         <tr>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground w-16">#</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Nomi</th>
-                            <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Amallar</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Kod</th>
+                            <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground w-20">Holati</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="faculties.data.length === 0">
-                            <td colspan="3" class="p-8 text-center text-muted-foreground">
-                                Fakultetlar topilmadi.
-                            </td>
-                        </tr>
-                        <tr v-for="faculty in faculties.data" :key="faculty.id" class="border-b transition-colors hover:bg-muted/50">
-                            <td class="p-4 align-middle font-medium w-16">#{{ faculty.id }}</td>
+                        <tr v-for="(faculty, index) in faculties" :key="faculty.id" class="border-b transition-colors hover:bg-muted/50">
+                            <td class="p-4 align-middle text-muted-foreground w-16">{{ index + 1 }}</td>
                             <td class="p-4 align-middle font-medium">{{ faculty.name }}</td>
-                            <td class="p-4 align-middle text-right">
-                                <div class="flex justify-end gap-2">
-                                    <Button variant="ghost" size="icon" @click="openEditModal(faculty)">
-                                        <Edit class="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" @click="deleteItem(faculty)">
-                                        <Trash2 class="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
+                            <td class="p-4 align-middle text-muted-foreground hidden sm:table-cell">
+                                <span v-if="faculty.code" class="font-mono text-xs">{{ faculty.code }}</span>
+                                <span v-else class="text-xs">—</span>
+                            </td>
+                            <td class="p-4 align-middle text-center">
+                                <span
+                                    class="inline-flex h-2 w-2 rounded-full"
+                                    :class="faculty.active !== false ? 'bg-emerald-500' : 'bg-red-400'"
+                                    :title="faculty.active !== false ? 'Faol' : 'Nofaol'"
+                                />
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-
-            <div class="mt-4">
-                <Pagination :links="faculties.links" />
-            </div>
-
-            <ResourceDialog 
-                v-model:open="showDialog"
-                :item="selectedItem"
-                title="Fakultet"
-                url="/faculties"
-                label="Fakultet Nomi"
-            />
         </div>
     </AppLayout>
 </template>

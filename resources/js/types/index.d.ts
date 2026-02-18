@@ -80,4 +80,33 @@ export interface Floor {
 export interface Faculty {
     id: number;
     name: string;
+    hemis_id?: number | null;
+    code?: string | null;
+    active?: boolean;
+}
+
+export interface AuditoriumType {
+    code: string;
+    name: string;
+}
+
+export interface Building {
+    id: number;
+    name: string;
+}
+
+export interface Auditorium {
+    code: number;
+    name: string;
+    auditoriumType: AuditoriumType;
+    volume: number;
+    active: boolean;
+    building: Building;
+}
+
+export interface HemisPagination {
+    totalCount: number;
+    pageSize: number;
+    pageCount: number;
+    page: number;
 }

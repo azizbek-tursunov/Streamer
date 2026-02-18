@@ -25,6 +25,7 @@ import { index as camerasIndex } from '@/routes/cameras';
 import { index as branchesIndex } from '@/routes/branches';
 import { index as floorsIndex } from '@/routes/floors';
 import { index as facultiesIndex } from '@/routes/faculties';
+import { index as auditoriumsIndex } from '@/actions/App/Http/Controllers/AuditoriumController';
 
 const page = usePage();
 
@@ -61,7 +62,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: "Ma'lumotnomalar",
         href: '#',
         icon: Folder,
-        isActive: ['/branches', '/floors', '/faculties'].some(path => urlIsActive(path, page.url)),
+        isActive: ['/branches', '/floors', '/faculties', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
         items: [
             {
                 title: 'Filiallar',
@@ -74,6 +75,10 @@ const mainNavItems = computed<NavItem[]>(() => [
             {
                 title: 'Fakultetlar',
                 href: facultiesIndex().url,
+            },
+            {
+                title: 'Auditoriyalar',
+                href: auditoriumsIndex().url,
             },
         ],
     },
