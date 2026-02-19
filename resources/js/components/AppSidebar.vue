@@ -22,8 +22,6 @@ import { index as usersIndex } from '@/routes/users';
 import { index as rolesIndex } from '@/routes/roles';
 import { index as permissionsIndex } from '@/routes/permissions';
 import { index as camerasIndex } from '@/routes/cameras';
-import { index as branchesIndex } from '@/routes/branches';
-import { index as floorsIndex } from '@/routes/floors';
 import { index as facultiesIndex } from '@/routes/faculties';
 import { index as auditoriumsIndex } from '@/actions/App/Http/Controllers/AuditoriumController';
 
@@ -62,16 +60,8 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: "Ma'lumotnomalar",
         href: '#',
         icon: Folder,
-        isActive: ['/branches', '/floors', '/faculties', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
+        isActive: ['/faculties', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
         items: [
-            {
-                title: 'Filiallar',
-                href: branchesIndex().url,
-            },
-            {
-                title: 'Qavatlar',
-                href: floorsIndex().url,
-            },
             {
                 title: 'Fakultetlar',
                 href: facultiesIndex().url,

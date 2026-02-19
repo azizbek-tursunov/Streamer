@@ -25,10 +25,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('cameras/{camera}/toggle-active', [\App\Http\Controllers\CameraController::class, 'toggleActive'])->name('cameras.toggle-active');
     Route::put('cameras/{camera}/youtube', [\App\Http\Controllers\CameraController::class, 'updateYoutube'])->name('cameras.youtube.update');
 
-    Route::resource('branches', \App\Http\Controllers\BranchController::class);
-    Route::resource('floors', \App\Http\Controllers\FloorController::class);
-    Route::resource('branches', \App\Http\Controllers\BranchController::class);
-    Route::resource('floors', \App\Http\Controllers\FloorController::class);
     Route::get('faculties', [\App\Http\Controllers\FacultyController::class, 'index'])->name('faculties.index');
     Route::post('faculties/sync', [\App\Http\Controllers\FacultyController::class, 'sync'])->name('faculties.sync');
 
