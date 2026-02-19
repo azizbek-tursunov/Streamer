@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCameraRequest;
 use App\Http\Requests\UpdateCameraRequest;
-use App\Models\Branch;
 use App\Models\Camera;
 use App\Models\Faculty;
-use App\Models\Floor;
 use App\Services\MediaMtxService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,7 +21,7 @@ class CameraController extends Controller
 
     public function index(Request $request)
     {
-        $query = Camera::with(['branch', 'floor', 'faculty']);
+        $query = Camera::with(['faculty']);
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
@@ -36,30 +34,20 @@ class CameraController extends Controller
             $query->where('is_active', filter_var($request->active, FILTER_VALIDATE_BOOLEAN));
         }
 
-        if ($request->branch_id) {
-            $query->where('branch_id', $request->branch_id);
-        }
-
-        if ($request->floor_id) {
-            $query->where('floor_id', $request->floor_id);
-        }
-
         if ($request->faculty_id) {
             $query->where('faculty_id', $request->faculty_id);
         }
 
         return Inertia::render('Cameras/Index', [
             'cameras' => $query->paginate(10)->withQueryString(),
-            'filters' => $request->only(['search', 'active', 'branch_id', 'floor_id', 'faculty_id']),
-            'branches' => Branch::all(),
-            'floors' => Floor::all(),
+            'filters' => $request->only(['search', 'active', 'faculty_id']),
             'faculties' => Faculty::all(),
         ]);
     }
 
     public function grid()
     {
-        $cameras = Camera::with(['branch', 'floor', 'faculty'])->where('is_active', true)->get()->map(function ($camera) {
+        $cameras = Camera::with(['faculty'])->where('is_active', true)->get()->map(function ($camera) {
             // Find latest snapshot
             $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
             $latestFile = null;
@@ -81,8 +69,6 @@ class CameraController extends Controller
 
         return Inertia::render('Cameras/Grid', [
             'cameras' => $cameras,
-            'branches' => Branch::all(),
-            'floors' => Floor::all(),
         ]);
     }
 
@@ -134,8 +120,6 @@ class CameraController extends Controller
     {
         return Inertia::render('Cameras/Show', [
             'camera' => $camera,
-            'branches' => Branch::all(),
-            'floors' => Floor::all(),
             'faculties' => Faculty::all(),
         ]);
     }

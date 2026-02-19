@@ -20,8 +20,6 @@ class Camera extends Model
         'youtube_url',
         'is_active',
         'is_streaming_to_youtube',
-        'branch_id',
-        'floor_id',
         'faculty_id',
     ];
 
@@ -31,16 +29,6 @@ class Camera extends Model
     ];
 
     protected $appends = ['rtsp_url'];
-
-    public function branch(): BelongsTo
-    {
-        return $this->belongsTo(Branch::class);
-    }
-
-    public function floor(): BelongsTo
-    {
-        return $this->belongsTo(Floor::class);
-    }
 
     public function faculty(): BelongsTo
     {
