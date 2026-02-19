@@ -96,17 +96,53 @@ export interface Building {
 }
 
 export interface Auditorium {
+    id: number;
     code: number;
     name: string;
     auditoriumType: AuditoriumType;
     volume: number;
     active: boolean;
     building: Building;
+    camera_id?: number | null;
+    camera?: Camera | null;
 }
 
-export interface HemisPagination {
-    totalCount: number;
-    pageSize: number;
-    pageCount: number;
-    page: number;
+export interface LessonPair {
+    code: string;
+    name: string;
+    start_time: string;
+    end_time: string;
 }
+
+export interface Employee {
+    id: number;
+    name: string;
+}
+
+export interface Subject {
+    id: number;
+    name: string;
+    code: string;
+}
+
+export interface Group {
+    id: number;
+    name: string;
+}
+
+export interface Lesson {
+    id: number;
+    subject: Subject;
+    employee: Employee;
+    group: Group;
+    auditorium: Auditorium;
+    lessonPair: LessonPair;
+    lesson_date: number;
+    start_timestamp: number;
+    end_timestamp: number;
+    trainingType: {
+        code: string;
+        name: string;
+    };
+}
+

@@ -2,16 +2,31 @@
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { BreadcrumbItem, Auditorium } from '@/types';
+import { BreadcrumbItem, Auditorium, Camera } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Search,
     Building2,
@@ -23,6 +38,8 @@ import {
     CheckCircle,
     Eye,
     EyeOff,
+    Video,
+    Link as LinkIcon,
 } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 
@@ -32,6 +49,7 @@ const props = defineProps<{
         search?: string;
     };
     lastSyncedAt: string | null;
+    cameras: Camera[];
 }>();
 
 const page = usePage();
@@ -45,6 +63,12 @@ const search = ref(props.filters.search || '');
 const selectedType = ref<string | null>(null);
 const showInactive = ref(false);
 const syncing = ref(false);
+
+// Camera Assignment State
+const showCameraDialog = ref(false);
+const selectedAuditorium = ref<Auditorium | null>(null);
+const selectedCameraId = ref<string>('');
+const assigningCamera = ref(false);
 
 watch(search, debounce((value: string) => {
     router.get('/auditoriums', { search: value }, { preserveState: true, replace: true });
@@ -113,6 +137,29 @@ const syncFromApi = () => {
         preserveState: false,
         onFinish: () => {
             syncing.value = false;
+        },
+    });
+};
+
+const openCameraDialog = (auditorium: Auditorium) => {
+    selectedAuditorium.value = auditorium;
+    selectedCameraId.value = auditorium.camera_id?.toString() || '';
+    showCameraDialog.value = true;
+};
+
+const assignCamera = () => {
+    if (!selectedAuditorium.value) return;
+
+    assigningCamera.value = true;
+    router.put(`/auditoriums/${selectedAuditorium.value.id}`, {
+        camera_id: selectedCameraId.value || null,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showCameraDialog.value = false;
+        },
+        onFinish: () => {
+            assigningCamera.value = false;
         },
     });
 };
@@ -325,7 +372,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             <Card
                                 v-for="item in building.auditoriums"
                                 :key="item.code"
-                                class="group relative py-0 transition-all hover:shadow-md hover:border-primary/30"
+                                class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30"
                                 :class="{ 'opacity-50': !item.active }"
                             >
                                 <CardHeader class="pb-2 pt-4 px-4">
@@ -340,7 +387,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                         />
                                     </div>
                                 </CardHeader>
-                                <CardContent class="px-4 pb-4 pt-0">
+                                <CardContent class="px-4 pb-2 pt-0 flex-grow">
                                     <div class="flex flex-col gap-2">
                                         <div class="flex items-center justify-between text-xs">
                                             <span class="text-muted-foreground">Kod</span>
@@ -353,6 +400,10 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 <span class="font-medium">{{ item.volume }}</span>
                                             </div>
                                         </div>
+                                        <div v-if="item.camera" class="flex items-center gap-1 text-xs text-emerald-600 font-medium pt-1">
+                                            <Video class="h-3 w-3" />
+                                            <span>{{ item.camera.name }}</span>
+                                        </div>
                                         <div v-if="item.auditoriumType?.name" class="pt-1">
                                             <span
                                                 class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium"
@@ -363,11 +414,66 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                         </div>
                                     </div>
                                 </CardContent>
+                                <CardFooter class="px-4 pb-4 pt-2 flex gap-2">
+                                    <Button 
+                                        v-if="item.camera_id" 
+                                        size="sm" 
+                                        variant="outline" 
+                                        class="w-full text-xs h-8" 
+                                        as-child
+                                    >
+                                        <a :href="`/auditoriums/${item.id}`">
+                                            <Video class="mr-1 h-3 w-3" />
+                                            Ko'rish
+                                        </a>
+                                    </Button>
+                                    <Button 
+                                        size="sm" 
+                                        :variant="item.camera_id ? 'ghost' : 'outline'" 
+                                        class="w-full text-xs h-8"
+                                        @click="openCameraDialog(item)"
+                                    >
+                                        <LinkIcon class="mr-1 h-3 w-3" />
+                                        {{ item.camera_id ? 'O\'zgartirish' : 'Kamera ulash' }}
+                                    </Button>
+                                </CardFooter>
                             </Card>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
             </Accordion>
+            
+            <Dialog v-model:open="showCameraDialog">
+                <DialogContent class="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Kamera biriktirish</DialogTitle>
+                        <DialogDescription>
+                            {{ selectedAuditorium?.name }} uchun kamera tanlang.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-4 py-4">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-medium">Kamera</label>
+                            <Select v-model="selectedCameraId">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Kamerani tanlang" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="camera in cameras" :key="camera.id" :value="camera.id.toString()">
+                                        {{ camera.name }} ({{ camera.ip_address }})
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" @click="showCameraDialog = false" :disabled="assigningCamera">Bekor qilish</Button>
+                        <Button @click="assignCamera" :disabled="assigningCamera">
+                            {{ assigningCamera ? 'Saqlanmoqda...' : 'Saqlash' }}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     </AppLayout>
 </template>

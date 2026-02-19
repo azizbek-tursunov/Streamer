@@ -34,6 +34,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('auditoriums', [\App\Http\Controllers\AuditoriumController::class, 'index'])->name('auditoriums.index');
     Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->name('auditoriums.sync');
+    Route::put('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'update'])->name('auditoriums.update');
+    Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
 
     Route::middleware(['role:super-admin|admin'])->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class);

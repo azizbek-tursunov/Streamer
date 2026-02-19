@@ -2,6 +2,7 @@
 
 use App\Jobs\CaptureSnapshot;
 use App\Jobs\PruneSnapshots;
+use App\Jobs\SyncLessonSchedules;
 use App\Models\Camera;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -22,3 +23,6 @@ Schedule::call(function () {
 
 // Prune old snapshots every hour
 Schedule::job(new PruneSnapshots)->hourly();
+
+// Sync lesson schedules from HEMIS daily at 3:00 AM
+Schedule::job(new SyncLessonSchedules)->dailyAt('03:00');

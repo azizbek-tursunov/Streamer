@@ -26,7 +26,13 @@ class Auditorium extends Model
         'building_name',
         'volume',
         'active',
+        'camera_id',
     ];
+
+    public function camera()
+    {
+        return $this->belongsTo(\App\Models\Camera::class);
+    }
 
     /**
      * @return array{code: string, name: string}|null
@@ -65,6 +71,7 @@ class Auditorium extends Model
             'volume' => 'integer',
             'code' => 'integer',
             'building_id' => 'integer',
+            'camera_id' => 'integer',
         ];
     }
 }
