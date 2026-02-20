@@ -42,6 +42,7 @@ import {
     Link as LinkIcon,
 } from 'lucide-vue-next';
 import { debounce } from 'lodash';
+import { useSortable } from '@vueuse/integrations/useSortable';
 
 const props = defineProps<{
     auditoriums: Auditorium[];
@@ -63,6 +64,12 @@ const search = ref(props.filters.search || '');
 const selectedType = ref<string | null>(null);
 const showInactive = ref(false);
 const syncing = ref(false);
+
+// Reordering State
+const isReordering = ref(false);
+const savingOrder = ref(false);
+// Store ref to the root Accordion container for sortablejs
+const accordionRef = ref<any>(null);
 
 // Camera Assignment State
 const showCameraDialog = ref(false);
@@ -100,6 +107,7 @@ const filteredAuditoriums = computed(() => {
 const inactiveCount = computed(() => props.auditoriums.filter(a => !a.active).length);
 
 // Group by building
+// Using reactive to allow in-place sorting and updates
 const groupedByBuilding = computed(() => {
     const groups = new Map<string, { name: string; auditoriums: Auditorium[] }>();
 
@@ -116,11 +124,65 @@ const groupedByBuilding = computed(() => {
     return Array.from(groups.entries()).map(([id, group]) => ({
         id,
         name: group.name,
-        auditoriums: group.auditoriums,
+        auditoriums: group.auditoriums, // Note: ordered natively from controller
         activeCount: group.auditoriums.filter(a => a.active).length,
         totalCapacity: group.auditoriums.reduce((sum, a) => sum + (a.volume || 0), 0),
     }));
 });
+
+const mutableGroups = ref<any[]>([]);
+
+watch(groupedByBuilding, (newVal) => {
+    if (!isReordering.value) {
+        mutableGroups.value = [...newVal];
+    }
+}, { immediate: true });
+
+// Watch for reorder mode to initialize Sortable instances
+watch(isReordering, (val) => {
+    if (val && accordionRef.value) {
+        // give DOM a tick
+        setTimeout(() => {
+            if (accordionRef.value) {
+                // To attach to the actual accordion wrapper (typically Radix adds divs)
+                // We target the immediate child elements with `.accordion-item-handle`
+                useSortable(accordionRef.value.$el || accordionRef.value, mutableGroups, {
+                    animation: 150,
+                    handle: '.accordion-drag-handle',
+                    ghostClass: 'opacity-50',
+                });
+            }
+        }, 100);
+    }
+});
+
+const toggleReorder = () => {
+    isReordering.value = !isReordering.value;
+    // reset search to see all when reordering
+    if (isReordering.value) {
+        search.value = '';
+    }
+};
+
+const saveOrder = () => {
+    savingOrder.value = true;
+    
+    // Sort logic requires integer building ID
+    const orderedItems = mutableGroups.value.map((group, index) => ({
+        building_id: parseInt(group.id) || 0,
+        sort_order: index + 1
+    })).filter(g => g.building_id !== 0); // Ignore 'unknown'
+
+    router.put('/auditoriums/reorder-buildings', { buildings: orderedItems }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            isReordering.value = false;
+        },
+        onFinish: () => {
+            savingOrder.value = false;
+        }
+    });
+};
 
 
 // Stats
@@ -204,15 +266,30 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <span v-if="lastSyncedAt" class="hidden text-xs text-muted-foreground sm:inline">
                             Oxirgi sinxron: {{ formatDate(lastSyncedAt) }}
                         </span>
-                        <Button
-                            @click="syncFromApi"
-                            :disabled="syncing"
-                            variant="outline"
-                            size="sm"
-                        >
-                            <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />
-                            {{ syncing ? 'Sinxronlanmoqda...' : 'HEMIS dan sinxronlash' }}
-                        </Button>
+                        <div v-if="!isReordering" class="flex gap-2">
+                            <Button @click="toggleReorder" variant="outline" size="sm">
+                                <Layers class="mr-2 h-4 w-4" />
+                                Tartiblash
+                            </Button>
+                            <Button
+                                @click="syncFromApi"
+                                :disabled="syncing"
+                                variant="outline"
+                                size="sm"
+                            >
+                                <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />
+                                {{ syncing ? 'Sinxronlanmoqda...' : 'HEMIS dan sinxronlash' }}
+                            </Button>
+                        </div>
+                        <div v-else class="flex gap-2">
+                            <Button @click="toggleReorder" variant="secondary" size="sm" :disabled="savingOrder">
+                                Bekor qilish
+                            </Button>
+                            <Button @click="saveOrder" :disabled="savingOrder" size="sm">
+                                <CheckCircle class="mr-2 h-4 w-4" />
+                                {{ savingOrder ? 'Saqlanmoqda...' : 'Tartibni saqlash' }}
+                            </Button>
+                        </div>
                     </div>
                 </div>
                 <p class="text-sm text-muted-foreground">HEMIS tizimidan sinxronlangan auditoriyalar</p>
@@ -343,19 +420,29 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
             </div>
 
             <!-- Building Accordions -->
-            <Accordion v-else type="multiple" class="space-y-3">
+            <Accordion v-else type="multiple" class="space-y-3" ref="accordionRef">
                 <AccordionItem
-                    v-for="building in groupedByBuilding"
+                    v-for="(building, index) in mutableGroups"
                     :key="building.id"
-                    :value="building.id"
+                    :value="building.id.toString()"
                     class="rounded-lg border bg-card shadow-sm overflow-hidden"
                 >
-                    <AccordionTrigger class="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:border-b">
-                        <div class="flex items-center gap-3">
+                    <AccordionTrigger 
+                        class="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:border-b transition-all"
+                        :class="{'cursor-default': isReordering}"
+                    >
+                        <div class="flex items-center gap-3 w-full">
+                            <div 
+                                v-if="isReordering" 
+                                class="accordion-drag-handle cursor-grab active:cursor-grabbing p-1.5 -ml-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded"
+                                @click.stop
+                            >
+                                <Layers class="h-5 w-5" />
+                            </div>
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                                 <Building2 class="h-4 w-4 text-primary" />
                             </div>
-                            <div class="flex flex-col items-start gap-0.5">
+                            <div class="flex flex-col items-start gap-0.5 flex-1 text-left">
                                 <span class="text-sm font-semibold">{{ building.name }}</span>
                                 <div class="flex items-center gap-3 text-xs text-muted-foreground">
                                     <span>{{ building.auditoriums.length }} auditoriya</span>
@@ -371,7 +458,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             <Card
                                 v-for="item in building.auditoriums"
-                                :key="item.code"
+                                :key="item.id"
                                 class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30"
                                 :class="{ 'opacity-50': !item.active }"
                             >

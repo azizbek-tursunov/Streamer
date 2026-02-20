@@ -25,7 +25,7 @@ class AuditoriumController extends Controller
         }
 
         return Inertia::render('Auditoriums/Index', [
-            'auditoriums' => $query->orderBy('building_name')->orderBy('name')->get(),
+            'auditoriums' => $query->orderBy('building_sort_order')->orderBy('building_name')->orderBy('sort_order')->orderBy('name')->get(),
             'filters' => $request->only(['search']),
             'lastSyncedAt' => Auditorium::max('updated_at'),
             // Pass available cameras for linking
@@ -87,5 +87,36 @@ class AuditoriumController extends Controller
         $count = $this->hemisApi->syncAuditoriums();
 
         return back()->with('success', "$count ta auditoriya muvaffaqiyatli sinxronlashtirildi.");
+    }
+
+    public function reorder(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:auditoriums,id',
+            'items.*.sort_order' => 'required|integer',
+        ]);
+
+        foreach ($validated['items'] as $item) {
+            Auditorium::where('id', $item['id'])->update(['sort_order' => $item['sort_order']]);
+        }
+
+        return back()->with('success', 'Auditoriyalar tartibi saqlandi.');
+    }
+
+    public function reorderBuildings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'buildings' => 'required|array',
+            'buildings.*.building_id' => 'required|integer',
+            'buildings.*.sort_order' => 'required|integer',
+        ]);
+
+        foreach ($validated['buildings'] as $building) {
+            Auditorium::where('building_id', $building['building_id'])
+                ->update(['building_sort_order' => $building['sort_order']]);
+        }
+
+        return back()->with('success', 'Binolar tartibi saqlandi.');
     }
 }

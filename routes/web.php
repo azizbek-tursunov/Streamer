@@ -30,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('auditoriums', [\App\Http\Controllers\AuditoriumController::class, 'index'])->name('auditoriums.index');
     Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->name('auditoriums.sync');
+    Route::put('auditoriums/reorder', [\App\Http\Controllers\AuditoriumController::class, 'reorder'])->name('auditoriums.reorder');
+    Route::put('auditoriums/reorder-buildings', [\App\Http\Controllers\AuditoriumController::class, 'reorderBuildings'])->name('auditoriums.reorder-buildings');
     Route::put('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'update'])->name('auditoriums.update');
     Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
 

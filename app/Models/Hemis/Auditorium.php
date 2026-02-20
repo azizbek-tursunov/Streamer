@@ -27,6 +27,8 @@ class Auditorium extends Model
         'volume',
         'active',
         'camera_id',
+        'sort_order',
+        'building_sort_order',
     ];
 
     public function camera()
@@ -72,6 +74,8 @@ class Auditorium extends Model
             'code' => 'integer',
             'building_id' => 'integer',
             'camera_id' => 'integer',
+            'sort_order' => 'integer',
+            'building_sort_order' => 'integer',
         ];
     }
 }
