@@ -17,7 +17,7 @@ class FacultyController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Faculty::query();
+        $query = Faculty::query()->withCount('auditoriums');
 
         if ($request->search) {
             $query->where('name', 'like', '%'.$request->search.'%');

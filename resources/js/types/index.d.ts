@@ -84,6 +84,7 @@ export interface Faculty {
     hemis_id?: number | null;
     code?: string | null;
     active?: boolean;
+    auditoriums_count?: number;
 }
 
 export interface AuditoriumType {
@@ -106,6 +107,8 @@ export interface Auditorium {
     building: Building;
     camera_id?: number | null;
     camera?: Camera | null;
+    faculty_id?: number | null;
+    faculty?: Faculty | null;
 }
 
 export interface LessonPair {

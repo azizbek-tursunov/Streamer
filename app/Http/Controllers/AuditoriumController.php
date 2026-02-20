@@ -18,18 +18,24 @@ class AuditoriumController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Auditorium::query()->with('camera');
+        $query = Auditorium::query()->with(['camera', 'faculty']);
 
         if ($request->search) {
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
+        if ($request->filled('faculty_id')) {
+            $query->where('faculty_id', $request->faculty_id);
+        }
+
         return Inertia::render('Auditoriums/Index', [
             'auditoriums' => $query->orderBy('building_sort_order')->orderBy('building_name')->orderBy('sort_order')->orderBy('name')->get(),
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'faculty_id']),
             'lastSyncedAt' => Auditorium::max('updated_at'),
             // Pass available cameras for linking
             'cameras' => Camera::select('id', 'name', 'ip_address')->get(),
+            // Pass faculties for linking and filtering
+            'faculties' => \App\Models\Faculty::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -48,7 +54,7 @@ class AuditoriumController extends Controller
 
     public function show(Auditorium $auditorium): Response
     {
-        $auditorium->load('camera');
+        $auditorium->load('camera', 'faculty');
 
         $timezone = config('app.timezone');
         $today = now($timezone)->toDateString();
@@ -118,5 +124,23 @@ class AuditoriumController extends Controller
         }
 
         return back()->with('success', 'Binolar tartibi saqlandi.');
+    }
+
+    public function bulkAssignFaculty(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'auditorium_ids' => 'required|array',
+            'auditorium_ids.*' => 'required|exists:auditoriums,id',
+            'faculty_id' => 'nullable|exists:faculties,id',
+        ]);
+
+        Auditorium::whereIn('id', $validated['auditorium_ids'])
+            ->update(['faculty_id' => $validated['faculty_id']]);
+
+        $message = $validated['faculty_id'] 
+            ? count($validated['auditorium_ids']) . ' ta auditoriya fakultetga biriktirildi.'
+            : count($validated['auditorium_ids']) . ' ta auditoriyadan fakultet ochirildi.';
+
+        return back()->with('success', $message);
     }
 }

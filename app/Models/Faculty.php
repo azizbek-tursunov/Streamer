@@ -23,6 +23,11 @@ class Faculty extends Model
         return $this->hasMany(Camera::class);
     }
 
+    public function auditoriums(): HasMany
+    {
+        return $this->hasMany(\App\Models\Hemis\Auditorium::class);
+    }
+
     protected function casts(): array
     {
         return [

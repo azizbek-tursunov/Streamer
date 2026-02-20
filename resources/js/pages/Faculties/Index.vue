@@ -125,6 +125,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <tr>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground w-16">#</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Nomi</th>
+                            <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground w-32">Auditoriyalar</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Kod</th>
                             <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground w-20">Holati</th>
                         </tr>
@@ -133,6 +134,11 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <tr v-for="(faculty, index) in faculties" :key="faculty.id" class="border-b transition-colors hover:bg-muted/50">
                             <td class="p-4 align-middle text-muted-foreground w-16">{{ index + 1 }}</td>
                             <td class="p-4 align-middle font-medium">{{ faculty.name }}</td>
+                            <td class="p-4 align-middle text-center">
+                                <span class="inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                                    {{ faculty.auditoriums_count || 0 }} ta
+                                </span>
+                            </td>
                             <td class="p-4 align-middle text-muted-foreground hidden sm:table-cell">
                                 <span v-if="faculty.code" class="font-mono text-xs">{{ faculty.code }}</span>
                                 <span v-else class="text-xs">—</span>

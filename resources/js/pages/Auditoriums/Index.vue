@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { BreadcrumbItem, Auditorium, Camera } from '@/types';
+import { BreadcrumbItem, Auditorium, Camera, Faculty } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -40,6 +40,8 @@ import {
     EyeOff,
     Video,
     Link as LinkIcon,
+    GraduationCap,
+    X,
 } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 import { useSortable } from '@vueuse/integrations/useSortable';
@@ -48,9 +50,11 @@ const props = defineProps<{
     auditoriums: Auditorium[];
     filters: {
         search?: string;
+        faculty_id?: number;
     };
     lastSyncedAt: string | null;
     cameras: Camera[];
+    faculties: Faculty[];
 }>();
 
 const page = usePage();
@@ -61,6 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const search = ref(props.filters.search || '');
+const selectedFaculty = ref<string>(props.filters.faculty_id?.toString() || 'all');
 const selectedType = ref<string | null>(null);
 const showInactive = ref(false);
 const syncing = ref(false);
@@ -71,14 +76,23 @@ const savingOrder = ref(false);
 // Store ref to the root Accordion container for sortablejs
 const accordionRef = ref<any>(null);
 
+// Multi-select State
+const selectedAuditoriums = ref<number[]>([]);
+const showFacultyDialog = ref(false);
+const selectedBulkFacultyId = ref<string>('');
+const assigningFaculty = ref(false);
+
 // Camera Assignment State
 const showCameraDialog = ref(false);
 const selectedAuditorium = ref<Auditorium | null>(null);
 const selectedCameraId = ref<string>('');
 const assigningCamera = ref(false);
 
-watch(search, debounce((value: string) => {
-    router.get('/auditoriums', { search: value }, { preserveState: true, replace: true });
+watch([search, selectedFaculty], debounce(([searchVal, facultyVal]) => {
+    router.get('/auditoriums', { 
+        search: searchVal as string, 
+        faculty_id: facultyVal === 'all' ? undefined : parseInt(facultyVal as string) 
+    }, { preserveState: true, replace: true });
 }, 300));
 
 // Extract unique auditorium types
@@ -161,6 +175,7 @@ const toggleReorder = () => {
     // reset search to see all when reordering
     if (isReordering.value) {
         search.value = '';
+        selectedFaculty.value = 'all';
     }
 };
 
@@ -184,6 +199,47 @@ const saveOrder = () => {
     });
 };
 
+// Bulk Actions
+const toggleSelection = (id: number) => {
+    const index = selectedAuditoriums.value.indexOf(id);
+    if (index === -1) {
+        selectedAuditoriums.value.push(id);
+    } else {
+        selectedAuditoriums.value.splice(index, 1);
+    }
+};
+
+const selectAll = () => {
+    if (selectedAuditoriums.value.length === filteredAuditoriums.value.length) {
+        selectedAuditoriums.value = [];
+    } else {
+        selectedAuditoriums.value = filteredAuditoriums.value.map(a => a.id);
+    }
+};
+
+const clearBulkSelection = () => {
+    selectedAuditoriums.value = [];
+};
+
+const assignBulkFaculty = () => {
+    if (!selectedAuditoriums.value.length) return;
+    
+    assigningFaculty.value = true;
+    router.put('/auditoriums/bulk-assign-faculty', {
+        auditorium_ids: selectedAuditoriums.value,
+        faculty_id: selectedBulkFacultyId.value || null,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showFacultyDialog.value = false;
+            selectedAuditoriums.value = [];
+            selectedBulkFacultyId.value = '';
+        },
+        onFinish: () => {
+            assigningFaculty.value = false;
+        }
+    });
+};
 
 // Stats
 const totalActive = computed(() => filteredAuditoriums.value.filter(a => a.active).length);
@@ -343,13 +399,26 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
 
             <!-- Search + Type Filters -->
             <div class="flex flex-col gap-3">
-                <div class="relative w-full max-w-md">
-                    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        v-model="search"
-                        placeholder="Auditoriya nomi bo'yicha qidirish..."
-                        class="pl-9"
-                    />
+                <div class="flex items-center gap-3 w-full max-w-2xl">
+                    <div class="relative w-full md:w-[350px]">
+                        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            v-model="search"
+                            placeholder="Auditoriya nomi bo'yicha qidirish..."
+                            class="pl-9"
+                        />
+                    </div>
+                    <Select v-model="selectedFaculty" class="w-full md:w-[250px]">
+                        <SelectTrigger class="w-full md:w-[250px]">
+                            <SelectValue placeholder="Barcha fakultetlar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Barcha fakultetlar</SelectItem>
+                            <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
+                                {{ faculty.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div v-if="auditoriumTypes.length > 0" class="flex flex-wrap items-center gap-2">
@@ -460,13 +529,15 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 v-for="item in building.auditoriums"
                                 :key="item.id"
                                 class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30"
-                                :class="{ 'opacity-50': !item.active }"
+                                :class="{ 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) }"
                             >
                                 <CardHeader class="pb-2 pt-4 px-4">
                                     <div class="flex items-start justify-between gap-2">
-                                        <CardTitle class="text-sm font-semibold leading-tight line-clamp-2">
-                                            {{ item.name }}
-                                        </CardTitle>
+                                        <div class="flex items-center gap-2" :class="{'cursor-pointer': !isReordering}" @click.stop="!isReordering && toggleSelection(item.id)">
+                                            <CardTitle class="text-sm font-semibold leading-tight line-clamp-2 select-none">
+                                                {{ item.name }}
+                                            </CardTitle>
+                                        </div>
                                         <span
                                             class="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full"
                                             :class="item.active ? 'bg-emerald-500' : 'bg-red-400'"
@@ -499,6 +570,10 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 {{ item.auditoriumType.name }}
                                             </span>
                                         </div>
+                                        <div v-if="item.faculty" class="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 bg-muted/50 p-1.5 rounded w-fit border border-border/50">
+                                            <GraduationCap class="h-3.5 w-3.5 text-primary/70 shrink-0" />
+                                            <span class="font-medium truncate max-w-[180px]" :title="item.faculty.name">{{ item.faculty.name }}</span>
+                                        </div>
                                     </div>
                                 </CardContent>
                                 <CardFooter class="px-4 pb-4 pt-2 flex gap-2">
@@ -530,6 +605,42 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                 </AccordionItem>
             </Accordion>
             
+            <!-- Bulk Actions Floating Bar -->
+            <div 
+                v-if="selectedAuditoriums.length > 0 && !isReordering"
+                class="fixed bottom-6 w-[calc(100%-2rem)] md:w-auto left-4 md:left-1/2 md:-translate-x-1/2 z-50 flex items-center justify-between md:justify-start gap-4 rounded-full border border-primary/20 bg-background/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3"
+            >
+                <div class="flex items-center gap-2 border-r pr-4">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground">
+                        {{ selectedAuditoriums.length }}
+                    </span>
+                    <span class="text-sm font-medium">ta tanlandi</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <Button 
+                        variant="default" 
+                        size="sm" 
+                        class="rounded-full shadow-sm"
+                        @click="showFacultyDialog = true"
+                    >
+                        <GraduationCap class="mr-2 h-4 w-4" />
+                        Fakultetga biriktirish
+                    </Button>
+                    
+                    <Button 
+                        variant="ghost" 
+                        size="icon"
+                        class="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+                        @click="clearBulkSelection"
+                        title="Tanlovni bekor qilish"
+                    >
+                        <X class="h-4 w-4" />
+                        <span class="sr-only">Bekor qilish</span>
+                    </Button>
+                </div>
+            </div>
+
             <Dialog v-model:open="showCameraDialog">
                 <DialogContent class="sm:max-w-[425px]">
                     <DialogHeader>
@@ -557,6 +668,43 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <Button variant="outline" @click="showCameraDialog = false" :disabled="assigningCamera">Bekor qilish</Button>
                         <Button @click="assignCamera" :disabled="assigningCamera">
                             {{ assigningCamera ? 'Saqlanmoqda...' : 'Saqlash' }}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog v-model:open="showFacultyDialog">
+                <DialogContent class="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Fakultetga biriktirish</DialogTitle>
+                        <DialogDescription>
+                            Tanlangan <b>{{ selectedAuditoriums.length }}</b> ta auditoriyani fakultetga biriktiring yoki joriy fakultetdan o'chiring.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div class="grid gap-4 py-4">
+                        <div class="grid gap-2">
+                            <Select v-model="selectedBulkFacultyId" :disabled="assigningFaculty">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Fakultetni tanlang" />
+                                </SelectTrigger>
+                                <SelectContent class="max-h-[300px]">
+                                    <SelectItem value="">
+                                        <span class="text-destructive font-medium">Fakultetdan o'chirish (Hech qaysi)</span>
+                                    </SelectItem>
+                                    <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
+                                        {{ faculty.name }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" @click="showFacultyDialog = false" :disabled="assigningFaculty">
+                            Bekor qilish
+                        </Button>
+                        <Button type="submit" @click="assignBulkFaculty" :disabled="assigningFaculty">
+                            <RefreshCw v-if="assigningFaculty" class="mr-2 h-4 w-4 animate-spin" />
+                            Saqlash
                         </Button>
                     </DialogFooter>
                 </DialogContent>

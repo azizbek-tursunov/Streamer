@@ -27,6 +27,7 @@ class Auditorium extends Model
         'volume',
         'active',
         'camera_id',
+        'faculty_id',
         'sort_order',
         'building_sort_order',
     ];
@@ -34,6 +35,11 @@ class Auditorium extends Model
     public function camera()
     {
         return $this->belongsTo(\App\Models\Camera::class);
+    }
+
+    public function faculty()
+    {
+        return $this->belongsTo(\App\Models\Faculty::class);
     }
 
     /**
