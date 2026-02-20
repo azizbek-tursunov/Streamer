@@ -21,11 +21,13 @@ class Camera extends Model
         'is_active',
         'is_streaming_to_youtube',
         'faculty_id',
+        'rotation',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_streaming_to_youtube' => 'boolean',
+        'rotation' => 'integer',
     ];
 
     protected $appends = ['rtsp_url'];

@@ -199,8 +199,11 @@ class HemisApiService
                             continue;
                         }
 
-                        [$sh, $sm] = explode(':', $item['lessonPair']['start_time']);
-                        [$eh, $em] = explode(':', $item['lessonPair']['end_time']);
+                        $startTime = $item['lessonPair']['start_time'] ?? '00:00';
+                        $endTime = $item['lessonPair']['end_time'] ?? '00:00';
+
+                        [$sh, $sm] = explode(':', $startTime);
+                        [$eh, $em] = explode(':', $endTime);
 
                         LessonSchedule::updateOrCreate(
                             [
@@ -214,8 +217,8 @@ class HemisApiService
                                 'group_name' => $item['group']['name'] ?? '',
                                 'training_type_name' => $item['trainingType']['name'] ?? null,
                                 'lesson_pair_name' => $item['lessonPair']['name'] ?? null,
-                                'start_time' => $item['lessonPair']['start_time'],
-                                'end_time' => $item['lessonPair']['end_time'],
+                                'start_time' => $startTime,
+                                'end_time' => $endTime,
                                 'start_timestamp' => $date->copy()->setTime((int) $sh, (int) $sm),
                                 'end_timestamp' => $date->copy()->setTime((int) $eh, (int) $em),
                                 'raw_data' => $item,

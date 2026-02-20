@@ -2,10 +2,10 @@
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Camera, BreadcrumbItem, Branch, Floor, Faculty } from '@/types';
+import { Camera, BreadcrumbItem, Faculty } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Play, Square, Edit, ArrowLeft } from 'lucide-vue-next';
@@ -14,8 +14,6 @@ import YouTubeDialog from '@/components/YouTubeDialog.vue';
 
 const props = defineProps<{
     camera: Camera;
-    branches: Branch[];
-    floors: Floor[];
     faculties: Faculty[];
 }>();
 
@@ -79,11 +77,12 @@ const toggleActive = (camera: Camera) => {
 
             <div class="grid gap-6 md:grid-cols-3">
                 <Card class="md:col-span-2 overflow-hidden bg-black border-0 ring-1 ring-border">
-                    <div class="aspect-video relative">
+                    <div :class="(camera.rotation || 0) % 180 !== 0 ? 'aspect-[9/16] max-h-[80vh] mx-auto' : 'aspect-video'" class="relative w-full transition-all duration-300">
                          <VideoPlayer 
                             v-if="camera.is_active" 
                             :stream-url="getStreamUrl(camera)" 
                             :autoplay="true"
+                            :rotation="camera.rotation"
                         />
                         <div v-else class="flex items-center justify-center h-full text-white/50">
                             Kamera O'chirib Qo'yilgan
@@ -142,8 +141,6 @@ const toggleActive = (camera: Camera) => {
             <CameraDialog 
                 v-model:open="showDialog"
                 :camera="camera"
-                :branches="branches"
-                :floors="floors"
                 :faculties="faculties"
             />
             

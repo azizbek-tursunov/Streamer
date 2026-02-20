@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { Camera, Branch, Floor, Faculty } from '@/types';
+import { Camera, Faculty } from '@/types';
 import {
     Select,
     SelectContent,
@@ -24,8 +24,6 @@ import {
 const props = defineProps<{
     open: boolean;
     camera?: Camera | null;
-    branches: Branch[];
-    floors: Floor[];
     faculties: Faculty[];
 }>();
 
@@ -37,25 +35,10 @@ const form = useForm({
     password: '',
     ip_address: '',
     port: 554,
-    // stream_path removed (handled by default '/')
     is_active: true,
-    branch_id: '',
-    floor_id: '',
     faculty_id: '',
+    rotation: 0,
 });
-
-// Filter floors based on selected branch
-const filteredFloors = computed(() => {
-    if (!form.branch_id) {
-        return [];
-    }
-    return props.floors.filter(floor => 
-        floor.branch_id === parseInt(form.branch_id)
-    );
-});
-
-// Track previous branch_id to detect changes
-let previousBranchId: string | undefined;
 
 watch(() => props.open, (isOpen) => {
     if (isOpen) {
@@ -66,32 +49,21 @@ watch(() => props.open, (isOpen) => {
             form.ip_address = props.camera.ip_address;
             form.port = props.camera.port;
             form.is_active = Boolean(props.camera.is_active);
-            form.branch_id = props.camera.branch_id?.toString() ?? '';
-            form.floor_id = props.camera.floor_id?.toString() ?? '';
             form.faculty_id = props.camera.faculty_id?.toString() ?? '';
+            form.rotation = props.camera.rotation ?? 0;
         } else {
             form.reset();
             form.port = 554;
             form.is_active = true;
+            form.rotation = 0;
         }
-        previousBranchId = form.branch_id;
         form.clearErrors();
     }
-});
-
-// Reset floor selection when branch changes
-watch(() => form.branch_id, (newBranchId) => {
-    if (previousBranchId !== undefined && newBranchId !== previousBranchId) {
-        form.floor_id = '';
-    }
-    previousBranchId = newBranchId;
 });
 
 const submit = () => {
     const data = {
         ...form.data(),
-        branch_id: (form.branch_id && form.branch_id !== 'none') ? parseInt(form.branch_id) : null,
-        floor_id: (form.floor_id && form.floor_id !== 'none') ? parseInt(form.floor_id) : null,
         faculty_id: (form.faculty_id && form.faculty_id !== 'none') ? parseInt(form.faculty_id) : null,
     };
 
@@ -119,51 +91,20 @@ const submit = () => {
       
       <form @submit.prevent="submit" class="grid gap-4 py-4">
         <!-- Category Section -->
-        <div class="grid grid-cols-3 gap-4 pb-4 border-b">
-            <div class="space-y-2">
-                <Label for="branch_id">Filial *</Label>
-                <Select v-model="form.branch_id">
-                    <SelectTrigger>
-                        <SelectValue placeholder="Tanlang" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id.toString()">
-                            {{ branch.name }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                <div v-if="form.errors.branch_id" class="text-sm text-destructive">{{ form.errors.branch_id }}</div>
-            </div>
-            <div class="space-y-2">
-                <Label for="floor_id">Qavat</Label>
-                <Select v-model="form.floor_id" :disabled="!form.branch_id || form.branch_id === 'none'">
-                    <SelectTrigger>
-                        <SelectValue :placeholder="form.branch_id ? 'Tanlang' : 'Avval filial tanlang'" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="none">— Tanlanmagan —</SelectItem>
-                        <SelectItem v-for="floor in filteredFloors" :key="floor.id" :value="floor.id.toString()">
-                            {{ floor.name }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                <div v-if="form.errors.floor_id" class="text-sm text-destructive">{{ form.errors.floor_id }}</div>
-            </div>
-            <div class="space-y-2">
-                <Label for="faculty_id">Fakultet</Label>
-                <Select v-model="form.faculty_id">
-                    <SelectTrigger>
-                        <SelectValue placeholder="Tanlang" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="none">— Tanlanmagan —</SelectItem>
-                        <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
-                            {{ faculty.name }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                <div v-if="form.errors.faculty_id" class="text-sm text-destructive">{{ form.errors.faculty_id }}</div>
-            </div>
+        <div class="space-y-2 pb-4 border-b">
+            <Label for="faculty_id">Fakultet</Label>
+            <Select v-model="form.faculty_id">
+                <SelectTrigger>
+                    <SelectValue placeholder="Tanlang" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="none">— Tanlanmagan —</SelectItem>
+                    <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
+                        {{ faculty.name }}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+            <div v-if="form.errors.faculty_id" class="text-sm text-destructive">{{ form.errors.faculty_id }}</div>
         </div>
 
         <div class="space-y-2">
@@ -178,10 +119,25 @@ const submit = () => {
                 <Input id="ip_address" v-model="form.ip_address" placeholder="192.168.1.100" required />
                 <div v-if="form.errors.ip_address" class="text-sm text-destructive">{{ form.errors.ip_address }}</div>
             </div>
-             <div class="space-y-2">
+            <div class="space-y-2">
                 <Label for="port">Port</Label>
                 <Input id="port" type="number" v-model="form.port" placeholder="554" required />
                 <div v-if="form.errors.port" class="text-sm text-destructive">{{ form.errors.port }}</div>
+            </div>
+            <div class="space-y-2">
+                <Label for="rotation">Aylantirish</Label>
+                <Select :model-value="form.rotation?.toString()" @update:model-value="(v) => form.rotation = parseInt(v)">
+                    <SelectTrigger>
+                        <SelectValue placeholder="0°" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="0">0°</SelectItem>
+                        <SelectItem value="90">90°</SelectItem>
+                        <SelectItem value="180">180°</SelectItem>
+                        <SelectItem value="270">270°</SelectItem>
+                    </SelectContent>
+                </Select>
+                <div v-if="form.errors.rotation" class="text-sm text-destructive">{{ form.errors.rotation }}</div>
             </div>
         </div>
 

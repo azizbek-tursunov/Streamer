@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Camera, BreadcrumbItem } from '@/types';
+import { Camera, BreadcrumbItem, Faculty } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -26,13 +26,9 @@ const props = defineProps<{
     filters: {
         search?: string;
         active?: string;
-        branch_id?: string;
-        floor_id?: string;
         faculty_id?: string;
     };
-    branches: { id: number; name: string }[];
-    floors: { id: number; name: string }[];
-    faculties: { id: number; name: string }[];
+    faculties: Faculty[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -44,16 +40,12 @@ const selectedCamera = ref<Camera | null>(null);
 
 const search = ref(props.filters.search || '');
 const activeFilter = ref(props.filters.active ?? 'all');
-const branchFilter = ref(props.filters.branch_id ?? 'all');
-const floorFilter = ref(props.filters.floor_id ?? 'all');
 const facultyFilter = ref(props.filters.faculty_id ?? 'all');
 
-watch([search, activeFilter, branchFilter, floorFilter, facultyFilter], debounce(([newSearch, newActive, newBranch, newFloor, newFaculty]: [string, string, string, string, string]) => {
+watch([search, activeFilter, facultyFilter], debounce(([newSearch, newActive, newFaculty]: [string, string, string]) => {
     router.get('/cameras', {
         search: newSearch,
         active: newActive === 'all' ? null : newActive,
-        branch_id: newBranch === 'all' ? null : newBranch,
-        floor_id: newFloor === 'all' ? null : newFloor,
         faculty_id: newFaculty === 'all' ? null : newFaculty,
     }, {
         preserveState: true,
@@ -101,28 +93,6 @@ const deleteCamera = (camera: Camera) => {
                         class="pl-8" 
                     />
                 </div>
-                <Select v-model="branchFilter">
-                    <SelectTrigger class="w-[140px]">
-                        <SelectValue placeholder="Filial" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Barcha filiallar</SelectItem>
-                        <SelectItem v-for="branch in branches" :key="branch.id" :value="branch.id.toString()">
-                            {{ branch.name }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select v-model="floorFilter">
-                    <SelectTrigger class="w-[140px]">
-                        <SelectValue placeholder="Qavat" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Barcha qavatlar</SelectItem>
-                        <SelectItem v-for="floor in floors" :key="floor.id" :value="floor.id.toString()">
-                            {{ floor.name }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
                 <Select v-model="facultyFilter">
                     <SelectTrigger class="w-[140px]">
                         <SelectValue placeholder="Fakultet" />
@@ -168,11 +138,10 @@ const deleteCamera = (camera: Camera) => {
                             <td class="p-4 align-middle font-medium">{{ camera.name }}</td>
                             <td class="p-4 align-middle">
                                 <div class="flex flex-col gap-0.5 text-xs">
-                                    <span v-if="camera.branch" class="font-medium">{{ camera.branch.name }}</span>
-                                    <span v-if="camera.floor || camera.faculty" class="text-muted-foreground">
-                                        {{ [camera.floor?.name, camera.faculty?.name].filter(Boolean).join(' • ') }}
+                                    <span v-if="camera.faculty" class="font-medium">
+                                        {{ camera.faculty.name }}
                                     </span>
-                                    <span v-if="!camera.branch && !camera.floor && !camera.faculty" class="text-muted-foreground">—</span>
+                                    <span v-else class="text-muted-foreground">—</span>
                                 </div>
                             </td>
                             <td class="p-4 align-middle">{{ camera.ip_address }}:{{ camera.port }}</td>
@@ -214,8 +183,6 @@ const deleteCamera = (camera: Camera) => {
             <CameraDialog 
                 v-model:open="showDialog"
                 :camera="selectedCamera"
-                :branches="branches"
-                :floors="floors"
                 :faculties="faculties"
             />
         </div>

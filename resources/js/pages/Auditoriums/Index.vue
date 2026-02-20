@@ -418,23 +418,23 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     <Button 
                                         v-if="item.camera_id" 
                                         size="sm" 
-                                        variant="outline" 
-                                        class="w-full text-xs h-8" 
+                                        variant="default" 
+                                        class="flex-1 text-xs h-8 px-2 overflow-hidden" 
                                         as-child
                                     >
-                                        <a :href="`/auditoriums/${item.id}`">
-                                            <Video class="mr-1 h-3 w-3" />
-                                            Ko'rish
+                                        <a :href="`/auditoriums/${item.id}`" class="flex items-center justify-center">
+                                            <Video class="mr-1.5 h-3 w-3 shrink-0" />
+                                            <span class="truncate">Ko'rish</span>
                                         </a>
                                     </Button>
                                     <Button 
                                         size="sm" 
-                                        :variant="item.camera_id ? 'ghost' : 'outline'" 
-                                        class="w-full text-xs h-8"
+                                        variant="outline" 
+                                        class="flex-1 text-xs h-8 px-2 overflow-hidden"
                                         @click="openCameraDialog(item)"
                                     >
-                                        <LinkIcon class="mr-1 h-3 w-3" />
-                                        {{ item.camera_id ? 'O\'zgartirish' : 'Kamera ulash' }}
+                                        <LinkIcon class="mr-1.5 h-3 w-3 shrink-0" />
+                                        <span class="truncate">{{ item.camera_id ? 'Tahrirlash' : 'Kamera ulash' }}</span>
                                     </Button>
                                 </CardFooter>
                             </Card>

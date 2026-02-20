@@ -92,6 +92,7 @@ const streamUrl = computed(() => {
                             v-if="auditorium.camera"
                             :stream-url="streamUrl" 
                             autoplay
+                            :rotation="auditorium.camera.rotation"
                             class="h-full w-full"
                         />
                         <div v-else class="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground">
