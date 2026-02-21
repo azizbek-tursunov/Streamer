@@ -19,6 +19,7 @@ class Camera extends Model
         'stream_path',
         'youtube_url',
         'is_active',
+        'is_public',
         'is_streaming_to_youtube',
         'faculty_id',
         'rotation',
@@ -26,6 +27,7 @@ class Camera extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_public' => 'boolean',
         'is_streaming_to_youtube' => 'boolean',
         'rotation' => 'integer',
     ];

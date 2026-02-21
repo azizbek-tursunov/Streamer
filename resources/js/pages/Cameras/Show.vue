@@ -44,6 +44,12 @@ const toggleActive = (camera: Camera) => {
         preserveScroll: true,
     });
 };
+
+const togglePublic = (camera: Camera) => {
+    router.post(`/cameras/${camera.id}/toggle-public`, {}, {
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -106,6 +112,18 @@ const toggleActive = (camera: Camera) => {
                                 <Switch 
                                     :checked="camera.is_active"
                                     @update:checked="toggleActive(camera)"
+                                />
+                            </div>
+                            
+                            <!-- Public Status Section -->
+                            <div class="flex items-center justify-between pt-4 border-t">
+                                <div class="space-y-0.5">
+                                    <h3 class="font-medium text-sm">Ommaviy ko'rish ruxsati</h3>
+                                    <p class="text-[0.65rem] text-muted-foreground mr-6">Kamerani barchaga ochiq stream sahifasida ko'rsatish yoki yashirish</p>
+                                </div>
+                                <Switch 
+                                    :checked="camera.is_public"
+                                    @update:checked="togglePublic(camera)"
                                 />
                             </div>
                         </div>

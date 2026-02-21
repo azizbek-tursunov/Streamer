@@ -25,6 +25,7 @@ class StoreCameraRequest extends FormRequest
             'stream_path' => 'nullable|string|max:255',
             'youtube_url' => 'nullable|string|url:rtmp,rtmps',
             'is_active' => 'boolean',
+            'is_public' => 'boolean',
             'faculty_id' => 'nullable|exists:faculties,id',
             'rotation' => 'integer|in:0,90,180,270',
         ];

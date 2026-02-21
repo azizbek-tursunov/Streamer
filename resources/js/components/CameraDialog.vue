@@ -36,6 +36,7 @@ const form = useForm({
     ip_address: '',
     port: 554,
     is_active: true,
+    is_public: false,
     faculty_id: '',
     rotation: 0,
 });
@@ -49,12 +50,14 @@ watch(() => props.open, (isOpen) => {
             form.ip_address = props.camera.ip_address;
             form.port = props.camera.port;
             form.is_active = Boolean(props.camera.is_active);
+            form.is_public = Boolean(props.camera.is_public);
             form.faculty_id = props.camera.faculty_id?.toString() ?? '';
             form.rotation = props.camera.rotation ?? 0;
         } else {
             form.reset();
             form.port = 554;
             form.is_active = true;
+            form.is_public = false;
             form.rotation = 0;
         }
         form.clearErrors();

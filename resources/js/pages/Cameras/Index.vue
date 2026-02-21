@@ -146,9 +146,17 @@ const deleteCamera = (camera: Camera) => {
                             </td>
                             <td class="p-4 align-middle">{{ camera.ip_address }}:{{ camera.port }}</td>
                             <td class="p-4 align-middle">
-                                <Badge :variant="camera.is_active ? 'default' : 'secondary'">
-                                    {{ camera.is_active ? 'Faol' : 'Faol Emas' }}
-                                </Badge>
+                                <div class="flex flex-col gap-1 items-start">
+                                    <Badge :variant="camera.is_active ? 'default' : 'secondary'">
+                                        {{ camera.is_active ? 'Faol' : 'Faol Emas' }}
+                                    </Badge>
+                                    <Badge 
+                                        :variant="camera.is_public ? 'outline' : 'secondary'"
+                                        :class="camera.is_public ? 'text-[10px] text-primary border-primary/20 bg-primary/5' : 'text-[10px]'"
+                                    >
+                                        {{ camera.is_public ? 'Ommaviy' : 'Yopiq (Tizim)' }}
+                                    </Badge>
+                                </div>
                             </td>
                             <td class="p-4 align-middle">
                                 <Badge v-if="camera.is_streaming_to_youtube" variant="destructive" class="text-xs animate-pulse">

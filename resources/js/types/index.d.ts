@@ -53,6 +53,7 @@ export interface Camera {
     rtsp_url: string; // appended accessor
     youtube_url?: string;
     is_active: boolean;
+    is_public: boolean;
     is_streaming_to_youtube: boolean;
     rotation?: number;
     branch_id?: number;

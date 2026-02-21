@@ -207,6 +207,13 @@ class CameraController extends Controller
         return back()->with('success', 'Kamera holati yangilandi.');
     }
 
+    public function togglePublic(Camera $camera)
+    {
+        $camera->update(['is_public' => ! $camera->is_public]);
+
+        return back()->with('success', 'Kamera ommaviy ruxsati yangilandi.');
+    }
+
     public function updateYoutube(Request $request, Camera $camera)
     {
         $validated = $request->validate([
