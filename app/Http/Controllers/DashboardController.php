@@ -10,18 +10,22 @@ class DashboardController extends Controller
     public function index()
     {
         $stats = [
-            'total' => Camera::count(),
-            'active' => Camera::where('is_active', true)->count(),
-            'streaming' => Camera::where('is_streaming_to_youtube', true)->count(),
+            'cameras' => [
+                'total' => Camera::count(),
+                'active' => Camera::where('is_active', true)->count(),
+                'public' => Camera::where('is_public', true)->count(),
+                'streaming' => Camera::where('is_streaming_to_youtube', true)->count(),
+            ],
+            'auditoriums' => [
+                'total' => \App\Models\Hemis\Auditorium::count(),
+                'active' => \App\Models\Hemis\Auditorium::where('active', true)->count(),
+                'with_camera' => \App\Models\Hemis\Auditorium::whereNotNull('camera_id')->count(),
+            ],
+            'faculties' => \App\Models\Faculty::count(),
         ];
-
-        // Fetch active cameras for the live mosaic
-        // Limiting to e.g. 6 to avoid overwhelming the browser if there are hundreds
-        $activeCameras = Camera::where('is_active', true)->take(6)->get();
 
         return Inertia::render('Dashboard', [
             'stats' => $stats,
-            'activeCameras' => $activeCameras,
         ]);
     }
 }
