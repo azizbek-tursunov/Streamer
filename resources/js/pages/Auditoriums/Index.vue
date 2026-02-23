@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { BreadcrumbItem, Auditorium, Camera, Faculty } from '@/types';
@@ -77,6 +77,7 @@ const savingOrder = ref(false);
 const accordionRef = ref<any>(null);
 
 // Multi-select State
+const isAssigning = ref(false);
 const selectedAuditoriums = ref<number[]>([]);
 const showFacultyDialog = ref(false);
 const selectedBulkFacultyId = ref<string>('');
@@ -179,6 +180,13 @@ const toggleReorder = () => {
     }
 };
 
+const toggleAssigning = () => {
+    isAssigning.value = !isAssigning.value;
+    if (!isAssigning.value) {
+        selectedAuditoriums.value = []; // clear selection on exit
+    }
+};
+
 const saveOrder = () => {
     savingOrder.value = true;
     
@@ -259,6 +267,42 @@ const syncFromApi = () => {
     });
 };
 
+// --- Smart Polling for Snapshots ---
+const snapshotUrls = reactive<Record<number, string>>({});
+const cachedTimestamps = reactive<Record<number, number>>({});
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+const pollSnapshots = async () => {
+    try {
+        const response = await fetch('/cameras/snapshots');
+        const data: Record<number, { url: string; timestamp: number } | null> = await response.json();
+        
+        Object.entries(data).forEach(([cameraIdStr, info]) => {
+            const id = parseInt(cameraIdStr);
+            if (info && info.timestamp !== cachedTimestamps[id]) {
+                snapshotUrls[id] = `${info.url}?t=${info.timestamp}`;
+                cachedTimestamps[id] = info.timestamp;
+            }
+        });
+    } catch (error) {
+        console.error('Failed to poll snapshots:', error);
+    }
+};
+
+onMounted(() => {
+    // Initial fetch shortly after loading
+    setTimeout(pollSnapshots, 2000);
+    // Poll every 30 seconds to bypass cache
+    pollInterval = setInterval(pollSnapshots, 30000);
+});
+
+onUnmounted(() => {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+    }
+});
+// -----------------------------------
+
 const openCameraDialog = (auditorium: Auditorium) => {
     selectedAuditorium.value = auditorium;
     selectedCameraId.value = auditorium.camera_id?.toString() || '';
@@ -322,7 +366,26 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <span v-if="lastSyncedAt" class="hidden text-xs text-muted-foreground sm:inline">
                             Oxirgi sinxron: {{ formatDate(lastSyncedAt) }}
                         </span>
-                        <div v-if="!isReordering" class="flex gap-2">
+                        <div v-if="isReordering" class="flex gap-2">
+                            <Button @click="toggleReorder" variant="secondary" size="sm" :disabled="savingOrder">
+                                Bekor qilish
+                            </Button>
+                            <Button @click="saveOrder" :disabled="savingOrder" size="sm">
+                                <CheckCircle class="mr-2 h-4 w-4" />
+                                {{ savingOrder ? 'Saqlanmoqda...' : 'Tartibni saqlash' }}
+                            </Button>
+                        </div>
+                        <div v-else-if="isAssigning" class="flex gap-2">
+                            <Button @click="toggleAssigning" variant="secondary" size="sm">
+                                <X class="mr-2 h-4 w-4" />
+                                Bekor qilish
+                            </Button>
+                        </div>
+                        <div v-else class="flex gap-2">
+                            <Button @click="toggleAssigning" variant="outline" size="sm">
+                                <GraduationCap class="mr-2 h-4 w-4" />
+                                Fakultetga biriktirish
+                            </Button>
                             <Button @click="toggleReorder" variant="outline" size="sm">
                                 <Layers class="mr-2 h-4 w-4" />
                                 Tartiblash
@@ -335,15 +398,6 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             >
                                 <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />
                                 {{ syncing ? 'Sinxronlanmoqda...' : 'HEMIS dan sinxronlash' }}
-                            </Button>
-                        </div>
-                        <div v-else class="flex gap-2">
-                            <Button @click="toggleReorder" variant="secondary" size="sm" :disabled="savingOrder">
-                                Bekor qilish
-                            </Button>
-                            <Button @click="saveOrder" :disabled="savingOrder" size="sm">
-                                <CheckCircle class="mr-2 h-4 w-4" />
-                                {{ savingOrder ? 'Saqlanmoqda...' : 'Tartibni saqlash' }}
                             </Button>
                         </div>
                     </div>
@@ -528,12 +582,38 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             <Card
                                 v-for="item in building.auditoriums"
                                 :key="item.id"
-                                class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30"
+                                class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden"
                                 :class="{ 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) }"
                             >
+                                <div 
+                                    v-if="item.camera_snapshot" 
+                                    class="w-full aspect-video bg-muted border-b relative group/image"
+                                    :class="{'cursor-pointer': !isReordering}"
+                                    @click.stop="isAssigning ? toggleSelection(item.id) : (!isReordering ? router.visit(`/auditoriums/${item.id}`) : null)"
+                                >
+                                    <img :src="item.camera_id && snapshotUrls[item.camera_id] ? snapshotUrls[item.camera_id] : item.camera_snapshot" class="object-cover w-full h-full" alt="Camera Snapshot" />
+                                    <div class="absolute inset-0 bg-black/10 transition-colors" :class="!isAssigning && !isReordering ? 'group-hover/image:bg-transparent' : ''"></div>
+                                    <div v-if="!isAssigning && !isReordering" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity">
+                                        <div class="bg-black/50 text-white rounded-full p-3 backdrop-blur-sm">
+                                            <Video class="h-6 w-6" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div 
+                                    v-else-if="item.camera_id" 
+                                    class="w-full aspect-video bg-muted border-b flex items-center justify-center text-muted-foreground relative"
+                                    :class="{'cursor-pointer': !isReordering}"
+                                    @click.stop="isAssigning ? toggleSelection(item.id) : (!isReordering ? router.visit(`/auditoriums/${item.id}`) : null)"
+                                >
+                                    <div class="flex flex-col items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
+                                        <Video class="h-8 w-8" />
+                                        <span class="text-xs">Ulanmoqda... / Ko'rish</span>
+                                    </div>
+                                </div>
+                                
                                 <CardHeader class="pb-2 pt-4 px-4">
                                     <div class="flex items-start justify-between gap-2">
-                                        <div class="flex items-center gap-2" :class="{'cursor-pointer': !isReordering}" @click.stop="!isReordering && toggleSelection(item.id)">
+                                        <div class="flex items-center gap-2" :class="{'cursor-pointer': isAssigning}" @click.stop="isAssigning && toggleSelection(item.id)">
                                             <CardTitle class="text-sm font-semibold leading-tight line-clamp-2 select-none">
                                                 {{ item.name }}
                                             </CardTitle>
@@ -574,6 +654,29 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                             <GraduationCap class="h-3.5 w-3.5 text-primary/70 shrink-0" />
                                             <span class="font-medium truncate max-w-[180px]" :title="item.faculty.name">{{ item.faculty.name }}</span>
                                         </div>
+
+                                        <div v-if="item.current_lesson" class="mt-2 p-2.5 bg-primary/5 rounded-md border border-primary/20">
+                                            <div class="text-[10px] font-bold text-primary mb-1.5 uppercase tracking-wider flex justify-between items-center">
+                                                <span>Hozirgi Dars</span>
+                                                <span class="relative flex h-2 w-2">
+                                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                                </span>
+                                            </div>
+                                            <p class="text-xs font-semibold leading-tight line-clamp-2" :title="item.current_lesson.subject_name">
+                                                {{ item.current_lesson.subject_name }}
+                                            </p>
+                                            <div class="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground truncate" :title="item.current_lesson.employee_name">
+                                                <Users class="h-3 w-3 shrink-0" />
+                                                <span class="truncate">{{ item.current_lesson.employee_name }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
+                                                <span class="truncate font-medium text-foreground py-0.5 px-1.5 bg-background rounded border" :title="item.current_lesson.group_name">
+                                                    Guruh: {{ item.current_lesson.group_name }}
+                                                </span>
+                                                <span class="opacity-80">{{ item.current_lesson.start_time.substring(0, 5) }} - {{ item.current_lesson.end_time.substring(0, 5) }}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </CardContent>
                                 <CardFooter class="px-4 pb-4 pt-2 flex gap-2">
@@ -607,7 +710,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
             
             <!-- Bulk Actions Floating Bar -->
             <div 
-                v-if="selectedAuditoriums.length > 0 && !isReordering"
+                v-if="isAssigning"
                 class="fixed bottom-6 w-[calc(100%-2rem)] md:w-auto left-4 md:left-1/2 md:-translate-x-1/2 z-50 flex items-center justify-between md:justify-start gap-4 rounded-full border border-primary/20 bg-background/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3"
             >
                 <div class="flex items-center gap-2 border-r pr-4">
@@ -623,6 +726,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         size="sm" 
                         class="rounded-full shadow-sm"
                         @click="showFacultyDialog = true"
+                        :disabled="selectedAuditoriums.length === 0"
                     >
                         <GraduationCap class="mr-2 h-4 w-4" />
                         Fakultetga biriktirish

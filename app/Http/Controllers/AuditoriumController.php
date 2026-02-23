@@ -28,8 +28,38 @@ class AuditoriumController extends Controller
             $query->where('faculty_id', $request->faculty_id);
         }
 
+        $auditoriums = $query->orderBy('building_sort_order')->orderBy('building_name')->orderBy('sort_order')->orderBy('name')->get();
+
+        // Fetch current lessons
+        $timezone = config('app.timezone');
+        $now = now($timezone);
+        $currentLessons = \App\Models\LessonSchedule::where('lesson_date', $now->toDateString())
+            ->where('start_timestamp', '<=', $now)
+            ->where('end_timestamp', '>=', $now)
+            ->get()
+            ->keyBy('auditorium_code');
+
+        // Fetch snapshots
+        $cameraIds = $auditoriums->whereNotNull('camera_id')->pluck('camera_id')->unique();
+        $snapshots = [];
+        foreach ($cameraIds as $cameraId) {
+            $files = glob(storage_path("app/public/snapshots/camera_{$cameraId}_*.jpg"));
+            if (!empty($files)) {
+                usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
+                $snapshots[$cameraId] = asset('storage/snapshots/'.basename($files[0]));
+            }
+        }
+
+        $auditoriums->transform(function ($auditorium) use ($currentLessons, $snapshots) {
+            $auditorium->current_lesson = $currentLessons->get($auditorium->code);
+            if ($auditorium->camera_id && isset($snapshots[$auditorium->camera_id])) {
+                $auditorium->camera_snapshot = $snapshots[$auditorium->camera_id];
+            }
+            return $auditorium;
+        });
+
         return Inertia::render('Auditoriums/Index', [
-            'auditoriums' => $query->orderBy('building_sort_order')->orderBy('building_name')->orderBy('sort_order')->orderBy('name')->get(),
+            'auditoriums' => $auditoriums,
             'filters' => $request->only(['search', 'faculty_id']),
             'lastSyncedAt' => Auditorium::max('updated_at'),
             // Pass available cameras for linking
