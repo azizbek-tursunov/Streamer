@@ -173,4 +173,16 @@ class AuditoriumController extends Controller
 
         return back()->with('success', $message);
     }
+    public function activeLessons()
+    {
+        $timezone = config('app.timezone');
+        $now = now($timezone);
+        $currentLessons = \App\Models\LessonSchedule::where('lesson_date', $now->toDateString())
+            ->where('start_timestamp', '<=', $now)
+            ->where('end_timestamp', '>=', $now)
+            ->get()
+            ->keyBy('auditorium_code');
+
+        return response()->json($currentLessons);
+    }
 }

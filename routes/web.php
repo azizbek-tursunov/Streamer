@@ -17,7 +17,6 @@ Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'inde
 Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'index'])->name('public.streams');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('cameras/grid', [\App\Http\Controllers\CameraController::class, 'grid'])->name('cameras.grid');
     Route::get('cameras/snapshots', [\App\Http\Controllers\CameraController::class, 'snapshots'])->name('cameras.snapshots');
     Route::resource('cameras', \App\Http\Controllers\CameraController::class)->except(['create', 'edit']);
     Route::post('cameras/{camera}/stream', [\App\Http\Controllers\CameraController::class, 'startStream'])->name('cameras.stream.start');
@@ -30,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('faculties/sync', [\App\Http\Controllers\FacultyController::class, 'sync'])->name('faculties.sync');
 
     Route::get('auditoriums', [\App\Http\Controllers\AuditoriumController::class, 'index'])->name('auditoriums.index');
+    Route::get('auditoriums/active-lessons', [\App\Http\Controllers\AuditoriumController::class, 'activeLessons'])->name('auditoriums.active-lessons');
     Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->name('auditoriums.sync');
     Route::put('auditoriums/reorder', [\App\Http\Controllers\AuditoriumController::class, 'reorder'])->name('auditoriums.reorder');
     Route::put('auditoriums/reorder-buildings', [\App\Http\Controllers\AuditoriumController::class, 'reorderBuildings'])->name('auditoriums.reorder-buildings');

@@ -36,19 +36,9 @@ const mainNavItems = computed<NavItem[]>(() => [
     },
     {
         title: 'Kameralar',
-        href: '#',
+        href: '/cameras',
         icon: Camera,
-        isActive: ['/cameras', '/cameras/grid'].some(path => urlIsActive(path, page.url)),
-        items: [
-            {
-                title: "Ro'yhat",
-                href: '/cameras',
-            },
-            {
-                title: 'Mozaika',
-                href: '/cameras/grid',
-            },
-        ],
+        isActive: urlIsActive('/cameras', page.url),
     },
     {
         title: "Ma'lumotnomalar",

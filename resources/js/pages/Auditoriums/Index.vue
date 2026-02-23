@@ -267,10 +267,12 @@ const syncFromApi = () => {
     });
 };
 
-// --- Smart Polling for Snapshots ---
+// --- Smart Polling for Snapshots & Lessons ---
 const snapshotUrls = reactive<Record<number, string>>({});
 const cachedTimestamps = reactive<Record<number, number>>({});
+const activeLessons = reactive<Record<number, any>>({});
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+let lessonsPollInterval: ReturnType<typeof setInterval> | null = null;
 
 const pollSnapshots = async () => {
     try {
@@ -289,19 +291,42 @@ const pollSnapshots = async () => {
     }
 };
 
+const pollActiveLessons = async () => {
+    try {
+        const response = await fetch('/auditoriums/active-lessons');
+        const data = await response.json();
+        // Overwrite the reactive state with the fresh snapshot
+        for (const key in activeLessons) delete activeLessons[key];
+        Object.assign(activeLessons, data);
+    } catch (error) {
+        console.error('Failed to poll active lessons:', error);
+    }
+};
+
 onMounted(() => {
     // Initial fetch shortly after loading
     setTimeout(pollSnapshots, 2000);
-    // Poll every 30 seconds to bypass cache
+    setTimeout(pollActiveLessons, 3000);
+    
+    // Poll snapshots every 30 seconds
     pollInterval = setInterval(pollSnapshots, 30000);
+    
+    // Poll lessons every 60 seconds (they change less frequently)
+    lessonsPollInterval = setInterval(pollActiveLessons, 60000);
+    
+    // Initialize activeLessons from props so it renders immediately
+    props.auditoriums.forEach(a => {
+        if (a.current_lesson) {
+            activeLessons[a.code] = a.current_lesson;
+        }
+    });
 });
 
 onUnmounted(() => {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-    }
+    if (pollInterval) clearInterval(pollInterval);
+    if (lessonsPollInterval) clearInterval(lessonsPollInterval);
 });
-// -----------------------------------
+// ---------------------------------------------
 
 const openCameraDialog = (auditorium: Auditorium) => {
     selectedAuditorium.value = auditorium;
@@ -655,7 +680,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                             <span class="font-medium truncate max-w-[180px]" :title="item.faculty.name">{{ item.faculty.name }}</span>
                                         </div>
 
-                                        <div v-if="item.current_lesson" class="mt-2 p-2.5 bg-primary/5 rounded-md border border-primary/20">
+                                        <div v-if="activeLessons[item.code]" class="mt-2 p-2.5 bg-primary/5 rounded-md border border-primary/20">
                                             <div class="text-[10px] font-bold text-primary mb-1.5 uppercase tracking-wider flex justify-between items-center">
                                                 <span>Hozirgi Dars</span>
                                                 <span class="relative flex h-2 w-2">
@@ -663,18 +688,18 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                     <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                                                 </span>
                                             </div>
-                                            <p class="text-xs font-semibold leading-tight line-clamp-2" :title="item.current_lesson.subject_name">
-                                                {{ item.current_lesson.subject_name }}
+                                            <p class="text-xs font-semibold leading-tight line-clamp-2" :title="activeLessons[item.code].subject_name">
+                                                {{ activeLessons[item.code].subject_name }}
                                             </p>
-                                            <div class="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground truncate" :title="item.current_lesson.employee_name">
+                                            <div class="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground truncate" :title="activeLessons[item.code].employee_name">
                                                 <Users class="h-3 w-3 shrink-0" />
-                                                <span class="truncate">{{ item.current_lesson.employee_name }}</span>
+                                                <span class="truncate">{{ activeLessons[item.code].employee_name }}</span>
                                             </div>
                                             <div class="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
-                                                <span class="truncate font-medium text-foreground py-0.5 px-1.5 bg-background rounded border" :title="item.current_lesson.group_name">
-                                                    Guruh: {{ item.current_lesson.group_name }}
+                                                <span class="truncate font-medium text-foreground py-0.5 px-1.5 bg-background rounded border" :title="activeLessons[item.code].group_name">
+                                                    Guruh: {{ activeLessons[item.code].group_name }}
                                                 </span>
-                                                <span class="opacity-80">{{ item.current_lesson.start_time.substring(0, 5) }} - {{ item.current_lesson.end_time.substring(0, 5) }}</span>
+                                                <span class="opacity-80">{{ activeLessons[item.code].start_time.substring(0, 5) }} - {{ activeLessons[item.code].end_time.substring(0, 5) }}</span>
                                             </div>
                                         </div>
                                     </div>

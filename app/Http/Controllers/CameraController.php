@@ -45,33 +45,6 @@ class CameraController extends Controller
         ]);
     }
 
-    public function grid()
-    {
-        $cameras = Camera::with(['faculty'])->where('is_active', true)->get()->map(function ($camera) {
-            // Find latest snapshot
-            $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
-            $latestFile = null;
-
-            if (! empty($files)) {
-                // Sort by name desc (timestamp is in name) or filemtime
-                usort($files, function ($a, $b) {
-                    return filemtime($b) - filemtime($a);
-                });
-                $latestFile = $files[0];
-            }
-
-            $camera->snapshot_url = $latestFile
-                ? asset('storage/snapshots/'.basename($latestFile))
-                : null; // Or a placeholder URL
-
-            return $camera;
-        });
-
-        return Inertia::render('Cameras/Grid', [
-            'cameras' => $cameras,
-        ]);
-    }
-
     /**
      * Return JSON with latest snapshot info for smart polling.
      * Frontend calls this every 30 seconds to check for new snapshots.
