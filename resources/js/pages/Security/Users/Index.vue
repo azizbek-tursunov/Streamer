@@ -11,7 +11,14 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Pencil, Trash2, Plus, Search } from 'lucide-vue-next';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Pencil, Trash2, Plus, Search, RefreshCw } from 'lucide-vue-next';
 import { Badge } from '@/components/ui/badge';
 import Pagination from '@/components/Pagination.vue';
 import { ref, watch } from 'vue';
@@ -26,17 +33,24 @@ const props = defineProps<{
             email: string;
             roles: Array<{ name: string }>;
         }>;
-        links: any[]; // Use proper Pagination type if available
+        links: any[];
     };
+    roles: Array<{ id: number; name: string }>;
     filters: {
         search?: string;
+        role?: string;
     };
 }>();
 
 const search = ref(props.filters.search || '');
+const selectedRole = ref(props.filters.role || 'all');
 
-watch(search, debounce((value: string) => {
-    router.get(index().url, { search: value }, {
+watch([search, selectedRole], debounce(([newSearch, newRole]: [string, string]) => {
+    const params: any = {};
+    if (newSearch) params.search = newSearch;
+    if (newRole && newRole !== 'all') params.role = newRole;
+
+    router.get(index().url, params, {
         preserveState: true,
         preserveScroll: true,
         replace: true,
@@ -47,6 +61,16 @@ const deleteUser = (id: number) => {
     if (confirm('Foydalanuvchini o\'chirishni tasdiqlaysizmi?')) {
         router.delete(destroy(id).url);
     }
+};
+
+const isSyncing = ref(false);
+
+const syncFromHemis = () => {
+    isSyncing.value = true;
+    router.post('/users/sync', {}, {
+        preserveScroll: true,
+        onFinish: () => { isSyncing.value = false; }
+    });
 };
 </script>
 
@@ -67,15 +91,22 @@ const deleteUser = (id: number) => {
                         Tizim foydalanuvchilarini boshqarish.
                     </p>
                 </div>
-                <Button as-child>
-                    <Link :href="create().url">
-                        <Plus class="w-4 h-4 mr-2" />
-                        Yangi qo'shish
-                    </Link>
-                </Button>
+                <div class="flex gap-2 items-center">
+                    <Button variant="outline" @click="syncFromHemis" :disabled="isSyncing">
+                        <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': isSyncing }" />
+                        {{ isSyncing ? 'Sinxronlanmoqda...' : 'HEMISdan sinxronlash' }}
+                    </Button>
+                    <Button as-child>
+                        <Link :href="create().url">
+                            <Plus class="w-4 h-4 mr-2" />
+                            Yangi qo'shish
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <div class="flex items-center gap-4 mb-6">
+                <!-- Search Filter -->
                 <div class="relative w-full max-w-sm">
                     <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -83,6 +114,23 @@ const deleteUser = (id: number) => {
                         placeholder="Ism yoki Email bo'yicha qidirish..." 
                         class="pl-8" 
                     />
+                </div>
+
+                <!-- Role Filter -->
+                <div class="w-64">
+                    <Select v-model="selectedRole">
+                        <SelectTrigger>
+                            <SelectValue placeholder="Rollar bo'yicha filtrlash" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Barcha rollar
+                            </SelectItem>
+                            <SelectItem v-for="role in roles" :key="role.id" :value="role.name">
+                                {{ role.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

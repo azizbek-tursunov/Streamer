@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use App\Jobs\SyncHemisEmployees;
 
 class UserController extends Controller
 {
@@ -15,15 +18,23 @@ class UserController extends Controller
     {
         $users = User::with('roles')
             ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->role, function ($query, $role) {
+                $query->whereHas('roles', function($q) use ($role) {
+                    $q->where('name', $role);
+                });
             })
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Security/Users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search']),
+            'roles' => Role::select('id', 'name')->get(),
+            'filters' => $request->only(['search', 'role']),
         ]);
     }
 
@@ -101,5 +112,19 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->back()->with('success', 'Foydalanuvchi o\'chirildi.');
+    }
+
+    public function syncFromHemis()
+    {
+        $baseUrl = rtrim(Setting::get('hemis.base_url', 'https://student.hemis.uz/rest/v1'), '/');
+        $token = Setting::get('hemis.token');
+
+        if (!$baseUrl || !$token) {
+            return redirect()->back()->with('error', 'HEMIS API sozlamalari topilmadi. Avval API kaliti va manzilni kiriting.');
+        }
+
+        SyncHemisEmployees::dispatch();
+
+        return redirect()->back()->with('success', "HEMIS xodimlari orqa fonda (Queue) sinxronizatsiya qilinmoqda. Birozdan so'ng sahifani yangilang.");
     }
 }

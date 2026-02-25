@@ -38,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
 
     Route::middleware(['role:super-admin|admin'])->group(function () {
+        Route::post('users/sync', [\App\Http\Controllers\UserController::class, 'syncFromHemis'])->name('users.sync');
         Route::resource('users', \App\Http\Controllers\UserController::class);
         Route::resource('roles', \App\Http\Controllers\RoleController::class);
         Route::resource('permissions', \App\Http\Controllers\PermissionController::class);

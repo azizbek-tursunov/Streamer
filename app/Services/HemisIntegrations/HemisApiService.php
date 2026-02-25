@@ -5,6 +5,8 @@ namespace App\Services\HemisIntegrations;
 use App\Models\Faculty;
 use App\Models\Hemis\Auditorium;
 use App\Models\LessonSchedule;
+use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -24,6 +26,7 @@ class HemisApiService
     public function getAuditoriums(array $params = []): array
     {
         $response = Http::withToken($this->token)
+            ->timeout(30)
             ->get("{$this->baseUrl}/data/auditorium-list", $params);
 
         $response->throw();
@@ -40,11 +43,85 @@ class HemisApiService
     public function getDepartments(array $params = []): array
     {
         $response = Http::withToken($this->token)
+            ->timeout(30)
             ->get("{$this->baseUrl}/data/department-list", $params);
 
         $response->throw();
 
         return $response->json();
+    }
+
+    /**
+     * Fetch the employee list from HEMIS API.
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    public function getEmployees(array $params = []): array
+    {
+        $response = Http::withToken($this->token)
+            ->timeout(30)
+            ->get("{$this->baseUrl}/data/employee-list", $params);
+
+        $response->throw();
+
+        return $response->json();
+    }
+
+    /**
+     * Sync employees of given types from HEMIS API into the local users table.
+     *
+     * @param  int[]  $employeeTypes
+     * @return int Number of employees synced
+     */
+    public function syncEmployees(array $employeeTypes = [11, 14]): int
+    {
+        $synced = 0;
+
+        foreach ($employeeTypes as $type) {
+            $page = 1;
+            $limit = 200;
+
+            do {
+                $response = $this->getEmployees([
+                    'type' => '',
+                    '_employee_type' => $type,
+                    'limit' => $limit,
+                    'page' => $page,
+                ]);
+
+                $items = $response['data']['items'] ?? [];
+                $pagination = $response['data']['pagination'] ?? null;
+
+                foreach ($items as $emp) {
+                    $hemisId = $emp['employee_id_number'] ?? null;
+                    $fullName = $emp['full_name'] ?? trim(
+                        ($emp['second_name'] ?? '') . ' ' .
+                        ($emp['first_name'] ?? '') . ' ' .
+                        ($emp['third_name'] ?? '')
+                    );
+
+                    if (!$hemisId) {
+                        continue;
+                    }
+
+                    $userEmail = $hemisId . '@hemis.local';
+
+                    User::updateOrCreate(
+                        ['email' => $userEmail],
+                        [
+                            'name' => $fullName ?: 'HEMIS User',
+                            'password' => bcrypt(str()->random(24)),
+                        ]
+                    );
+                    $synced++;
+                }
+
+                $page++;
+            } while ($pagination && $page <= ($pagination['pageCount'] ?? $pagination['page_count'] ?? 1));
+        }
+
+        return $synced;
     }
 
     /**
@@ -145,6 +222,7 @@ class HemisApiService
     public function getSchedule(array $params = []): array
     {
         $response = Http::withToken($this->token)
+            ->timeout(30)
             ->get("{$this->baseUrl}/data/schedule-list", $params);
 
         $response->throw();
