@@ -36,6 +36,45 @@ class SettingController extends Controller
     }
 
     /**
+     * Display the HEMIS Auth settings configuration page.
+     */
+    public function hemisAuth()
+    {
+        return Inertia::render('HemisAuth', [
+            'clientId' => Setting::get('hemis.oauth.client_id', ''),
+            'clientSecret' => Setting::get('hemis.oauth.client_secret', ''),
+            'urlAuthorize' => Setting::get('hemis.oauth.url_authorize', 'https://hemis.namdu.uz/oauth/authorize'),
+            'urlAccessToken' => Setting::get('hemis.oauth.url_access_token', 'https://hemis.namdu.uz/oauth/access-token'),
+            'urlUserInfo' => Setting::get('hemis.oauth.url_user_info', 'https://hemis.namdu.uz/oauth/api/user'),
+            'redirectUri' => Setting::get('hemis.oauth.redirect_uri', route('hemis.callback.employee')),
+        ]);
+    }
+
+    /**
+     * Update the HEMIS Auth settings.
+     */
+    public function updateHemisAuth(\Illuminate\Http\Request $request)
+    {
+        $validated = $request->validate([
+            'client_id' => ['required', 'string'],
+            'client_secret' => ['required', 'string'],
+            'url_authorize' => ['required', 'url'],
+            'url_access_token' => ['required', 'url'],
+            'url_user_info' => ['required', 'url'],
+            'redirect_uri' => ['required', 'url'],
+        ]);
+
+        Setting::set('hemis.oauth.client_id', $validated['client_id']);
+        Setting::set('hemis.oauth.client_secret', $validated['client_secret']);
+        Setting::set('hemis.oauth.url_authorize', $validated['url_authorize']);
+        Setting::set('hemis.oauth.url_access_token', $validated['url_access_token']);
+        Setting::set('hemis.oauth.url_user_info', $validated['url_user_info']);
+        Setting::set('hemis.oauth.redirect_uri', $validated['redirect_uri']);
+
+        return back()->with('success', 'HEMIS Avtorizatsiya sozlamalari muvaffaqiyatli saqlandi.');
+    }
+
+    /**
      * Test the HEMIS API connection using provided credentials.
      */
     public function testHemis(\Illuminate\Http\Request $request)

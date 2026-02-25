@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Link as LinkIcon, Key, ExternalLink, Activity, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { Save, Link as LinkIcon, Key, ExternalLink, Activity, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-vue-next';
 
 const page = usePage();
 
@@ -34,6 +34,8 @@ const updateSettings = () => {
         preserveScroll: true,
     });
 };
+
+const showToken = ref(false);
 
 const isTesting = ref(false);
 
@@ -124,14 +126,25 @@ const testConnection = () => {
                                     API Xavfsizlik Kaliti (Token)
                                 </Label>
                                 <div class="flex flex-col gap-1.5">
-                                    <Input 
-                                        id="token" 
-                                        v-model="form.token" 
-                                        type="password" 
-                                        placeholder="••••••••••••••••" 
-                                        :class="{ 'border-destructive': form.errors.token }"
-                                        required
-                                    />
+                                    <div class="relative">
+                                        <Input 
+                                            id="token" 
+                                            v-model="form.token" 
+                                            :type="showToken ? 'text' : 'password'" 
+                                            placeholder="••••••••••••••••" 
+                                            :class="{ 'border-destructive': form.errors.token }"
+                                            required
+                                            class="pr-10"
+                                        />
+                                        <button 
+                                            type="button" 
+                                            @click="showToken = !showToken"
+                                            class="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground hover:text-foreground focus:outline-none"
+                                        >
+                                            <Eye v-if="!showToken" class="h-4 w-4" />
+                                            <EyeOff v-else class="h-4 w-4" />
+                                        </button>
+                                    </div>
                                     <p v-if="form.errors.token" class="text-sm font-medium text-destructive">
                                         {{ form.errors.token }}
                                     </p>

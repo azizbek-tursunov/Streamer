@@ -17,6 +17,7 @@
         "laravel/telescope": "^5.16",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
+        "league/oauth2-client": "^2.9",
         "predis/predis": "^3.3",
         "spatie/laravel-permission": "*"
     },

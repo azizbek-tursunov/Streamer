@@ -47,4 +47,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('hemis', [\App\Http\Controllers\SettingController::class, 'updateHemis'])->name('hemis.settings.update');
     Route::post('hemis/test', [\App\Http\Controllers\SettingController::class, 'testHemis'])->name('hemis.settings.test');
 
+    Route::get('hemis-auth', [\App\Http\Controllers\SettingController::class, 'hemisAuth'])->name('hemis-auth.settings');
+    Route::put('hemis-auth', [\App\Http\Controllers\SettingController::class, 'updateHemisAuth'])->name('hemis-auth.settings.update');
+
+    // HEMIS OAuth Routes
+    Route::get('hemis/redirect/employee', [\App\Http\Controllers\Auth\HemisOAuthController::class, 'redirect'])->name('hemis.redirect.employee');
+    Route::get('hemis/callback/employee', [\App\Http\Controllers\Auth\HemisOAuthController::class, 'callback'])->name('hemis.callback.employee');
+
 require __DIR__.'/settings.php';

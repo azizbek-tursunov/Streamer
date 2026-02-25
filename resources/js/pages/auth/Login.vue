@@ -94,7 +94,27 @@ defineProps<{
                     data-test="login-button"
                 >
                     <Spinner v-if="processing" />
-                    Log in
+                    Tizimga kirish
+                </Button>
+
+                <div class="relative my-2">
+                    <div class="absolute inset-0 flex items-center">
+                        <span class="w-full border-t"></span>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-background px-2 text-muted-foreground">Yoki ushbu orqali</span>
+                    </div>
+                </div>
+
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="w-full"
+                    as="a"
+                    href="/hemis/redirect/employee"
+                >
+                    <img src="https://student.hemis.uz/favicon.ico" class="w-4 h-4 mr-2" alt="HEMIS" @error="($event.target as HTMLImageElement).style.display='none'" />
+                    HEMIS orqali kirish
                 </Button>
             </div>
 
