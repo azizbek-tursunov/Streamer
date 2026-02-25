@@ -16,7 +16,7 @@ import { usePage, Link } from '@inertiajs/vue3';
 import { urlIsActive } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { BookOpen, Folder, LayoutGrid, Camera, Shield } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Camera, Shield, Settings } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { index as usersIndex } from '@/routes/users';
 import { index as rolesIndex } from '@/routes/roles';
@@ -75,6 +75,12 @@ const mainNavItems = computed<NavItem[]>(() => [
                 href: permissionsIndex().url,
             },
         ],
+    },
+    {
+        title: "HEMIS Sozlamalari",
+        href: '/hemis',
+        icon: Settings,
+        isActive: urlIsActive('/hemis', page.url),
     },
 ]);
 

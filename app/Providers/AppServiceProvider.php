@@ -13,9 +13,21 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(HemisApiService::class, function ($app) {
+            $baseUrl = config('services.hemis.base_url');
+            $token = config('services.hemis.token');
+
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                    $baseUrl = \App\Models\Setting::get('hemis.base_url', $baseUrl);
+                    $token = \App\Models\Setting::get('hemis.token', $token);
+                }
+            } catch (\Exception $e) {
+                // Ignore if DB isn't ready or settings table doesn't exist
+            }
+
             return new HemisApiService(
-                baseUrl: config('services.hemis.base_url'),
-                token: config('services.hemis.token'),
+                baseUrl: $baseUrl,
+                token: $token,
             );
         });
     }

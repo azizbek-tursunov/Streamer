@@ -43,5 +43,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('permissions', \App\Http\Controllers\PermissionController::class);
     });
 });
+    Route::get('hemis', [\App\Http\Controllers\SettingController::class, 'hemis'])->name('hemis.settings');
+    Route::put('hemis', [\App\Http\Controllers\SettingController::class, 'updateHemis'])->name('hemis.settings.update');
+    Route::post('hemis/test', [\App\Http\Controllers\SettingController::class, 'testHemis'])->name('hemis.settings.test');
 
 require __DIR__.'/settings.php';
