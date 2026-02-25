@@ -2,31 +2,60 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class Setting extends Model
 {
     protected $fillable = ['key', 'value'];
 
     /**
-     * Get a setting value by key, with an optional default.
-     * Caches the setting forever until updated.
+     * Keys that should be encrypted/decrypted automatically.
+     *
+     * @var string[]
      */
-    public static function get(string $key, $default = null)
+    protected static array $encryptedKeys = [
+        'hemis.token',
+        'hemis.oauth.client_id',
+        'hemis.oauth.client_secret',
+    ];
+
+    /**
+     * Get a setting value by key, with an optional default.
+     * Automatically decrypts sensitive keys.
+     */
+    public static function get(string $key, mixed $default = null): mixed
     {
-        // For larger apps, use caching here: Cache::rememberForever("setting.{$key}", ...)
         $setting = self::where('key', $key)->first();
-        return $setting ? $setting->value : $default;
+
+        if (! $setting) {
+            return $default;
+        }
+
+        if (in_array($key, static::$encryptedKeys)) {
+            try {
+                return Crypt::decryptString($setting->value);
+            } catch (DecryptException) {
+                // Gracefully handle pre-existing unencrypted values
+                return $setting->value;
+            }
+        }
+
+        return $setting->value;
     }
 
     /**
      * Set a setting value by key. Creates or updates automatically.
+     * Automatically encrypts sensitive keys.
      */
-    public static function set(string $key, $value): void
+    public static function set(string $key, mixed $value): void
     {
-        self::updateOrCreate(['key' => $key], ['value' => $value]);
-        
-        // Cache::forget("setting.{$key}");
+        $storedValue = in_array($key, static::$encryptedKeys)
+            ? Crypt::encryptString($value)
+            : $value;
+
+        self::updateOrCreate(['key' => $key], ['value' => $storedValue]);
     }
 }
