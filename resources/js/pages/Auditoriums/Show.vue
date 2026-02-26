@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem, Auditorium, Lesson } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Users, BookOpen, MapPin, VideoOff } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Calendar, Clock, User, Users, BookOpen, MapPin, VideoOff, MessageSquareText, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-vue-next';
 
 const props = defineProps<{
     auditorium: Auditorium;
@@ -66,6 +75,40 @@ const streamUrl = computed(() => {
     const host = window.location.hostname;
     return `http://viewer:viewer@${host}:8888/cam_${props.auditorium.camera.id}/index.m3u8`;
 });
+
+const showFeedbackDialog = ref(false);
+const feedbackForm = useForm({
+    auditorium_id: 0,
+    lesson_name: '',
+    employee_name: '',
+    group_name: '',
+    start_time: '',
+    end_time: '',
+    type: 'good',
+    message: '',
+});
+
+const openFeedbackDialog = (auditoriumId: number, lesson: any) => {
+    feedbackForm.reset();
+    feedbackForm.auditorium_id = auditoriumId;
+    feedbackForm.lesson_name = lesson.subject.name;
+    feedbackForm.employee_name = lesson.employee.name;
+    feedbackForm.group_name = lesson.group.name;
+    feedbackForm.start_time = lesson.startTime;
+    feedbackForm.end_time = lesson.endTime;
+    feedbackForm.type = 'good';
+    feedbackForm.message = '';
+    showFeedbackDialog.value = true;
+};
+
+const submitFeedback = () => {
+    feedbackForm.post('/feedbacks', {
+        preserveScroll: true,
+        onSuccess: () => {
+            showFeedbackDialog.value = false;
+        },
+    });
+};
 </script>
 
 <template>
@@ -113,9 +156,19 @@ const streamUrl = computed(() => {
                     <!-- Current Lesson Card (Mobile only, or duplicate info) -->
                     <Card class="lg:hidden" v-if="currentLesson">
                         <CardHeader>
-                            <CardTitle class="flex items-center gap-2 text-lg">
-                                <Clock class="h-5 w-5 text-primary" />
-                                Hozirgi dars
+                            <CardTitle class="flex items-center justify-between text-lg w-full">
+                                <div class="flex items-center gap-2">
+                                    <Clock class="h-5 w-5 text-primary" />
+                                    Hozirgi dars
+                                </div>
+                                <button 
+                                    @click.stop="openFeedbackDialog(auditorium.id, currentLesson)"
+                                    class="opacity-90 hover:opacity-100 hover:text-emerald-600 hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all bg-background border px-2 py-1.5 rounded-md flex items-center gap-1.5 cursor-pointer shadow-sm text-foreground"
+                                    title="Darsni baholash"
+                                >
+                                    <MessageSquareText class="h-4 w-4" />
+                                    <span class="text-[10px] font-semibold uppercase tracking-wider">Baholash</span>
+                                </button>
                             </CardTitle>
                         </CardHeader>
                         <CardContent class="grid gap-4">
@@ -151,12 +204,23 @@ const streamUrl = computed(() => {
                     <!-- Current Lesson (Desktop) -->
                     <Card class="hidden lg:block border-primary/20 shadow-md">
                         <CardHeader class="pb-3">
-                            <CardTitle class="flex items-center gap-2">
-                                <span class="relative flex h-3 w-3 mr-1">
-                                    <span v-if="currentLesson" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-3 w-3" :class="currentLesson ? 'bg-primary' : 'bg-muted'"></span>
-                                </span>
-                                {{ currentLesson ? 'Hozirgi dars' : 'Ayni paytda dars yo\'q' }}
+                            <CardTitle class="flex items-center justify-between w-full">
+                                <div class="flex items-center gap-2">
+                                    <span class="relative flex h-3 w-3 mr-1">
+                                        <span v-if="currentLesson" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-3 w-3" :class="currentLesson ? 'bg-primary' : 'bg-muted'"></span>
+                                    </span>
+                                    {{ currentLesson ? 'Hozirgi dars' : 'Ayni paytda dars yo\'q' }}
+                                </div>
+                                <button 
+                                    v-if="currentLesson"
+                                    @click.stop="openFeedbackDialog(auditorium.id, currentLesson)"
+                                    class="opacity-90 hover:opacity-100 hover:text-emerald-600 hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all bg-background border px-2 py-1 rounded-md flex items-center gap-1.5 cursor-pointer shadow-sm text-foreground"
+                                    title="Darsni baholash"
+                                >
+                                    <MessageSquareText class="h-4 w-4" />
+                                    <span class="text-[10px] font-semibold uppercase tracking-wider">Baholash</span>
+                                </button>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -234,5 +298,60 @@ const streamUrl = computed(() => {
                 </div>
             </div>
         </div>
+
+        <!-- Feedback Dialog -->
+        <Dialog v-model:open="showFeedbackDialog">
+            <DialogContent class="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Dars tahlili</DialogTitle>
+                    <DialogDescription>
+                        {{ feedbackForm.employee_name }} domlaning {{ feedbackForm.lesson_name }} darsi haqida fikringizni yozib qoldiring.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <form @submit.prevent="submitFeedback" class="grid gap-4 py-4">
+                    <div class="flex justify-center gap-4 py-2">
+                        <button 
+                            type="button" 
+                            @click="feedbackForm.type = 'good'" 
+                            class="flex w-24 flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all cursor-pointer" 
+                            :class="feedbackForm.type === 'good' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'border-border text-muted-foreground hover:bg-muted'"
+                        >
+                            <ThumbsUp class="h-6 w-6" />
+                            <span class="text-xs font-medium">Ijobiy</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="feedbackForm.type = 'bad'" 
+                            class="flex w-24 flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all cursor-pointer" 
+                            :class="feedbackForm.type === 'bad' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400' : 'border-border text-muted-foreground hover:bg-muted'"
+                        >
+                            <ThumbsDown class="h-6 w-6" />
+                            <span class="text-xs font-medium">Salbiy</span>
+                        </button>
+                    </div>
+
+                    <div class="grid gap-2">
+                        <label class="text-sm font-medium">Xabar</label>
+                        <textarea
+                            v-model="feedbackForm.message"
+                            placeholder="(Ixtiyoriy) Dars holati haqida qisqacha yozing..."
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            :disabled="feedbackForm.processing"
+                        ></textarea>
+                    </div>
+                </form>
+                
+                <DialogFooter>
+                    <Button type="button" variant="outline" @click="showFeedbackDialog = false" :disabled="feedbackForm.processing">
+                        Bekor qilish
+                    </Button>
+                    <Button type="button" @click="submitFeedback" :disabled="feedbackForm.processing">
+                        <RefreshCw v-if="feedbackForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Jo'natish
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

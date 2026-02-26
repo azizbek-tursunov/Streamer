@@ -26,8 +26,8 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return new HemisApiService(
-                baseUrl: $baseUrl,
-                token: $token,
+                baseUrl: $baseUrl ?? '',
+                token: $token ?? '',
             );
         });
     }

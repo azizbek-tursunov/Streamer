@@ -37,6 +37,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'update'])->name('auditoriums.update');
     Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
 
+    Route::get('feedbacks', [\App\Http\Controllers\LessonFeedbackController::class, 'index'])->name('feedbacks.index');
+    Route::post('feedbacks', [\App\Http\Controllers\LessonFeedbackController::class, 'store'])->name('feedbacks.store');
+
     Route::middleware(['role:super-admin|admin'])->group(function () {
         Route::post('users/sync', [\App\Http\Controllers\UserController::class, 'syncFromHemis'])->name('users.sync');
         Route::resource('users', \App\Http\Controllers\UserController::class);

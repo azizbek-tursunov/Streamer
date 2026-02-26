@@ -41,6 +41,18 @@ const mainNavItems = computed<NavItem[]>(() => [
         isActive: urlIsActive('/cameras', page.url),
     },
     {
+        title: "O'quv jarayoni",
+        href: '#',
+        icon: BookOpen,
+        isActive: ['/feedbacks'].some(path => urlIsActive(path, page.url)),
+        items: [
+            {
+                title: 'Dars tahlili',
+                href: '/feedbacks',
+            },
+        ],
+    },
+    {
         title: "Ma'lumotnomalar",
         href: '#',
         icon: Folder,
