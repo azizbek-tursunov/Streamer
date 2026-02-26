@@ -602,7 +602,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             </div>
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent class="px-4 pb-4 pt-3">
+                    <AccordionContent class="px-3 pb-3 pt-2">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             <Card
                                 v-for="item in building.auditoriums"
@@ -636,48 +636,42 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     </div>
                                 </div>
                                 
-                                <CardHeader class="pb-2 pt-4 px-4">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div class="flex items-center gap-2" :class="{'cursor-pointer': isAssigning}" @click.stop="isAssigning && toggleSelection(item.id)">
-                                            <CardTitle class="text-sm font-semibold leading-tight line-clamp-2 select-none">
+                                <CardHeader class="pb-1 pt-3 px-3">
+                                    <div class="flex items-start justify-between gap-1">
+                                        <div class="flex items-center gap-1.5" :class="{'cursor-pointer': isAssigning}" @click.stop="isAssigning && toggleSelection(item.id)">
+                                            <CardTitle class="text-[13px] font-semibold leading-tight line-clamp-2 select-none" :title="item.name">
                                                 {{ item.name }}
                                             </CardTitle>
                                         </div>
                                         <span
-                                            class="mt-0.5 inline-flex h-2 w-2 shrink-0 rounded-full"
+                                            class="mt-0.5 inline-flex h-1.5 w-1.5 shrink-0 rounded-full"
                                             :class="item.active ? 'bg-emerald-500' : 'bg-red-400'"
                                             :title="item.active ? 'Faol' : 'Nofaol'"
                                         />
                                     </div>
                                 </CardHeader>
-                                <CardContent class="px-4 pb-2 pt-0 flex-grow">
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-muted-foreground">Kod</span>
-                                            <span class="font-mono font-medium">{{ item.code }}</span>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-muted-foreground">Sig'imi</span>
+                                <CardContent class="px-3 pb-1.5 pt-0 flex-grow">
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                            <span class="font-mono">{{ item.code }}</span>
+                                            <span>•</span>
                                             <div class="flex items-center gap-1">
-                                                <Users class="h-3 w-3 text-muted-foreground" />
-                                                <span class="font-medium">{{ item.volume }}</span>
+                                                <Users class="h-3 w-3 opacity-70" />
+                                                <span>{{ item.volume }}</span>
                                             </div>
                                         </div>
-                                        <div v-if="item.camera" class="flex items-center gap-1 text-xs text-emerald-600 font-medium pt-1">
+                                        <div v-if="item.camera" class="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
                                             <Video class="h-3 w-3" />
-                                            <span>{{ item.camera.name }}</span>
+                                            <span class="truncate">{{ item.camera.name }}</span>
                                         </div>
-                                        <div v-if="item.auditoriumType?.name" class="pt-1">
-                                            <span
-                                                class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium"
-                                                :class="getTypeColor(item.auditoriumType.code)"
-                                            >
+                                        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                            <span v-if="item.auditoriumType?.name" class="inline-flex items-center rounded bg-opacity-10 px-1.5 py-0.5 text-[9px] font-medium" :class="getTypeColor(item.auditoriumType.code)">
                                                 {{ item.auditoriumType.name }}
                                             </span>
-                                        </div>
-                                        <div v-if="item.faculty" class="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 bg-muted/50 p-1.5 rounded w-fit border border-border/50">
-                                            <GraduationCap class="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                                            <span class="font-medium truncate max-w-[180px]" :title="item.faculty.name">{{ item.faculty.name }}</span>
+                                            <div v-if="item.faculty" class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/50 truncate max-w-full" :title="item.faculty.name">
+                                                <GraduationCap class="h-2.5 w-2.5 text-primary/70 shrink-0" />
+                                                <span class="truncate">{{ item.faculty.name }}</span>
+                                            </div>
                                         </div>
 
                                         <div v-if="activeLessons[item.code]" class="mt-2 p-2.5 bg-primary/5 rounded-md border border-primary/20">
@@ -704,27 +698,27 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                         </div>
                                     </div>
                                 </CardContent>
-                                <CardFooter class="px-4 pb-4 pt-2 flex gap-2">
+                                <CardFooter class="px-3 pb-3 pt-1.5 flex gap-1.5">
                                     <Button 
                                         v-if="item.camera_id" 
                                         size="sm" 
                                         variant="default" 
-                                        class="flex-1 text-xs h-8 px-2 overflow-hidden" 
+                                        class="flex-1 text-[11px] h-7 px-2 overflow-hidden" 
                                         as-child
                                     >
-                                        <a :href="`/auditoriums/${item.id}`" class="flex items-center justify-center">
-                                            <Video class="mr-1.5 h-3 w-3 shrink-0" />
+                                        <a :href="`/auditoriums/${item.id}`" class="flex items-center justify-center gap-1">
+                                            <Video class="h-3 w-3 shrink-0" />
                                             <span class="truncate">Ko'rish</span>
                                         </a>
                                     </Button>
                                     <Button 
                                         size="sm" 
                                         variant="outline" 
-                                        class="flex-1 text-xs h-8 px-2 overflow-hidden"
+                                        class="flex-1 text-[11px] h-7 px-2 overflow-hidden"
                                         @click="openCameraDialog(item)"
                                     >
-                                        <LinkIcon class="mr-1.5 h-3 w-3 shrink-0" />
-                                        <span class="truncate">{{ item.camera_id ? 'Tahrirlash' : 'Kamera ulash' }}</span>
+                                        <LinkIcon class="h-3 w-3 shrink-0" />
+                                        <span class="truncate">{{ item.camera_id ? 'Tahrirlash' : 'Ulash' }}</span>
                                     </Button>
                                 </CardFooter>
                             </Card>
