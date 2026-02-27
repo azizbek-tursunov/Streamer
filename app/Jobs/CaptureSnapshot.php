@@ -6,11 +6,15 @@ use App\Models\Camera;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Process;
 
 class CaptureSnapshot implements ShouldQueue
 {
     use Queueable;
+
+    /**
+     * The queue this job should be dispatched to.
+     */
+    public string $queue = 'snapshots';
 
     /**
      * Create a new job instance.
@@ -35,29 +39,36 @@ class CaptureSnapshot implements ShouldQueue
         $filename = "camera_{$this->camera->id}_{$timestamp}.jpg";
         $outputPath = "{$snapshotDir}/{$filename}";
 
-        // Use MediaMTX proxied stream (accessible from Docker network)
-        // This is more reliable than direct camera RTSP which may not be reachable
-        $host = config('services.mediamtx.host', 'mediamtx');
-        $user = config('services.mediamtx.user', 'admin');
-        $pass = config('services.mediamtx.password', '12345');
-        $streamUrl = "rtsp://{$user}:{$pass}@{$host}:8554/cam_{$this->camera->id}";
+        // Directly use Hikvision ISAPI endpoint (massively more efficient than FFmpeg RTSP)
+        $url = "http://{$this->camera->ip_address}/ISAPI/Streaming/channels/101/picture";
 
-        // FFmpeg command to capture single frame
-        // -y: overwrite
-        // -rtsp_transport tcp: use TCP for reliability
-        // -i: input url
-        // -vframes 1: take 1 frame
-        // -q:v 2: high quality jpeg
-        $cmd = "ffmpeg -y -rtsp_transport tcp -i \"{$streamUrl}\" -vframes 1 -q:v 2 \"{$outputPath}\"";
+        Log::info("Snapshot: Starting HTTP ISAPI for Camera {$this->camera->id}", ['url' => $url]);
 
-        Log::info("Snapshot: Starting for Camera {$this->camera->id}", ['cmd' => $cmd]);
+        $http = \Illuminate\Support\Facades\Http::timeout(10)->sink($outputPath);
 
-        Process::timeout(60)->run($cmd);
+        if (! empty($this->camera->username)) {
+            $http->withDigestAuth($this->camera->username, $this->camera->password ?? '');
+        }
 
-        if (file_exists($outputPath)) {
-            Log::info("Snapshot: Success for Camera {$this->camera->id}", ['file' => $filename]);
-        } else {
-            Log::error("Snapshot: Failed for Camera {$this->camera->id}");
+        try {
+            $response = $http->get($url);
+
+            if ($response->successful() && file_exists($outputPath)) {
+                // Double check if file is not an empty layout (sometimes ISAPI returns XML error but 200 OK)
+                if (filesize($outputPath) > 1000) {
+                    Log::info("Snapshot: Success for Camera {$this->camera->id}", ['file' => $filename]);
+                } else {
+                    unlink($outputPath);
+                    Log::error("Snapshot: HTTP returned a tiny file (likely auth error or XML) for Camera {$this->camera->id}");
+                }
+            } else {
+                Log::error("Snapshot: Failed HTTP ISAPI for Camera {$this->camera->id}", [
+                    'status' => $response->status(),
+                    'error' => $response->body(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Snapshot: Exception for Camera {$this->camera->id}", ['error' => $e->getMessage()]);
         }
     }
 }
