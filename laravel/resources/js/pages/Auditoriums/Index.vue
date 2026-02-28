@@ -92,6 +92,7 @@ const showCameraDialog = ref(false);
 const selectedAuditorium = ref<Auditorium | null>(null);
 const selectedCameraId = ref<string>('');
 const assigningCamera = ref(false);
+const cameraSearch = ref('');
 
 // Lesson Feedback State
 const showFeedbackDialog = ref(false);
@@ -370,8 +371,17 @@ onUnmounted(() => {
 const openCameraDialog = (auditorium: Auditorium) => {
     selectedAuditorium.value = auditorium;
     selectedCameraId.value = auditorium.camera_id?.toString() || '';
+    cameraSearch.value = '';
     showCameraDialog.value = true;
 };
+
+const filteredCameras = computed(() => {
+    if (!cameraSearch.value) return props.cameras;
+    const q = cameraSearch.value.toLowerCase();
+    return props.cameras.filter(c =>
+        c.name.toLowerCase().includes(q) || c.ip_address.includes(q)
+    );
+});
 
 const assignCamera = () => {
     if (!selectedAuditorium.value) return;
@@ -830,13 +840,23 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                     </DialogHeader>
                     <div class="grid gap-4 py-4">
                         <div class="flex flex-col gap-2">
-                            <label class="text-sm font-medium">Kamera</label>
+                            <label class="text-sm font-medium">Kamera qidirish</label>
+                            <Input
+                                v-model="cameraSearch"
+                                placeholder="Kamera nomi yoki IP manzilini kiriting..."
+                                class="mb-2"
+                            />
+                            
+                            <label class="text-sm font-medium">Natija ({{ filteredCameras.length }} ta)</label>
                             <Select v-model="selectedCameraId">
                                 <SelectTrigger>
                                     <SelectValue placeholder="Kamerani tanlang" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem v-for="camera in cameras" :key="camera.id" :value="camera.id.toString()">
+                                <SelectContent class="max-h-[300px]">
+                                    <SelectItem value="">
+                                        <span class="text-destructive font-medium">Kamerani o'chirish</span>
+                                    </SelectItem>
+                                    <SelectItem v-for="camera in filteredCameras" :key="camera.id" :value="camera.id.toString()">
                                         {{ camera.name }} ({{ camera.ip_address }})
                                     </SelectItem>
                                 </SelectContent>
