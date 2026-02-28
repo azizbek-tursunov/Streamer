@@ -50,7 +50,7 @@ class CameraController extends Controller
     {
         $paginator = Camera::with(['faculty'])
             ->where('is_active', true)
-            ->paginate(12)
+            ->paginate(24)
             ->withQueryString();
 
         $paginator->getCollection()->transform(function ($camera) {
