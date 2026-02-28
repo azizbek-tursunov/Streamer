@@ -19,6 +19,7 @@ Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'in
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('cameras/snapshots', [\App\Http\Controllers\CameraController::class, 'snapshots'])->name('cameras.snapshots');
     Route::get('cameras/grid', [\App\Http\Controllers\CameraController::class, 'grid'])->name('cameras.grid');
+    Route::post('cameras/import', [\App\Http\Controllers\CameraController::class, 'import'])->name('cameras.import');
     Route::resource('cameras', \App\Http\Controllers\CameraController::class)->except(['create', 'edit']);
     Route::post('cameras/{camera}/stream', [\App\Http\Controllers\CameraController::class, 'startStream'])->name('cameras.stream.start');
     Route::post('cameras/{camera}/stop-stream', [\App\Http\Controllers\CameraController::class, 'stopStream'])->name('cameras.stream.stop');

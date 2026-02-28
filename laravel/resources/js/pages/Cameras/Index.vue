@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Eye, Edit, Trash2, Search } from 'lucide-vue-next';
+import { Plus, Eye, Edit, Trash2, Search, Upload } from 'lucide-vue-next';
 import CameraDialog from '@/components/CameraDialog.vue';
 import Pagination from '@/components/Pagination.vue';
 import { debounce } from 'lodash';
@@ -69,6 +69,31 @@ const deleteCamera = (camera: Camera) => {
         router.delete(`/cameras/${camera.id}`);
     }
 };
+
+const fileInput = ref<HTMLInputElement | null>(null);
+const uploading = ref(false);
+
+const triggerFileInput = () => {
+    fileInput.value?.click();
+};
+
+const handleFileUpload = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+        uploading.value = true;
+        router.post('/cameras/import', {
+            file: target.files[0],
+        }, {
+            forceFormData: true,
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => {
+                uploading.value = false;
+                if (fileInput.value) fileInput.value.value = '';
+            },
+        });
+    }
+};
 </script>
 
 <template>
@@ -78,10 +103,18 @@ const deleteCamera = (camera: Camera) => {
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Kameralar</h1>
-                <Button @click="openCreateModal">
-                    <Plus class="mr-2 h-4 w-4" />
-                    Kamera Qo'shish
-                </Button>
+                <div class="flex items-center gap-2">
+                    <input type="file" ref="fileInput" class="hidden" accept=".xlsx,.xls,.csv" @change="handleFileUpload" />
+                    <Button variant="outline" @click="triggerFileInput" :disabled="uploading">
+                        <Upload class="mr-2 h-4 w-4" v-if="!uploading" />
+                        <span v-else class="mr-2 h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full"></span>
+                        Excel orqali yuklash
+                    </Button>
+                    <Button @click="openCreateModal">
+                        <Plus class="mr-2 h-4 w-4" />
+                        Kamera Qo'shish
+                    </Button>
+                </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-4">

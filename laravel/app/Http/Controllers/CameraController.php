@@ -8,6 +8,7 @@ use App\Models\Camera;
 use App\Models\Faculty;
 use App\Services\MediaMtxService;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 
 class CameraController extends Controller
@@ -214,18 +215,42 @@ class CameraController extends Controller
         return back()->with('success', 'Kamera ommaviy ruxsati yangilandi.');
     }
 
-    public function updateYoutube(Request $request, Camera $camera)
+    public function updateYoutube(Request $request, Camera $camera): RedirectResponse
     {
         $validated = $request->validate([
-            'youtube_url' => 'nullable|string',
+            'youtube_url' => 'nullable|url',
+            'is_streaming_to_youtube' => 'boolean',
         ]);
 
         $camera->update($validated);
 
-        // If streaming is active, we might need to restart it?
-        // For simplicity, if they change the URL while streaming, we stop the stream or update it.
-        // Let's just update the DB. If they are streaming, they need to Stop/Start to pick up new URL.
+        if ($validated['is_streaming_to_youtube']) {
+            $this->mediaMtxApi->startYoutubeRestream($camera);
+        } else {
+            $this->mediaMtxApi->stopYoutubeRestream($camera);
+        }
 
-        return back()->with('success', 'YouTube sozlamalari yangilandi.');
+        return back()->with('success', 'YouTube sozlamalari saqlandi');
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+        ]);
+
+        try {
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\CamerasImport, $request->file('file'));
+            return back()->with('success', 'Kameralar muvaffaqiyatli yuklandi!');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errors = [];
+            foreach ($failures as $failure) {
+                $errors[] = "Qator {$failure->row()}: {$failure->errors()[0]}";
+            }
+            return back()->withErrors(['file' => implode(', ', $errors)]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['file' => 'Faylni o\'qishda xatolik yuz berdi: ' . $e->getMessage()]);
+        }
     }
 }

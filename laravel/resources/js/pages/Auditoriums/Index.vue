@@ -460,9 +460,9 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                 <div class="flex items-center justify-between">
                     <h1 class="text-2xl font-bold tracking-tight">Auditoriyalar</h1>
                     <div class="flex items-center gap-3">
-                        <span v-if="lastSyncedAt" class="hidden text-xs text-muted-foreground sm:inline">
+                        <!-- <span v-if="lastSyncedAt" class="hidden text-xs text-muted-foreground sm:inline">
                             Oxirgi sinxron: {{ formatDate(lastSyncedAt) }}
-                        </span>
+                        </span> -->
                         <div v-if="isReordering" class="flex gap-2">
                             <Button @click="toggleReorder" variant="secondary" size="sm" :disabled="savingOrder">
                                 Bekor qilish
