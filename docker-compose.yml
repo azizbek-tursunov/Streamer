@@ -12,7 +12,6 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./laravel:/var/www/html
-      - laravel-vendor:/var/www/html/vendor
     env_file:
       - ./laravel/.env
     environment:
@@ -158,6 +157,4 @@ volumes:
   redis-data:
     driver: local
   pgsql-data:
-    driver: local
-  laravel-vendor:
     driver: local
