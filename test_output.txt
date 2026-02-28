@@ -1,0 +1,42 @@
+﻿
+   FAIL  Tests\Feature\CameraTest
+  Γ£ô cameras page is displayed                                            1.16s  
+  Γ¿» can create camera                                                    0.12s  
+  Γ¿» can update camera                                                    0.10s  
+  Γ£ô can search cameras                                                   0.11s  
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\CameraTest > can create camera                         
+  Expected response status code [201, 301, 302, 303, 307, 308] but received 419.
+Failed asserting that false is true.
+
+  at tests/Feature/CameraTest.php:40
+     36Γûò             'password' => '12345',
+     37Γûò             'is_active' => true,
+     38Γûò         ]);
+     39Γûò 
+  Γ₧£  40Γûò     $response->assertRedirect();
+     41Γûò     $this->assertDatabaseHas('cameras', ['name' => 'New Camera', 'ip_address' => '192.168.1.50']);
+     42Γûò });
+     43Γûò 
+     44Γûò test('can update camera', function () {
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\CameraTest > can update camera                         
+  Expected response status code [201, 301, 302, 303, 307, 308] but received 419.
+Failed asserting that false is true.
+
+  at tests/Feature/CameraTest.php:61
+     57Γûò             'port' => 554,
+     58Γûò             'is_active' => true,
+     59Γûò         ]);
+     60Γûò 
+  Γ₧£  61Γûò     $response->assertRedirect();
+     62Γûò     $this->assertDatabaseHas('cameras', ['id' => $camera->id, 'name' => 'Updated Camera']);
+     63Γûò });
+     64Γûò 
+     65Γûò test('can search cameras', function () {
+
+
+  Tests:    2 failed, 2 passed (27 assertions)
+  Duration: 1.65s
+
