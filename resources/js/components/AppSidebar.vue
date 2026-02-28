@@ -36,7 +36,7 @@ const mainNavItems = computed<NavItem[]>(() => [
     },
     {
         title: 'Kameralar',
-        href: '/cameras',
+        href: '/cameras/grid',
         icon: Camera,
         isActive: urlIsActive('/cameras', page.url),
     },
