@@ -21,8 +21,8 @@ Schedule::call(function () {
     });
 })->everyFiveMinutes();
 
-// Count people via YOLO every 30 minutes
-Schedule::job(new DispatchPeopleCounting)->everyThirtyMinutes();
+// Count people via YOLO every 5 minutes
+Schedule::job(new DispatchPeopleCounting)->everyFiveMinutes();
 
 // Prune old snapshots every hour
 Schedule::job(new PruneSnapshots)->hourly();

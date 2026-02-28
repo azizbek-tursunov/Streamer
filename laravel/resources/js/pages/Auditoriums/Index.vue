@@ -307,12 +307,14 @@ const syncFromApi = () => {
     });
 };
 
-// --- Smart Polling for Snapshots & Lessons ---
+// --- Smart Polling for Snapshots, Lessons & People Counts ---
 const snapshotUrls = reactive<Record<number, string>>({});
 const cachedTimestamps = reactive<Record<number, number>>({});
 const activeLessons = reactive<Record<number, any>>({});
+const peopleCounts = reactive<Record<number, number>>({});
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let lessonsPollInterval: ReturnType<typeof setInterval> | null = null;
+let peopleCountsPollInterval: ReturnType<typeof setInterval> | null = null;
 
 const pollSnapshots = async () => {
     try {
@@ -335,7 +337,6 @@ const pollActiveLessons = async () => {
     try {
         const response = await fetch('/auditoriums/active-lessons');
         const data = await response.json();
-        // Overwrite the reactive state with the fresh snapshot
         for (const key in activeLessons) delete activeLessons[key];
         Object.assign(activeLessons, data);
     } catch (error) {
@@ -343,21 +344,42 @@ const pollActiveLessons = async () => {
     }
 };
 
+const pollPeopleCounts = async () => {
+    try {
+        const response = await fetch('/auditoriums/people-counts');
+        const data: Record<number, number> = await response.json();
+        Object.assign(peopleCounts, data);
+    } catch (error) {
+        console.error('Failed to poll people counts:', error);
+    }
+};
+
 onMounted(() => {
     // Initial fetch shortly after loading
     setTimeout(pollSnapshots, 2000);
     setTimeout(pollActiveLessons, 3000);
+    setTimeout(pollPeopleCounts, 4000);
     
     // Poll snapshots every 30 seconds
     pollInterval = setInterval(pollSnapshots, 30000);
     
-    // Poll lessons every 60 seconds (they change less frequently)
+    // Poll lessons every 60 seconds
     lessonsPollInterval = setInterval(pollActiveLessons, 60000);
     
-    // Initialize activeLessons from props so it renders immediately
+    // Poll people counts every 30 seconds
+    peopleCountsPollInterval = setInterval(pollPeopleCounts, 30000);
+    
+    // Initialize activeLessons from props
     props.auditoriums.forEach(a => {
         if (a.current_lesson) {
             activeLessons[a.code] = a.current_lesson;
+        }
+    });
+    
+    // Initialize peopleCounts from props
+    props.auditoriums.forEach(a => {
+        if (a.camera_id && a.people_count !== null && a.people_count !== undefined) {
+            peopleCounts[a.camera_id] = a.people_count;
         }
     });
 });
@@ -365,6 +387,7 @@ onMounted(() => {
 onUnmounted(() => {
     if (pollInterval) clearInterval(pollInterval);
     if (lessonsPollInterval) clearInterval(lessonsPollInterval);
+    if (peopleCountsPollInterval) clearInterval(peopleCountsPollInterval);
 });
 // ---------------------------------------------
 
@@ -708,11 +731,11 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 <Users class="h-3 w-3 opacity-70" />
                                                 <span>{{ item.volume }}</span>
                                             </div>
-                                            <template v-if="item.people_count !== null && item.people_count !== undefined">
+                                            <template v-if="item.camera_id && peopleCounts[item.camera_id] !== undefined">
                                                 <span>•</span>
                                                 <div class="flex items-center gap-1 text-primary font-medium">
                                                     <Users class="h-3 w-3" />
-                                                    <span>{{ item.people_count }} kishi</span>
+                                                    <span>{{ peopleCounts[item.camera_id] }} kishi</span>
                                                 </div>
                                             </template>
                                         </div>

@@ -197,4 +197,15 @@ class AuditoriumController extends Controller
 
         return response()->json($currentLessons);
     }
+
+    public function peopleCounts()
+    {
+        $counts = \App\Models\PeopleCount::whereIn('id', function ($query) {
+            $query->selectRaw('MAX(id)')
+                ->from('people_counts')
+                ->groupBy('camera_id');
+        })->pluck('people_count', 'camera_id');
+
+        return response()->json($counts);
+    }
 }

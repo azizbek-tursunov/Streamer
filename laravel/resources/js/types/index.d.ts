@@ -110,6 +110,7 @@ export interface Auditorium {
     camera?: Camera | null;
     camera_snapshot?: string | null;
     current_lesson?: any | null;
+    people_count?: number | null;
     faculty_id?: number | null;
     faculty?: Faculty | null;
 }
