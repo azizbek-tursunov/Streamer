@@ -64,7 +64,7 @@ const props = defineProps<{
 const page = usePage();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: "Ma'lumotnomalar", href: '#' },
+    { title: "O'quv jarayoni", href: '#' },
     { title: 'Auditoriyalar', href: '/auditoriums' },
 ];
 
@@ -698,6 +698,13 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 <Users class="h-3 w-3 opacity-70" />
                                                 <span>{{ item.volume }}</span>
                                             </div>
+                                            <template v-if="item.people_count !== null && item.people_count !== undefined">
+                                                <span>•</span>
+                                                <div class="flex items-center gap-1 text-primary font-medium">
+                                                    <Users class="h-3 w-3" />
+                                                    <span>{{ item.people_count }} kishi</span>
+                                                </div>
+                                            </template>
                                         </div>
                                         <div v-if="item.camera" class="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
                                             <Video class="h-3 w-3" />

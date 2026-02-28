@@ -54,8 +54,12 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: "O'quv jarayoni",
         href: '#',
         icon: BookOpen,
-        isActive: ['/feedbacks'].some(path => urlIsActive(path, page.url)),
+        isActive: ['/feedbacks', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
         items: [
+            {
+                title: 'Auditoriyalar',
+                href: auditoriumsIndex().url,
+            },
             {
                 title: 'Dars tahlili',
                 href: '/feedbacks',
@@ -66,15 +70,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: "Ma'lumotnomalar",
         href: '#',
         icon: Folder,
-        isActive: ['/faculties', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
+        isActive: ['/faculties'].some(path => urlIsActive(path, page.url)),
         items: [
             {
                 title: 'Fakultetlar',
                 href: facultiesIndex().url,
-            },
-            {
-                title: 'Auditoriyalar',
-                href: auditoriumsIndex().url,
             },
         ],
     },

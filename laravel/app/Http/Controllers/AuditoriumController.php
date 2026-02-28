@@ -50,11 +50,23 @@ class AuditoriumController extends Controller
             }
         }
 
-        $auditoriums->transform(function ($auditorium) use ($currentLessons, $snapshots) {
+        // Fetch latest people counts per camera
+        $peopleCounts = \App\Models\PeopleCount::whereIn('camera_id', $cameraIds)
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MAX(id)')
+                    ->from('people_counts')
+                    ->groupBy('camera_id');
+            })
+            ->pluck('people_count', 'camera_id');
+
+        $auditoriums->transform(function ($auditorium) use ($currentLessons, $snapshots, $peopleCounts) {
             $auditorium->current_lesson = $currentLessons->get($auditorium->code);
             if ($auditorium->camera_id && isset($snapshots[$auditorium->camera_id])) {
                 $auditorium->camera_snapshot = $snapshots[$auditorium->camera_id];
             }
+            $auditorium->people_count = $auditorium->camera_id
+                ? ($peopleCounts[$auditorium->camera_id] ?? null)
+                : null;
             return $auditorium;
         });
 
