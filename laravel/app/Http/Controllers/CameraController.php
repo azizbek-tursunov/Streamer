@@ -46,9 +46,14 @@ class CameraController extends Controller
         ]);
     }
 
-    public function grid()
+    public function grid(Request $request)
     {
-        $cameras = Camera::with(['faculty'])->where('is_active', true)->get()->map(function ($camera) {
+        $paginator = Camera::with(['faculty'])
+            ->where('is_active', true)
+            ->paginate(12)
+            ->withQueryString();
+
+        $paginator->getCollection()->transform(function ($camera) {
             // Find latest snapshot
             $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
             $latestFile = null;
@@ -69,7 +74,7 @@ class CameraController extends Controller
         });
 
         return Inertia::render('Cameras/Grid', [
-            'cameras' => $cameras,
+            'cameras' => $paginator,
         ]);
     }
 

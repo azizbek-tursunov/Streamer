@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/Pagination.vue';
 
 interface SnapshotInfo {
     url: string;
@@ -11,7 +12,10 @@ interface SnapshotInfo {
 }
 
 const props = defineProps<{
-    cameras: Camera[];
+    cameras: {
+        data: Camera[];
+        links: any[];
+    };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -28,7 +32,7 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 // Initialize snapshot URLs from props
 const initializeSnapshots = () => {
-    props.cameras.forEach(camera => {
+    props.cameras.data.forEach(camera => {
         if (camera.snapshot_url) {
             snapshotUrls[camera.id] = {
                 url: camera.snapshot_url,
@@ -63,7 +67,7 @@ const pollSnapshots = async () => {
 
 // Cameras with dynamic snapshot URLs
 const camerasWithSnapshots = computed(() => {
-    return props.cameras.map(camera => ({
+    return props.cameras.data.map(camera => ({
         ...camera,
         displaySnapshotUrl: snapshotUrls[camera.id]?.url || camera.snapshot_url
     }));
@@ -142,6 +146,11 @@ onUnmounted(() => {
                         <Link href="/cameras">Kameralarni Boshqarish</Link>
                     </Button>
                 </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-4 pb-4 px-4" v-if="cameras.data.length > 0">
+                <Pagination :links="cameras.links" />
             </div>
         </div>
     </AppLayout>
