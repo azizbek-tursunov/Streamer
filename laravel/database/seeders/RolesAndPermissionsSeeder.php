@@ -20,11 +20,15 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // create permissions
         $permissions = [
-            'manage users',
-            'manage roles',
-            'manage permissions',
-            'view cameras',
-            'manage cameras',
+            'manage-users',
+            'manage-roles',
+            'manage-permissions',
+            'manage-cameras',
+            'manage-streams',
+            'manage-sync',
+            'view-streams',
+            'add-comments',
+            'analyze-comments',
         ];
 
         foreach ($permissions as $permission) {
@@ -32,20 +36,32 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // create roles and assign created permissions
+        
+        // it-technician role
+        $itTechnicianRole = Role::firstOrCreate(['name' => 'it-technician']);
+        $itTechnicianRole->givePermissionTo([
+            'manage-cameras',
+            'manage-streams',
+            'manage-sync',
+        ]);
 
-        // User role
-        $role = Role::firstOrCreate(['name' => 'user']);
-        $role->givePermissionTo('view cameras');
+        // department role
+        $departmentRole = Role::firstOrCreate(['name' => 'department']);
+        $departmentRole->givePermissionTo([
+            'view-streams',
+            'add-comments',
+            'analyze-comments',
+        ]);
 
-        // Admin role
-        $role = Role::firstOrCreate(['name' => 'admin']);
-        $role->givePermissionTo(Permission::all());
+        // deans role
+        $deansRole = Role::firstOrCreate(['name' => 'deans']);
+        $deansRole->givePermissionTo([
+            'view-streams',
+        ]);
 
         // Super-Admin role
-        $role = Role::firstOrCreate(['name' => 'super-admin']);
-        // Super admin gets all permissions via Gate::before rule usually, but explicit assignment is fine too
-        // or just give all permissions
-        $role->givePermissionTo(Permission::all());
+        $superAdminRole = Role::firstOrCreate(['name' => 'super-admin']);
+        $superAdminRole->givePermissionTo(Permission::all());
 
         // Create/Find Super Admin User
         $email = 'azizbektursunovofficial@gmail.com';

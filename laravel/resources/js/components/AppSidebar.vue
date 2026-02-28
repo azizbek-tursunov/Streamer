@@ -27,94 +27,113 @@ import { index as auditoriumsIndex } from '@/actions/App/Http/Controllers/Audito
 
 const page = usePage();
 
-const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: 'Boshqaruv Paneli',
-        href: dashboard(),
-        icon: LayoutGrid,
-        isActive: urlIsActive(dashboard().url, page.url),
-    },
-    {
-        title: 'Kameralar',
-        href: '#',
-        icon: Camera,
-        isActive: ['/cameras', '/cameras/grid'].some(path => urlIsActive(path, page.url)),
-        items: [
-            {
-                title: "Ro'yhat",
-                href: '/cameras',
-            },
-            {
-                title: 'Mozaika',
-                href: '/cameras/grid',
-            },
-        ],
-    },
-    {
-        title: "O'quv jarayoni",
-        href: '#',
-        icon: BookOpen,
-        isActive: ['/feedbacks', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
-        items: [
-            {
-                title: 'Auditoriyalar',
-                href: auditoriumsIndex().url,
-            },
-            {
-                title: 'Dars tahlili',
-                href: '/feedbacks',
-            },
-        ],
-    },
-    {
-        title: "Ma'lumotnomalar",
-        href: '#',
-        icon: Folder,
-        isActive: ['/faculties'].some(path => urlIsActive(path, page.url)),
-        items: [
-            {
-                title: 'Fakultetlar',
-                href: facultiesIndex().url,
-            },
-        ],
-    },
-    {
-        title: "Xavfsizlik",
-        href: '#',
-        icon: Shield,
-        isActive: [usersIndex().url, rolesIndex().url, permissionsIndex().url].some(path => urlIsActive(path, page.url)),
-        items: [
-            {
-                title: 'Foydalanuvchilar',
-                href: usersIndex().url,
-            },
-            {
-                title: 'Rollar',
-                href: rolesIndex().url,
-            },
-            {
-                title: 'Ruxsatnomalar',
-                href: permissionsIndex().url,
-            },
-        ],
-    },
-    {
-        title: "Sozlamalar",
-        href: '#',
-        icon: Settings,
-        isActive: ['/hemis', '/hemis-auth'].some(path => urlIsActive(path, page.url)),
-        items: [
-            {
-                title: 'HEMIS API',
-                href: '/hemis',
-            },
-            {
-                title: 'HEMIS Avtorizatsiya',
-                href: '/hemis-auth',
-            },
-        ],
-    },
-]);
+const mainNavItems = computed<NavItem[]>(() => {
+    const userPermissions = page.props.auth?.user?.permissions || [];
+    
+    // Admin checking or global super-admin check
+    const isSuperAdmin = userPermissions.length > 20; // super admins get all permissions implicitly, but we can just check if they have specific ones
+
+    const checkPermission = (perms?: string[]) => {
+        if (!perms || perms.length === 0) return true;
+        return perms.some(p => userPermissions.includes(p));
+    };
+
+    const rawItems: NavItem[] = [
+        {
+            title: 'Boshqaruv Paneli',
+            href: dashboard(),
+            icon: LayoutGrid,
+            isActive: urlIsActive(dashboard().url, page.url),
+        },
+        {
+            title: 'Kameralar',
+            href: '#',
+            icon: Camera,
+            permissions: ['manage-cameras', 'view-streams'], // example permissions
+            isActive: ['/cameras', '/cameras/grid'].some(path => urlIsActive(path, page.url)),
+            items: [
+                {
+                    title: "Ro'yhat",
+                    href: '/cameras',
+                },
+                {
+                    title: 'Mozaika',
+                    href: '/cameras/grid',
+                },
+            ],
+        },
+        {
+            title: "O'quv jarayoni",
+            href: '#',
+            icon: BookOpen,
+            permissions: ['view-streams', 'add-comments', 'analyze-comments'],
+            isActive: ['/feedbacks', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
+            items: [
+                {
+                    title: 'Auditoriyalar',
+                    href: auditoriumsIndex().url,
+                },
+                {
+                    title: 'Dars tahlili',
+                    href: '/feedbacks',
+                },
+            ],
+        },
+        {
+            title: "Ma'lumotnomalar",
+            href: '#',
+            icon: Folder,
+            permissions: ['manage-users'], // Restrict to admin-level roughly
+            isActive: ['/faculties'].some(path => urlIsActive(path, page.url)),
+            items: [
+                {
+                    title: 'Fakultetlar',
+                    href: facultiesIndex().url,
+                },
+            ],
+        },
+        {
+            title: "Xavfsizlik",
+            href: '#',
+            icon: Shield,
+            permissions: ['manage-users', 'manage-roles', 'manage-permissions'],
+            isActive: [usersIndex().url, rolesIndex().url, permissionsIndex().url].some(path => urlIsActive(path, page.url)),
+            items: [
+                {
+                    title: 'Foydalanuvchilar',
+                    href: usersIndex().url,
+                },
+                {
+                    title: 'Rollar',
+                    href: rolesIndex().url,
+                },
+                {
+                    title: 'Ruxsatnomalar',
+                    href: permissionsIndex().url,
+                },
+            ],
+        },
+        {
+            title: "Sozlamalar",
+            href: '#',
+            icon: Settings,
+            permissions: ['manage-sync'],
+            isActive: ['/hemis', '/hemis-auth'].some(path => urlIsActive(path, page.url)),
+            items: [
+                {
+                    title: 'HEMIS API',
+                    href: '/hemis',
+                },
+                {
+                    title: 'HEMIS Avtorizatsiya',
+                    href: '/hemis-auth',
+                },
+            ],
+        },
+    ];
+
+    return rawItems.filter(item => checkPermission(item.permissions));
+});
 
 const footerNavItems: NavItem[] = [];
 </script>
