@@ -29,13 +29,25 @@ const page = usePage();
 
 const mainNavItems = computed<NavItem[]>(() => {
     const userPermissions = page.props.auth?.user?.permissions || [];
+    const userRoles = page.props.auth?.user?.roles || [];
     
     // Admin checking or global super-admin check
-    const isSuperAdmin = userPermissions.length > 20; // super admins get all permissions implicitly, but we can just check if they have specific ones
+    const isSuperAdmin = userRoles.includes('super-admin') || userPermissions.length > 20;
 
-    const checkPermission = (perms?: string[]) => {
-        if (!perms || perms.length === 0) return true;
-        return perms.some(p => userPermissions.includes(p));
+    const checkAccess = (item: NavItem) => {
+        if (isSuperAdmin) return true;
+        
+        let hasPerm = !item.permissions || item.permissions.length === 0 || item.permissions.some(p => userPermissions.includes(p));
+        let hasRole = !item.roles || item.roles.length === 0 || item.roles.some(r => userRoles.includes(r));
+
+        if (item.permissions && item.roles) {
+            return hasPerm || hasRole;
+        }
+
+        if (item.permissions) return hasPerm;
+        if (item.roles) return hasRole;
+        
+        return true;
     };
 
     const rawItems: NavItem[] = [
@@ -117,7 +129,7 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: "Sozlamalar",
             href: '#',
             icon: Settings,
-            permissions: ['manage-sync'],
+            roles: ['super-admin'],
             isActive: ['/hemis', '/hemis-auth'].some(path => urlIsActive(path, page.url)),
             items: [
                 {
@@ -132,7 +144,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         },
     ];
 
-    return rawItems.filter(item => checkPermission(item.permissions));
+    return rawItems.filter(item => checkAccess(item));
 });
 
 const footerNavItems: NavItem[] = [];

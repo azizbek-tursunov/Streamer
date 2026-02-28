@@ -49,16 +49,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('roles', \App\Http\Controllers\RoleController::class);
         Route::resource('permissions', \App\Http\Controllers\PermissionController::class);
     });
+    Route::middleware(['role:super-admin'])->group(function () {
+        Route::get('hemis', [\App\Http\Controllers\SettingController::class, 'hemis'])->name('hemis.settings');
+        Route::put('hemis', [\App\Http\Controllers\SettingController::class, 'updateHemis'])->name('hemis.settings.update');
+        Route::post('hemis/test', [\App\Http\Controllers\SettingController::class, 'testHemis'])->name('hemis.settings.test');
+
+        Route::get('hemis-auth', [\App\Http\Controllers\SettingController::class, 'hemisAuth'])->name('hemis-auth.settings');
+        Route::put('hemis-auth', [\App\Http\Controllers\SettingController::class, 'updateHemisAuth'])->name('hemis-auth.settings.update');
+    });
 });
-    Route::get('hemis', [\App\Http\Controllers\SettingController::class, 'hemis'])->name('hemis.settings');
-    Route::put('hemis', [\App\Http\Controllers\SettingController::class, 'updateHemis'])->name('hemis.settings.update');
-    Route::post('hemis/test', [\App\Http\Controllers\SettingController::class, 'testHemis'])->name('hemis.settings.test');
 
-    Route::get('hemis-auth', [\App\Http\Controllers\SettingController::class, 'hemisAuth'])->name('hemis-auth.settings');
-    Route::put('hemis-auth', [\App\Http\Controllers\SettingController::class, 'updateHemisAuth'])->name('hemis-auth.settings.update');
-
-    // HEMIS OAuth Routes
-    Route::get('hemis/redirect/employee', [\App\Http\Controllers\Auth\HemisOAuthController::class, 'redirect'])->name('hemis.redirect.employee');
-    Route::get('hemis/callback/employee', [\App\Http\Controllers\Auth\HemisOAuthController::class, 'callback'])->name('hemis.callback.employee');
+// HEMIS OAuth Routes
+Route::get('hemis/redirect/employee', [\App\Http\Controllers\Auth\HemisOAuthController::class, 'redirect'])->name('hemis.redirect.employee');
+Route::get('hemis/callback/employee', [\App\Http\Controllers\Auth\HemisOAuthController::class, 'callback'])->name('hemis.callback.employee');
 
 require __DIR__.'/settings.php';

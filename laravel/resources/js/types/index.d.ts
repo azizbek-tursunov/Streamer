@@ -16,9 +16,12 @@ export interface NavItem {
     icon?: LucideIcon;
     isActive?: boolean;
     permissions?: string[];
+    roles?: string[];
     items?: {
         title: string;
         href: string;
+        permissions?: string[];
+        roles?: string[];
     }[];
 }
 
@@ -38,6 +41,7 @@ export interface User {
     avatar?: string;
     email_verified_at: string | null;
     permissions?: string[];
+    roles?: string[];
     created_at: string;
     updated_at: string;
 }
