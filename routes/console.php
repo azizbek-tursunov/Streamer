@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\CaptureSnapshot;
+use App\Jobs\DispatchPeopleCounting;
 use App\Jobs\PruneSnapshots;
 use App\Jobs\SyncLessonSchedules;
 use App\Models\Camera;
@@ -12,13 +13,16 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule camera snapshots every 5 minutes (staggered to avoid 200 simultaneous FFmpeg processes)
+// Schedule camera snapshots every 5 minutes (staggered to avoid 200 simultaneous processes)
 Schedule::call(function () {
     Camera::where('is_active', true)->get()->each(function (Camera $camera, int $index) {
         CaptureSnapshot::dispatch($camera)
             ->delay(now()->addSeconds($index)); // 1 second apart
     });
 })->everyFiveMinutes();
+
+// Count people via YOLO every 30 minutes
+Schedule::job(new DispatchPeopleCounting)->everyThirtyMinutes();
 
 // Prune old snapshots every hour
 Schedule::job(new PruneSnapshots)->hourly();
