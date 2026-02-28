@@ -479,7 +479,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 {{ savingOrder ? 'Saqlanmoqda...' : 'Tartibni saqlash' }}
                             </Button>
                         </div>
-                        <div v-else-if="isAssigning" class="flex gap-2">
+                        <div v-else-if="isAssigning && hasPermission('manage-auditorium-faculty')" class="flex gap-2">
                             <Button @click="toggleAssigning" variant="secondary" size="sm">
                                 <X class="mr-2 h-4 w-4" />
                                 Bekor qilish
@@ -828,7 +828,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
             
             <!-- Bulk Actions Floating Bar -->
             <div 
-                v-if="isAssigning"
+                v-if="isAssigning && hasPermission('manage-auditorium-faculty')"
                 class="fixed bottom-6 w-[calc(100%-2rem)] md:w-auto left-4 md:left-1/2 md:-translate-x-1/2 z-50 flex items-center justify-between md:justify-start gap-4 rounded-full border border-primary/20 bg-background/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3"
             >
                 <div class="flex items-center gap-2 border-r pr-4">
