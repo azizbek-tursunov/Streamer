@@ -63,6 +63,13 @@ const props = defineProps<{
 
 const page = usePage();
 
+const hasPermission = (perm: string) => {
+    const userRoles = page.props.auth?.user?.roles || [];
+    const userPerms = page.props.auth?.user?.permissions || [];
+    if (userRoles.includes('super-admin')) return true;
+    return userPerms.includes(perm);
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: "O'quv jarayoni", href: '#' },
     { title: 'Auditoriyalar', href: '/auditoriums' },
@@ -479,7 +486,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             </Button>
                         </div>
                         <div v-else class="flex gap-2">
-                            <Button @click="toggleAssigning" variant="outline" size="sm">
+                            <Button v-if="hasPermission('manage-auditorium-faculty')" @click="toggleAssigning" variant="outline" size="sm">
                                 <GraduationCap class="mr-2 h-4 w-4" />
                                 Fakultetga biriktirish
                             </Button>
@@ -488,6 +495,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 Tartiblash
                             </Button>
                             <Button
+                                v-if="hasPermission('sync-auditoriums')"
                                 @click="syncFromApi"
                                 :disabled="syncing"
                                 variant="outline"
@@ -621,7 +629,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                     <p class="text-sm text-muted-foreground mb-4">
                         HEMIS tizimidan ma'lumotlarni sinxronlang
                     </p>
-                    <Button @click="syncFromApi" :disabled="syncing">
+                    <Button v-if="hasPermission('sync-auditoriums')" @click="syncFromApi" :disabled="syncing">
                         <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />
                         {{ syncing ? 'Sinxronlanmoqda...' : 'Sinxronlash' }}
                     </Button>
@@ -758,6 +766,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 <span>Hozirgi Dars</span>
                                                 <div class="flex items-center gap-2">
                                                     <button 
+                                                        v-if="hasPermission('add-feedbacks')"
                                                         @click.stop="openFeedbackDialog(item.id, activeLessons[item.code])"
                                                         class="opacity-70 hover:opacity-100 hover:text-emerald-600 hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all bg-background border px-2 py-1 rounded-md flex items-center gap-1.5 cursor-pointer shadow-sm"
                                                         title="Darsni baholash"
@@ -801,6 +810,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                         </a>
                                     </Button>
                                     <Button 
+                                        v-if="hasPermission('manage-auditorium-cameras')"
                                         size="sm" 
                                         variant="outline" 
                                         class="flex-1 text-[11px] h-7 px-2 overflow-hidden"

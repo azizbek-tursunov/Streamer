@@ -1,3 +1,4 @@
+```
 <script setup lang="ts">
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -16,7 +17,17 @@ import { usePage, Link } from '@inertiajs/vue3';
 import { urlIsActive } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { BookOpen, Folder, LayoutGrid, Camera, Shield, Settings, KeySquare } from 'lucide-vue-next';
+import {
+    Map,
+    FolderOpen,
+    SquareChartGantt,
+    Settings,
+    Video,
+    GraduationCap,
+    FolderKey,
+    LayoutGrid,
+    Folder,
+} from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { index as usersIndex } from '@/routes/users';
 import { index as rolesIndex } from '@/routes/roles';
@@ -60,34 +71,38 @@ const mainNavItems = computed<NavItem[]>(() => {
         {
             title: 'Kameralar',
             href: '#',
-            icon: Camera,
-            permissions: ['manage-cameras', 'view-streams'], // example permissions
-            isActive: ['/cameras', '/cameras/grid'].some(path => urlIsActive(path, page.url)),
+            icon: Video,
+            permissions: ['view-cameras', 'view-camera-grid'],
+            isActive: ['/cameras/grid', '/cameras'].some(path => urlIsActive(path, page.url)),
             items: [
                 {
-                    title: "Ro'yhat",
+                    title: "Ro'yxat",
                     href: '/cameras',
+                    permissions: ['view-cameras'],
                 },
                 {
                     title: 'Mozaika',
                     href: '/cameras/grid',
+                    permissions: ['view-camera-grid'],
                 },
             ],
         },
         {
             title: "O'quv jarayoni",
             href: '#',
-            icon: BookOpen,
-            permissions: ['view-streams', 'add-comments', 'analyze-comments'],
-            isActive: ['/feedbacks', auditoriumsIndex().url].some(path => urlIsActive(path, page.url)),
+            icon: GraduationCap,
+            permissions: ['view-auditoriums', 'view-feedbacks'],
+            isActive: ['/auditoriums', '/feedbacks'].some(path => urlIsActive(path, page.url)),
             items: [
                 {
                     title: 'Auditoriyalar',
-                    href: auditoriumsIndex().url,
+                    href: '/auditoriums',
+                    permissions: ['view-auditoriums'],
                 },
                 {
                     title: 'Dars tahlili',
                     href: '/feedbacks',
+                    permissions: ['view-feedbacks'],
                 },
             ],
         },
@@ -105,23 +120,23 @@ const mainNavItems = computed<NavItem[]>(() => {
             ],
         },
         {
-            title: "Xavfsizlik",
+            title: "Tizim",
             href: '#',
-            icon: Shield,
-            permissions: ['manage-users', 'manage-roles', 'manage-permissions'],
-            isActive: [usersIndex().url, rolesIndex().url, permissionsIndex().url].some(path => urlIsActive(path, page.url)),
+            icon: FolderKey,
+            permissions: ['manage-users'],
+            isActive: ['/users', '/roles', '/permissions'].some(path => urlIsActive(path, page.url)),
             items: [
                 {
                     title: 'Foydalanuvchilar',
-                    href: usersIndex().url,
+                    href: '/users',
                 },
                 {
                     title: 'Rollar',
-                    href: rolesIndex().url,
+                    href: '/roles',
                 },
                 {
                     title: 'Ruxsatnomalar',
-                    href: permissionsIndex().url,
+                    href: '/permissions',
                 },
             ],
         },
