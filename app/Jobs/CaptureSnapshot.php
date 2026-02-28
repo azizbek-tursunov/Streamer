@@ -12,16 +12,11 @@ class CaptureSnapshot implements ShouldQueue
     use Queueable;
 
     /**
-     * The queue this job should be dispatched to.
-     */
-    public string $queue = 'snapshots';
-
-    /**
      * Create a new job instance.
      */
     public function __construct(public Camera $camera)
     {
-        //
+        $this->queue = 'snapshots';
     }
 
     /**
