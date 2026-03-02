@@ -108,8 +108,9 @@ class HemisApiService
                     $userEmail = $hemisId . '@hemis.local';
 
                     User::updateOrCreate(
-                        ['email' => $userEmail],
+                        ['employee_id_number' => $hemisId],
                         [
+                            'email' => $userEmail, // Fallback placeholder email
                             'name' => $fullName ?: 'HEMIS User',
                             'password' => bcrypt(str()->random(24)),
                         ]

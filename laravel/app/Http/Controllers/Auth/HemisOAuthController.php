@@ -66,12 +66,18 @@ class HemisOAuthController extends Controller
             $userEmail = $email ?: ($hemisId . '@hemis.local');
 
             $user = User::firstOrCreate(
-                ['email' => $userEmail],
+                ['employee_id_number' => $hemisId],
                 [
+                    'email' => $userEmail,
                     'name' => $name ?: 'HEMIS User',
                     'password' => bcrypt(str()->random(24)),
                 ]
             );
+
+            // optionally update the email if they have a real one now, but firstOrCreate handles creation
+            if ($email && str_ends_with($user->email, '@hemis.local')) {
+                $user->update(['email' => $email]);
+            }
             
             Auth::login($user);
             return redirect()->route('dashboard');
