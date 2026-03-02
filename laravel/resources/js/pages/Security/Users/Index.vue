@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,8 @@ const deleteUser = (id: number) => {
     }
 };
 
+const { hasPermission } = usePermissions();
+
 const isSyncing = ref(false);
 
 const syncFromHemis = () => {
@@ -92,11 +95,11 @@ const syncFromHemis = () => {
                     </p>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <Button variant="outline" @click="syncFromHemis" :disabled="isSyncing">
+                    <Button v-if="hasPermission('manage-users')" variant="outline" @click="syncFromHemis" :disabled="isSyncing">
                         <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': isSyncing }" />
                         {{ isSyncing ? 'Sinxronlanmoqda...' : 'HEMISdan sinxronlash' }}
                     </Button>
-                    <Button as-child>
+                    <Button v-if="hasPermission('manage-users')" as-child>
                         <Link :href="create().url">
                             <Plus class="w-4 h-4 mr-2" />
                             Yangi qo'shish
@@ -141,7 +144,7 @@ const syncFromHemis = () => {
                             <TableHead>Ism</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Rollar</TableHead>
-                            <TableHead class="text-right">Amallar</TableHead>
+                            <TableHead v-if="hasPermission('manage-users')" class="text-right">Amallar</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -170,7 +173,7 @@ const syncFromHemis = () => {
                                     </span>
                                 </div>
                             </TableCell>
-                            <TableCell class="text-right">
+                            <TableCell v-if="hasPermission('manage-users')" class="text-right">
                                 <div class="flex justify-end gap-2">
                                     <Button variant="ghost" size="icon" as-child>
                                         <Link :href="edit(user.id).url">

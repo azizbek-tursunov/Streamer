@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,8 @@ const deletePermission = (id: number) => {
         router.delete(destroy(id).url);
     }
 };
+
+const { hasPermission } = usePermissions();
 </script>
 
 <template>
@@ -65,7 +68,7 @@ const deletePermission = (id: number) => {
                         Tizim ruxsatnomalarini boshqarish.
                     </p>
                 </div>
-                <Button as-child>
+                <Button v-if="hasPermission('manage-users')" as-child>
                     <Link :href="create().url">
                         <Plus class="w-4 h-4 mr-2" />
                         Yangi qo'shish
@@ -89,7 +92,7 @@ const deletePermission = (id: number) => {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Ruxsatnoma Nomi</TableHead>
-                            <TableHead class="text-right">Amallar</TableHead>
+                            <TableHead v-if="hasPermission('manage-users')" class="text-right">Amallar</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -105,7 +108,7 @@ const deletePermission = (id: number) => {
                                     <span>{{ permission.name }}</span>
                                 </div>
                             </TableCell>
-                            <TableCell class="text-right">
+                            <TableCell v-if="hasPermission('manage-users')" class="text-right">
                                 <div class="flex justify-end gap-2">
                                     <Button variant="ghost" size="icon" as-child>
                                         <Link :href="edit(permission.id).url">

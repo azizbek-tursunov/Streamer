@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Camera, BreadcrumbItem, Faculty } from '@/types';
@@ -30,6 +31,8 @@ const props = defineProps<{
     };
     faculties: Faculty[];
 }>();
+
+const { hasPermission } = usePermissions();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Kameralar', href: '/cameras' },
@@ -103,7 +106,7 @@ const handleFileUpload = (event: Event) => {
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Kameralar</h1>
-                <div class="flex items-center gap-2">
+                <div v-if="hasPermission('manage-cameras')" class="flex items-center gap-2">
                     <input type="file" ref="fileInput" class="hidden" accept=".xlsx,.xls,.csv" @change="handleFileUpload" />
                     <Button variant="outline" @click="triggerFileInput" :disabled="uploading">
                         <Upload class="mr-2 h-4 w-4" v-if="!uploading" />
@@ -158,7 +161,7 @@ const handleFileUpload = (event: Event) => {
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">IP Manzil</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Holati</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Efir</th>
-                            <th class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Amallar</th>
+                            <th v-if="hasPermission('manage-cameras')" class="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Amallar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -197,7 +200,7 @@ const handleFileUpload = (event: Event) => {
                                 </Badge>
                                 <span v-else class="text-muted-foreground">-</span>
                             </td>
-                            <td class="p-4 align-middle text-right">
+                            <td v-if="hasPermission('manage-cameras')" class="p-4 align-middle text-right">
                                 <div class="flex justify-end gap-2">
                                     <Button variant="ghost" size="icon" as-child>
                                         <Link :href="`/cameras/${camera.id}`">

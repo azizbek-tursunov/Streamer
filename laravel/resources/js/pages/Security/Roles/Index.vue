@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,8 @@ const deleteRole = (id: number) => {
         router.delete(destroy(id).url);
     }
 };
+
+const { hasPermission } = usePermissions();
 </script>
 
 <template>
@@ -66,7 +69,7 @@ const deleteRole = (id: number) => {
                         Tizim rollari va ularning ruxsatnomalarini boshqarish.
                     </p>
                 </div>
-                <Button as-child>
+                <Button v-if="hasPermission('manage-users')" as-child>
                     <Link :href="create().url">
                         <Plus class="w-4 h-4 mr-2" />
                         Yangi qo'shish
@@ -91,7 +94,7 @@ const deleteRole = (id: number) => {
                         <TableRow>
                             <TableHead>Rol Nomi</TableHead>
                             <TableHead>Ruxsatnomalar</TableHead>
-                            <TableHead class="text-right">Amallar</TableHead>
+                            <TableHead v-if="hasPermission('manage-users')" class="text-right">Amallar</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -122,7 +125,7 @@ const deleteRole = (id: number) => {
                                     </span>
                                 </div>
                             </TableCell>
-                            <TableCell class="text-right align-top">
+                            <TableCell v-if="hasPermission('manage-users')" class="text-right align-top">
                                 <div class="flex justify-end gap-2">
                                     <Button variant="ghost" size="icon" as-child>
                                         <Link :href="edit(role.id).url">

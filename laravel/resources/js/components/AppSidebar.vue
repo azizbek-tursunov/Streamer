@@ -61,6 +61,22 @@ const mainNavItems = computed<NavItem[]>(() => {
         return true;
     };
 
+    const filterItemInfo = (item: NavItem): NavItem | null => {
+        if (!checkAccess(item)) return null;
+
+        if (item.items) {
+            const filteredChildren = item.items.filter(child => checkAccess({ ...child, href: child.href, title: child.title, icon: undefined }));
+            if (filteredChildren.length === 0 && item.permissions) {
+                // If all children are filtered out and this parent had specific permissions, 
+                // we might want to still show it if they have permission for the parent? 
+                // Or maybe we hide it? Usually we keep parent if they can access parent.
+            }
+            return { ...item, items: filteredChildren };
+        }
+
+        return item;
+    };
+
     const rawItems: NavItem[] = [
         {
             title: 'Boshqaruv Paneli',
@@ -159,7 +175,9 @@ const mainNavItems = computed<NavItem[]>(() => {
         },
     ];
 
-    return rawItems.filter(item => checkAccess(item));
+    return rawItems
+        .map(item => filterItemInfo(item))
+        .filter((item): item is NavItem => item !== null);
 });
 
 const footerNavItems: NavItem[] = [];

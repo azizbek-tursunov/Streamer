@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
+import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage, useForm } from '@inertiajs/vue3';
 import { BreadcrumbItem, Auditorium, Camera, Faculty } from '@/types';
@@ -62,13 +63,7 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-
-const hasPermission = (perm: string) => {
-    const userRoles = page.props.auth?.user?.roles || [];
-    const userPerms = page.props.auth?.user?.permissions || [];
-    if (userRoles.includes('super-admin')) return true;
-    return userPerms.includes(perm);
-};
+const { hasPermission } = usePermissions();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: "O'quv jarayoni", href: '#' },
