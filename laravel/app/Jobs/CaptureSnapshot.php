@@ -37,7 +37,7 @@ class CaptureSnapshot implements ShouldQueue
         // Directly use Hikvision ISAPI endpoint (massively more efficient than FFmpeg RTSP)
         $url = "http://{$this->camera->ip_address}/ISAPI/Streaming/channels/101/picture";
 
-        Log::info("Snapshot: Starting HTTP ISAPI for Camera {$this->camera->id}", ['url' => $url]);
+        // Log::info("Snapshot: Starting HTTP ISAPI for Camera {$this->camera->id}", ['url' => $url]);
 
         $http = \Illuminate\Support\Facades\Http::timeout(10)->sink($outputPath);
 
@@ -51,7 +51,7 @@ class CaptureSnapshot implements ShouldQueue
             if ($response->successful() && file_exists($outputPath)) {
                 // Double check if file is not an empty layout (sometimes ISAPI returns XML error but 200 OK)
                 if (filesize($outputPath) > 1000) {
-                    Log::info("Snapshot: Success for Camera {$this->camera->id}", ['file' => $filename]);
+                    // Log::info("Snapshot: Success for Camera {$this->camera->id}", ['file' => $filename]);
                 } else {
                     unlink($outputPath);
                     Log::error("Snapshot: HTTP returned a tiny file (likely auth error or XML) for Camera {$this->camera->id}");

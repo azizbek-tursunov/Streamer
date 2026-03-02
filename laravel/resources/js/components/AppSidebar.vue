@@ -107,8 +107,8 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: "O'quv jarayoni",
             href: '#',
             icon: GraduationCap,
-            permissions: ['view-auditoriums', 'view-feedbacks'],
-            isActive: ['/auditoriums', '/feedbacks'].some(path => urlIsActive(path, page.url)),
+            permissions: ['view-auditoriums', 'view-feedbacks', 'view-lesson-schedules'],
+            isActive: ['/auditoriums', '/feedbacks', '/lesson-schedules'].some(path => urlIsActive(path, page.url)),
             items: [
                 {
                     title: 'Auditoriyalar',
@@ -119,6 +119,11 @@ const mainNavItems = computed<NavItem[]>(() => {
                     title: 'Dars tahlili',
                     href: '/feedbacks',
                     permissions: ['view-feedbacks'],
+                },
+                {
+                    title: 'Dars jadvali',
+                    href: '/lesson-schedules',
+                    permissions: ['view-lesson-schedules'],
                 },
             ],
         },

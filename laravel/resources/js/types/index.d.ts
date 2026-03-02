@@ -160,3 +160,23 @@ export interface Lesson {
     };
 }
 
+export interface LessonSchedule {
+    id: number;
+    hemis_id: number;
+    lesson_date: string;
+    auditorium_code: string;
+    auditorium?: {
+        name: string;
+        code: string;
+    };
+    subject_name?: string;
+    employee_name?: string;
+    group_name?: string;
+    training_type_name?: string;
+    lesson_pair_name?: string;
+    start_time: string;
+    end_time: string;
+    start_timestamp: string;
+    end_timestamp: string;
+    raw_data?: any;
+}

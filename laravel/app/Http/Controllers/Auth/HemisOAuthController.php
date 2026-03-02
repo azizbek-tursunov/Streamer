@@ -65,18 +65,42 @@ class HemisOAuthController extends Controller
             // Construct an identifier (fallback to hemis.local if email doesn't exist)
             $userEmail = $email ?: ($hemisId . '@hemis.local');
 
-            $user = User::firstOrCreate(
-                ['employee_id_number' => $hemisId],
-                [
+            // 1. Try to find user by the official HEMIS ID
+            $user = User::where('employee_id_number', $hemisId)->first();
+
+            // 2. If not found by ID, they might be an older user synced by email before the ID column existed
+            if (!$user) {
+                $user = User::where('email', $userEmail)->first();
+                // Link their HEMIS ID so future logins are deterministic
+                if ($user) {
+                    $user->employee_id_number = $hemisId;
+                    $user->save();
+                }
+            }
+
+            // 3. If still no user exists, safely create one
+            if (!$user) {
+                $user = User::create([
+                    'employee_id_number' => $hemisId,
                     'email' => $userEmail,
                     'name' => $name ?: 'HEMIS User',
                     'password' => bcrypt(str()->random(24)),
-                ]
-            );
+                    'email_verified_at' => now(), // Prevents 302 verification loop
+                ]);
+            } else {
+                // Ensure existing users are verified so they don't get stuck in a 302 loop
+                if (is_null($user->email_verified_at)) {
+                    $user->email_verified_at = now();
+                    $user->save();
+                }
+            }
 
-            // optionally update the email if they have a real one now, but firstOrCreate handles creation
+            // Optionally update the fallback email if they have a real one now
             if ($email && str_ends_with($user->email, '@hemis.local')) {
-                $user->update(['email' => $email]);
+                // Ensure the new real email doesn't collide with another older account
+                if (!User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
+                    $user->update(['email' => $email]);
+                }
             }
             
             Auth::login($user);

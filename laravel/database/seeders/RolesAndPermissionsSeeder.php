@@ -30,6 +30,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-auditorium-cameras',   // Kamera ulash dialog
             'add-feedbacks',               // Baholash button in auditoriums
             'view-feedbacks',              // Dars tahlili
+            'view-lesson-schedules',       // Dars jadvali
+            'sync-lesson-schedules',       // Dars jadvalini sinxronlash
             'manage-users',                // Foydalanuvchilar and hemis auth
         ];
 
@@ -50,6 +52,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage-auditorium-faculty',
             'sync-auditoriums',
             'manage-auditorium-cameras',
+            'view-lesson-schedules',
+            'sync-lesson-schedules',
         ]);
 
         // --- Department ---
@@ -59,6 +63,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view-auditoriums',
             'add-feedbacks',
             'view-feedbacks',
+            'view-lesson-schedules',
         ]);
 
         // --- Deans ---
@@ -66,6 +71,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $deansRole->syncPermissions([
             'view-camera-grid',
             'view-auditoriums',
+            'view-lesson-schedules',
         ]);
 
         // --- Admin ---

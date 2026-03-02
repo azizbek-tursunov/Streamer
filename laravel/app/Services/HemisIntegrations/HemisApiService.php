@@ -241,8 +241,6 @@ class HemisApiService
         $timezone = config('app.timezone');
         $today = now($timezone);
         $todayDate = $today->toDateString();
-        $startOfDay = $today->copy()->startOfDay()->timestamp;
-        $endOfDay = $today->copy()->endOfDay()->timestamp;
 
         // Remove old records (before today)
         LessonSchedule::where('lesson_date', '<', $todayDate)->delete();
@@ -252,66 +250,86 @@ class HemisApiService
 
         foreach ($auditoriums as $auditorium) {
             try {
-                $page = 1;
-                $limit = 200;
-
-                do {
-                    $response = $this->getSchedule([
-                        '_auditorium' => $auditorium->code,
-                        'lesson_date_from' => $startOfDay,
-                        'lesson_date_to' => $endOfDay,
-                        'limit' => $limit,
-                        'page' => $page,
-                    ]);
-
-                    $items = $response['data']['items'] ?? [];
-                    $pagination = $response['data']['pagination'] ?? null;
-
-                    foreach ($items as $item) {
-                        $date = \Carbon\Carbon::createFromTimestamp(
-                            $item['lesson_date'],
-                            $timezone
-                        )->startOfDay();
-
-                        // Skip lessons not from today
-                        if ($date->toDateString() !== $todayDate) {
-                            continue;
-                        }
-
-                        $startTime = $item['lessonPair']['start_time'] ?? '00:00';
-                        $endTime = $item['lessonPair']['end_time'] ?? '00:00';
-
-                        [$sh, $sm] = explode(':', $startTime);
-                        [$eh, $em] = explode(':', $endTime);
-
-                        LessonSchedule::updateOrCreate(
-                            [
-                                'hemis_id' => $item['id'],
-                                'lesson_date' => $date->toDateString(),
-                                'auditorium_code' => $auditorium->code,
-                            ],
-                            [
-                                'subject_name' => $item['subject']['name'] ?? '',
-                                'employee_name' => $item['employee']['name'] ?? '',
-                                'group_name' => $item['group']['name'] ?? '',
-                                'training_type_name' => $item['trainingType']['name'] ?? null,
-                                'lesson_pair_name' => $item['lessonPair']['name'] ?? null,
-                                'start_time' => $startTime,
-                                'end_time' => $endTime,
-                                'start_timestamp' => $date->copy()->setTime((int) $sh, (int) $sm),
-                                'end_timestamp' => $date->copy()->setTime((int) $eh, (int) $em),
-                                'raw_data' => $item,
-                            ]
-                        );
-                        $synced++;
-                    }
-
-                    $page++;
-                } while ($pagination && $page <= $pagination['pageCount']);
+                $synced += $this->syncAuditoriumSchedule($auditorium->code);
             } catch (\Exception $e) {
                 Log::warning("Failed to sync schedule for auditorium {$auditorium->code}: {$e->getMessage()}");
             }
         }
+
+        return $synced;
+    }
+
+    /**
+     * Sync today's lesson schedules for a single auditorium from HEMIS API.
+     *
+     * @param string $auditoriumCode
+     * @return int Number of lesson schedules synced
+     */
+    public function syncAuditoriumSchedule(string $auditoriumCode): int
+    {
+        $timezone = config('app.timezone');
+        $today = now($timezone);
+        $todayDate = $today->toDateString();
+        $startOfDay = $today->copy()->startOfDay()->timestamp;
+        $endOfDay = $today->copy()->endOfDay()->timestamp;
+
+        $synced = 0;
+        $page = 1;
+        $limit = 200;
+
+        do {
+            $response = $this->getSchedule([
+                '_auditorium' => $auditoriumCode,
+                'lesson_date_from' => $startOfDay,
+                'lesson_date_to' => $endOfDay,
+                'limit' => $limit,
+                'page' => $page,
+            ]);
+
+            $items = $response['data']['items'] ?? [];
+            $pagination = $response['data']['pagination'] ?? null;
+
+            foreach ($items as $item) {
+                $date = \Carbon\Carbon::createFromTimestamp(
+                    $item['lesson_date'],
+                    $timezone
+                )->startOfDay();
+
+                // Skip lessons not from today
+                if ($date->toDateString() !== $todayDate) {
+                    continue;
+                }
+
+                $startTime = $item['lessonPair']['start_time'] ?? '00:00';
+                $endTime = $item['lessonPair']['end_time'] ?? '00:00';
+
+                [$sh, $sm] = explode(':', $startTime);
+                [$eh, $em] = explode(':', $endTime);
+
+                LessonSchedule::updateOrCreate(
+                    [
+                        'hemis_id' => $item['id'],
+                        'lesson_date' => $date->toDateString(),
+                        'auditorium_code' => $auditoriumCode,
+                    ],
+                    [
+                        'subject_name' => $item['subject']['name'] ?? '',
+                        'employee_name' => $item['employee']['name'] ?? '',
+                        'group_name' => $item['group']['name'] ?? '',
+                        'training_type_name' => $item['trainingType']['name'] ?? null,
+                        'lesson_pair_name' => $item['lessonPair']['name'] ?? null,
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'start_timestamp' => $date->copy()->setTime((int) $sh, (int) $sm),
+                        'end_timestamp' => $date->copy()->setTime((int) $eh, (int) $em),
+                        'raw_data' => $item,
+                    ]
+                );
+                $synced++;
+            }
+
+            $page++;
+        } while ($pagination && $page <= $pagination['pageCount']);
 
         return $synced;
     }

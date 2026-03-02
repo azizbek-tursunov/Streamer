@@ -5,9 +5,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
+    return redirect()->route('dashboard');
 })->name('home');
 
 Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
@@ -57,6 +55,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('auditoriums/reorder-buildings', [\App\Http\Controllers\AuditoriumController::class, 'reorderBuildings'])->middleware('permission:view-auditoriums')->name('auditoriums.reorder-buildings');
     Route::put('auditoriums/bulk-assign-faculty', [\App\Http\Controllers\AuditoriumController::class, 'bulkAssignFaculty'])->middleware('permission:manage-auditorium-faculty')->name('auditoriums.bulk-assign-faculty');
     Route::put('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'update'])->middleware('permission:manage-auditorium-cameras')->name('auditoriums.update');
+
+    // --- Lesson Schedules ---
+    Route::middleware(['permission:view-lesson-schedules'])->group(function () {
+        Route::get('lesson-schedules', [\App\Http\Controllers\LessonScheduleController::class, 'index'])->name('lesson-schedules.index');
+    });
+    
+    Route::middleware(['permission:sync-lesson-schedules'])->group(function () {
+        Route::post('lesson-schedules/sync-init', [\App\Http\Controllers\LessonScheduleController::class, 'syncInit'])->name('lesson-schedules.sync-init');
+        Route::post('lesson-schedules/sync/{code}', [\App\Http\Controllers\LessonScheduleController::class, 'syncAuditorium'])->name('lesson-schedules.sync-auditorium');
+    });
 
     // --- Feedbacks ---
     Route::get('feedbacks', [\App\Http\Controllers\LessonFeedbackController::class, 'index'])->middleware('permission:view-feedbacks')->name('feedbacks.index');
