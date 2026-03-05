@@ -23,6 +23,7 @@ class LessonFeedback extends Model
         'end_time',
         'type',
         'message',
+        'snapshot_path',
     ];
 
     public function user(): BelongsTo

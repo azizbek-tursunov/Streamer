@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import Pagination from '@/components/Pagination.vue';
-import { ThumbsUp, ThumbsDown, MessageSquareText, Calendar, Clock, MapPin, Users, User, Search, Edit, Eye, Trash2 } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { ThumbsUp, ThumbsDown, MessageSquareText, Calendar, Clock, MapPin, Users, User, Search, Edit, Eye, Trash2, Download, ImageIcon } from 'lucide-vue-next';
 
 const props = defineProps<{
     feedbacks: {
@@ -20,6 +21,7 @@ const props = defineProps<{
             end_time: string | null;
             type: 'good' | 'bad';
             message: string | null;
+            snapshot_url: string | null;
             created_at: string;
             user?: { name: string };
             auditorium?: { name: string; building?: { name: string } };
@@ -49,6 +51,18 @@ watch([search, type, date, building], debounce(([searchVal, typeVal, dateVal, bu
     }, { preserveState: true, replace: true, preserveScroll: true });
 }, 300));
 
+const previewImage = ref<string | null>(null);
+
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+    if (search.value) params.set('search', search.value);
+    if (type.value !== 'all') params.set('type', type.value);
+    if (date.value) params.set('date', date.value);
+    if (building.value !== 'all') params.set('building', building.value);
+    const qs = params.toString();
+    return '/feedbacks/export' + (qs ? '?' + qs : '');
+});
+
 const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const yyyy = date.getFullYear();
@@ -77,6 +91,12 @@ const formatDate = (dateStr: string) => {
                         O'qituvchilar va ma'muriyat tomonidan dars jarayonlari haqida qoldirilgan fikr-mulohazalar.
                     </p>
                 </div>
+                <a :href="exportUrl">
+                    <Button variant="outline" size="sm" class="gap-2">
+                        <Download class="h-4 w-4" />
+                        Excel
+                    </Button>
+                </a>
             </div>
 
             <!-- Filters -->
@@ -139,6 +159,7 @@ const formatDate = (dateStr: string) => {
                 <table class="w-full text-sm">
                     <thead class="bg-muted/50 border-b">
                         <tr>
+                            <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground">Rasm</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Dars</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">O'qituvchi</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[100px]">Guruh</th>
@@ -151,7 +172,7 @@ const formatDate = (dateStr: string) => {
                     </thead>
                     <tbody>
                         <tr v-if="feedbacks.data.length === 0">
-                            <td colspan="8" class="p-8 text-center text-muted-foreground">
+                            <td colspan="9" class="p-8 text-center text-muted-foreground">
                                 <div class="flex flex-col items-center justify-center gap-2">
                                     <MessageSquareText class="h-8 w-8 opacity-20" />
                                     <span>Hozircha hech qanday tahlil qoldirilmagan.</span>
@@ -159,6 +180,20 @@ const formatDate = (dateStr: string) => {
                             </td>
                         </tr>
                         <tr v-for="feedback in feedbacks.data" :key="feedback.id" class="border-b transition-colors hover:bg-muted/50">
+                            <!-- Snapshot -->
+                            <td class="p-4 align-top text-center w-[60px]">
+                                <button
+                                    v-if="feedback.snapshot_url"
+                                    @click="previewImage = feedback.snapshot_url"
+                                    class="inline-block rounded overflow-hidden border border-border hover:ring-2 hover:ring-primary transition-all cursor-pointer"
+                                >
+                                    <img :src="feedback.snapshot_url" class="h-10 w-16 object-cover" alt="Snapshot" />
+                                </button>
+                                <span v-else class="text-muted-foreground/30">
+                                    <ImageIcon class="h-4 w-4 mx-auto" />
+                                </span>
+                            </td>
+
                             <!-- Lesson -->
                             <td class="p-4 align-top w-[200px]">
                                 <span class="font-medium" :title="feedback.lesson_name ?? ''">
@@ -237,5 +272,16 @@ const formatDate = (dateStr: string) => {
                 <Pagination :links="feedbacks.links" />
             </div>
         </div>
+
+        <!-- Image Preview Modal -->
+        <Teleport to="body">
+            <div
+                v-if="previewImage"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 cursor-pointer"
+                @click="previewImage = null"
+            >
+                <img :src="previewImage" class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl" alt="Preview" />
+            </div>
+        </Teleport>
     </AppLayout>
 </template>
