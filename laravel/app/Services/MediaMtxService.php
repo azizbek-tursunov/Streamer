@@ -26,28 +26,34 @@ class MediaMtxService
     public function addPath(Camera $camera): void
     {
         $pathName = $this->getPathName($camera);
+        $rtspUrl = $camera->rtsp_url;
+        $mtxUser = config('services.mediamtx.user');
+        $mtxPass = config('services.mediamtx.password');
 
-        // Native RTSP source proxy: MediaMTX pulls directly from camera.
-        // No FFmpeg middleman = faster startup (~1s vs ~3s).
-        // sourceOnDemand: only connects when a viewer requests the stream.
+        // FFmpeg relay with fast-start flags for quick on-demand startup.
+        // -c:v copy = no video transcoding (near 0% CPU)
+        // -c:a aac = transcode audio to AAC for HLS/browser compatibility
+        // -fflags nobuffer -flags low_delay = reduce startup latency
+        $ffmpegCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
+            ." -fflags nobuffer -flags low_delay -analyzeduration 500000 -probesize 500000"
+            ." -rtsp_transport tcp -i {$rtspUrl}"
+            ." -c:v copy -c:a aac -f rtsp rtsp://{$mtxUser}:{$mtxPass}@127.0.0.1:8554/{$pathName}";
+
         $payload = [
-            'source' => $camera->rtsp_url,
-            'sourceProtocol' => 'tcp',
-            'sourceOnDemand' => true,
-            'sourceOnDemandStartTimeout' => '10s',
-            'sourceOnDemandCloseAfter' => '30s',
+            'source' => 'publisher',
+            'runOnDemand' => "sh -c '{$ffmpegCmd} > /tmp/ffmpeg_{$camera->id}.log 2>&1'",
+            'runOnDemandRestart' => true,
+            'runOnDemandStartTimeout' => '10s',
+            'runOnDemandCloseAfter' => '30s',
         ];
 
         if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
-            // YouTube needs FFmpeg for RTMP push + AAC audio transcoding.
-            // Runs only when the stream is ready (viewer watching or YouTube active).
+            // YouTube RTMP push starts when stream is ready, uses already-transcoded AAC audio
             $ytCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
-                ." -i rtsp://".config('services.mediamtx.user').':'.config('services.mediamtx.password')."@127.0.0.1:8554/{$pathName}"
-                ." -c:v copy -c:a aac -f flv \"{$camera->youtube_url}\"";
+                ." -i rtsp://{$mtxUser}:{$mtxPass}@127.0.0.1:8554/{$pathName}"
+                ." -c copy -f flv \"{$camera->youtube_url}\"";
             $payload['runOnReady'] = "sh -c '{$ytCmd} > /tmp/yt_{$camera->id}.log 2>&1'";
             $payload['runOnReadyRestart'] = true;
-            // Keep stream always on so YouTube doesn't drop
-            $payload['sourceOnDemand'] = false;
         }
 
         Log::info('MediaMTX: Adding path', ['camera_id' => $camera->id, 'path' => $pathName]);
