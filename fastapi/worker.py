@@ -15,7 +15,8 @@ from ultralytics import YOLO
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PREFIX = os.getenv("REDIS_PREFIX", "univision-database-")
-CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE", 0.3))
+CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE", 0.5))
+YOLO_MODEL = os.getenv("YOLO_MODEL", "yolov8x.pt")
 PERSON_CLASS_ID = 0  # COCO class 0 = person
 
 # Redis key names (with Laravel prefix)
@@ -24,10 +25,10 @@ RESULTS_KEY = f"{REDIS_PREFIX}yolo:results"
 
 # Initialize
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
-model = YOLO("yolov8n.pt")  # Nano model (~6MB, fast inference)
+model = YOLO(YOLO_MODEL)
 
 print(f"[YOLO Worker] Started. Redis={REDIS_HOST}:{REDIS_PORT}, Prefix={REDIS_PREFIX}")
-print(f"[YOLO Worker] Model loaded: yolov8n.pt")
+print(f"[YOLO Worker] Model loaded: {YOLO_MODEL}, confidence={CONFIDENCE_THRESHOLD}")
 print(f"[YOLO Worker] Waiting for jobs on '{JOBS_KEY}'...")
 
 
