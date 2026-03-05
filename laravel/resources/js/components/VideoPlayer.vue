@@ -97,11 +97,6 @@ const initPlayer = () => {
             enableWorker: true,
             lowLatencyMode: true,
             backBufferLength: 90,
-            xhrSetup: (xhr, url) => {
-                if (url.includes(':8888')) {
-                     xhr.setRequestHeader('Authorization', 'Basic ' + btoa('viewer:viewer'));
-                }
-            },
         });
 
         const loadStream = () => {

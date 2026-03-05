@@ -72,8 +72,7 @@ const pastLessons = computed(() => {
 const streamUrl = computed(() => {
     if (!props.auditorium.camera) return '';
     if (typeof window === 'undefined') return '';
-    const host = window.location.hostname;
-    return `http://viewer:viewer@${host}:8888/cam_${props.auditorium.camera.id}/index.m3u8`;
+    return `/hls/cam_${props.auditorium.camera.id}/index.m3u8`;
 });
 
 const showFeedbackDialog = ref(false);

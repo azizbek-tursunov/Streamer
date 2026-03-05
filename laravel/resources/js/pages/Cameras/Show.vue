@@ -26,9 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const getStreamUrl = (camera: Camera) => {
-    const host = window.location.hostname;
-    // Use viewer credentials
-    return `http://viewer:viewer@${host}:8888/cam_${camera.id}/index.m3u8`;
+    return `/hls/cam_${camera.id}/index.m3u8`;
 };
 
 const toggleStream = (camera: Camera) => {

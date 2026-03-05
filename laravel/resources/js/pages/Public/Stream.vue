@@ -18,9 +18,7 @@ const selectedCamera = computed(() =>
 );
 
 const getStreamUrl = (camera: Camera) => {
-    const host = window.location.hostname;
-    // Embed viewer credentials for HLS playback compatibility
-    return `http://viewer:viewer@${host}:8888/cam_${camera.id}/index.m3u8`;
+    return `/hls/cam_${camera.id}/index.m3u8`;
 };
 </script>
 
