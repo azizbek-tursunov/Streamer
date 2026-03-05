@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { reactive, computed, onMounted, onUnmounted } from 'vue';
+import { reactive, computed, ref, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import Pagination from '@/components/Pagination.vue';
 
@@ -15,8 +15,16 @@ const props = defineProps<{
     cameras: {
         data: Camera[];
         links: any[];
+        per_page: number;
     };
 }>();
+
+const gridSizes = [16, 24, 32] as const;
+const currentPerPage = computed(() => props.cameras.per_page || 16);
+
+const changeGridSize = (size: number) => {
+    router.get('/cameras/grid', { per_page: size }, { preserveState: true, preserveScroll: true });
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Kameralar', href: '/cameras' },
@@ -93,23 +101,36 @@ onUnmounted(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4">
             <!-- Toolbar -->
-            <div class="flex items-center gap-4 px-4 pt-4 flex-wrap">
+            <div class="flex items-center justify-between gap-4 px-4 pt-4 flex-wrap">
                 <span class="text-sm text-muted-foreground">
                     {{ camerasWithSnapshots.length }} ta kamera
                 </span>
+                <div class="flex items-center gap-1">
+                    <span class="text-xs text-muted-foreground mr-2">Ko'rsatish:</span>
+                    <Button
+                        v-for="size in gridSizes"
+                        :key="size"
+                        :variant="currentPerPage === size ? 'default' : 'outline'"
+                        size="sm"
+                        class="h-7 px-3 text-xs"
+                        @click="changeGridSize(size)"
+                    >
+                        {{ size }}
+                    </Button>
+                </div>
             </div>
 
             <!-- CCTV Grid -->
             <div v-if="camerasWithSnapshots.length > 0" class="grid flex-1 content-start grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 p-4 overflow-auto">
-                <div 
-                    v-for="camera in camerasWithSnapshots" 
+                <div
+                    v-for="camera in camerasWithSnapshots"
                     :key="camera.id"
-                    class="relative aspect-video bg-black group overflow-hidden rounded-lg"
+                    class="relative bg-black group overflow-hidden rounded-lg flex flex-col"
                 >
-                    <div class="relative h-full w-full overflow-hidden">
-                        <img 
+                    <div class="relative aspect-video w-full overflow-hidden">
+                        <img
                             v-if="camera.displaySnapshotUrl"
-                            :src="camera.displaySnapshotUrl" 
+                            :src="camera.displaySnapshotUrl"
                             :alt="camera.name"
                             class="h-full w-full object-cover transition-transform duration-300"
                             :style="{ transform: `rotate(${camera.rotation || 0}deg) ${Math.abs(camera.rotation || 0) % 180 === 90 ? 'scale(1.777)' : ''}` }"
@@ -117,22 +138,22 @@ onUnmounted(() => {
                         <div v-else class="flex h-full w-full items-center justify-center bg-zinc-800">
                             <span class="text-xs text-muted-foreground p-4 text-center">Rasm yo'q</span>
                         </div>
-                    </div>
-                    
-                    <!-- Camera Overlay -->
-                    <div class="absolute inset-x-0 top-0 bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity flex justify-between items-start pointer-events-none">
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-white text-xs font-mono bg-black/50 px-1 rounded">{{ camera.name }}</span>
-                            <span v-if="camera.faculty" class="text-white/80 text-[10px] font-mono bg-black/50 px-1 rounded">{{ camera.faculty.name }}</span>
-                        </div>
-                        <div class="h-2 w-2 rounded-full bg-red-500 animate-pulse" v-if="camera.is_active" title="Live"></div>
+
+                        <!-- Live indicator -->
+                        <div class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-pulse" v-if="camera.is_active" title="Live"></div>
+
+                        <Link
+                            :href="`/cameras/${camera.id}`"
+                            class="absolute inset-0 z-10 focus:ring-2 focus:ring-inset focus:ring-primary"
+                            aria-label="Kamerani ochish"
+                        ></Link>
                     </div>
 
-                    <Link 
-                        :href="`/cameras/${camera.id}`" 
-                        class="absolute inset-0 z-10 focus:ring-2 focus:ring-inset focus:ring-primary"
-                        aria-label="Kamerani ochish"
-                    ></Link>
+                    <!-- Card Footer -->
+                    <div class="px-2 py-1.5 bg-zinc-900 text-white">
+                        <p class="text-xs font-medium truncate">{{ camera.name }}</p>
+                        <p v-if="camera.faculty" class="text-[10px] text-zinc-400 truncate">{{ camera.faculty.name }}</p>
+                    </div>
                 </div>
             </div>
             

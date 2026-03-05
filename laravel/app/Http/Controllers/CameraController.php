@@ -48,9 +48,11 @@ class CameraController extends Controller
 
     public function grid(Request $request)
     {
+        $perPage = in_array((int) $request->input('per_page'), [16, 24, 32]) ? (int) $request->input('per_page') : 16;
+
         $paginator = Camera::with(['faculty'])
             ->where('is_active', true)
-            ->paginate(24)
+            ->paginate($perPage)
             ->withQueryString();
 
         $paginator->getCollection()->transform(function ($camera) {
