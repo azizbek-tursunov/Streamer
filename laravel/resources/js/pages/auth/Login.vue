@@ -19,10 +19,10 @@ defineProps<{
 
 <template>
     <AuthBase
-        title="Log in to your account"
-        description="Enter your email and password below to log in"
+        title="Tizimga kirish"
+        description="Email va parolingizni kiriting"
     >
-        <Head title="Log in" />
+        <Head title="Kirish" />
 
         <div
             v-if="status"
@@ -39,7 +39,7 @@ defineProps<{
         >
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
+                    <Label for="email">Elektron pochta</Label>
                     <Input
                         id="email"
                         type="email"
@@ -55,14 +55,14 @@ defineProps<{
 
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
-                        <Label for="password">Password</Label>
+                        <Label for="password">Parol</Label>
                         <TextLink
                             v-if="canResetPassword"
                             href="/forgot-password"
                             class="text-sm"
                             :tabindex="5"
                         >
-                            Forgot password?
+                            Parolni unutdingizmi?
                         </TextLink>
                     </div>
                     <Input
@@ -72,7 +72,7 @@ defineProps<{
                         required
                         :tabindex="2"
                         autocomplete="current-password"
-                        placeholder="Password"
+                        placeholder="Parol"
                     />
                     <InputError :message="errors.password" />
                 </div>
@@ -80,7 +80,7 @@ defineProps<{
                 <div class="flex items-center justify-between">
                     <Label for="remember" class="flex items-center space-x-3">
                         <Checkbox id="remember" name="remember" :tabindex="3" />
-                        <span>Remember me</span>
+                        <span>Eslab qolish</span>
                     </Label>
                 </div>
 
@@ -120,8 +120,8 @@ defineProps<{
                 class="text-center text-sm text-muted-foreground"
                 v-if="canRegister"
             >
-                Don't have an account?
-                <TextLink href="/register" :tabindex="5">Sign up</TextLink>
+                Hisobingiz yo'qmi?
+                <TextLink href="/register" :tabindex="5">Ro'yxatdan o'tish</TextLink>
             </div>
         </Form>
     </AuthBase>
