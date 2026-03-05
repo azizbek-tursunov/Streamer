@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\HemisIntegrations\HemisApiService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Disable Vite's Link header prefetching — the large headers cause
+        // 502 errors from the upstream OpenResty proxy (buffer overflow)
+        Vite::prefetch(concurrency: 0);
+
         // Super-admin bypasses all permission checks (standard Spatie pattern)
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super-admin') ? true : null;
