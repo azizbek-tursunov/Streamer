@@ -43,7 +43,7 @@ hls: yes
 hlsAddress: :8888
 hlsAlwaysRemux: no
 hlsVariant: lowLatency
-hlsSegmentCount: 3
+hlsSegmentCount: 7
 hlsPartDuration: 200ms
 
 ###############################################
