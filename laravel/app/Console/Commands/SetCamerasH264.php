@@ -31,7 +31,7 @@ class SetCamerasH264 extends Command
 
         foreach ($cameras as $camera) {
             $label = "{$camera->name} (ID: {$camera->id}, IP: {$camera->ip_address})";
-            $url = "http://{$camera->ip_address}/ISAPI/Streaming/channels/101/video";
+            $url = "http://{$camera->ip_address}/ISAPI/Streaming/channels/101";
 
             try {
                 $http = Http::timeout(10);
