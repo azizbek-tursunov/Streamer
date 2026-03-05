@@ -6,7 +6,6 @@ use App\Models\Camera;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
 
 class CaptureSnapshot implements ShouldQueue
 {
@@ -50,14 +49,7 @@ class CaptureSnapshot implements ShouldQueue
             $response = $http->get($url);
 
             if ($response->successful() && file_exists($outputPath)) {
-                if (filesize($outputPath) > 1000) {
-                    // Immediately dispatch YOLO people counting for this snapshot
-                    Redis::lpush('yolo:jobs', json_encode([
-                        'camera_id' => $this->camera->id,
-                        'image_path' => $outputPath,
-                        'requested_at' => now()->toIso8601String(),
-                    ]));
-                } else {
+                if (filesize($outputPath) <= 1000) {
                     unlink($outputPath);
                     Log::error("Snapshot: HTTP returned a tiny file (likely auth error or XML) for Camera {$this->camera->id}");
                 }

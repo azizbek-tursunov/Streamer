@@ -15,8 +15,8 @@ from ultralytics import YOLO
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PREFIX = os.getenv("REDIS_PREFIX", "univision-database-")
-CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE", 0.5))
-YOLO_MODEL = os.getenv("YOLO_MODEL", "yolov8x.pt")
+CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE", 0.3))
+YOLO_MODEL = os.getenv("YOLO_MODEL", "yolov8n.pt")
 PERSON_CLASS_ID = 0  # COCO class 0 = person
 
 # Redis key names (with Laravel prefix)

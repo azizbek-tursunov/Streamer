@@ -80,8 +80,8 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - YOLO_CONFIDENCE=0.5
-      - YOLO_MODEL=yolov8x.pt
+      - YOLO_CONFIDENCE=0.3
+      - YOLO_MODEL=yolov8n.pt
     networks:
       - univision-network
     depends_on:

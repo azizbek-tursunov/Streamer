@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\CaptureSnapshot;
+use App\Jobs\DispatchPeopleCounting;
 use App\Jobs\PruneSnapshots;
 use App\Jobs\SyncLessonSchedules;
 use App\Models\Camera;
@@ -19,6 +20,9 @@ Schedule::call(function () {
             ->delay(now()->addSeconds($index)); // 1 second apart
     });
 })->everyFiveMinutes();
+
+// Count people via YOLO every 5 minutes
+Schedule::job(new DispatchPeopleCounting)->everyFiveMinutes();
 
 // Prune old snapshots every hour
 Schedule::job(new PruneSnapshots)->hourly();
