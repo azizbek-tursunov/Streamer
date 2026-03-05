@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\FeedbackExport;
+use App\Jobs\CaptureFeedbackSnapshot;
 use App\Models\LessonFeedback;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Response;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LessonFeedbackController extends Controller
 {
@@ -81,33 +83,25 @@ class LessonFeedbackController extends Controller
 
         $validated['user_id'] = auth()->id();
 
-        // Capture current camera snapshot if auditorium has a camera
+        $feedback = LessonFeedback::create($validated);
+
+        // Dispatch job to capture a fresh snapshot from the camera
         if (! empty($validated['auditorium_id'])) {
-            $auditorium = \App\Models\Hemis\Auditorium::with('camera')->find($validated['auditorium_id']);
+            $auditorium = \App\Models\Hemis\Auditorium::find($validated['auditorium_id']);
             if ($auditorium?->camera_id) {
-                $snapshotDir = storage_path('app/public/snapshots');
-                $files = glob($snapshotDir."/camera_{$auditorium->camera_id}_*.jpg");
-                if (! empty($files)) {
-                    usort($files, fn ($a, $b) => filemtime($b) - filemtime($a));
-                    $feedbackDir = storage_path('app/public/feedback_snapshots');
-                    if (! is_dir($feedbackDir)) {
-                        mkdir($feedbackDir, 0755, true);
-                    }
-                    $filename = 'feedback_'.now()->format('Y-m-d_H-i-s').'_cam'.$auditorium->camera_id.'.jpg';
-                    copy($files[0], $feedbackDir.'/'.$filename);
-                    $validated['snapshot_path'] = 'feedback_snapshots/'.$filename;
+                $camera = \App\Models\Camera::find($auditorium->camera_id);
+                if ($camera) {
+                    CaptureFeedbackSnapshot::dispatch($feedback, $camera);
                 }
             }
         }
-
-        LessonFeedback::create($validated);
 
         return redirect()->back()->with('success', 'Fikr-mulohaza muvaffaqiyatli saqlandi!');
     }
 
     public function export(Request $request)
     {
-        $query = LessonFeedback::with(['user', 'auditorium'])->latest();
+        $query = LessonFeedback::query()->latest();
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -132,42 +126,8 @@ class LessonFeedbackController extends Controller
             });
         }
 
-        $feedbacks = $query->get();
+        $filename = 'dars_tahlili_'.now()->format('Y-m-d').'.xlsx';
 
-        $rows = [];
-        $rows[] = ['#', 'Sana', 'Bino', 'Auditoriya', 'Fan', "O'qituvchi", 'Guruh', 'Vaqt', 'Holati', 'Mulohaza', 'Kiritdi'];
-
-        foreach ($feedbacks as $i => $f) {
-            $rows[] = [
-                $i + 1,
-                $f->created_at->format('d.m.Y H:i'),
-                $f->auditorium?->building_name ?? '',
-                $f->auditorium?->name ?? '',
-                $f->lesson_name ?? '',
-                $f->employee_name ?? '',
-                $f->group_name ?? '',
-                ($f->start_time ? substr($f->start_time, 0, 5) : '?').' - '.($f->end_time ? substr($f->end_time, 0, 5) : '?'),
-                $f->type === 'good' ? 'Ijobiy' : 'Salbiy',
-                $f->message ?? '',
-                $f->user?->name ?? '',
-            ];
-        }
-
-        $callback = function () use ($rows) {
-            $file = fopen('php://output', 'w');
-            // UTF-8 BOM for Excel
-            fwrite($file, "\xEF\xBB\xBF");
-            foreach ($rows as $row) {
-                fputcsv($file, $row, ';');
-            }
-            fclose($file);
-        };
-
-        $filename = 'dars_tahlili_'.now()->format('Y-m-d').'.csv';
-
-        return Response::stream($callback, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ]);
+        return Excel::download(new FeedbackExport($query), $filename);
     }
 }
