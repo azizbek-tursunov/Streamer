@@ -25,9 +25,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.camera.name, href: '#' },
 ];
 
-const getStreamUrl = (camera: Camera) => {
-    return `/hls/cam_${camera.id}/index.m3u8`;
-};
+const getStreamUrl = (camera: Camera) => `/hls/cam_${camera.id}/index.m3u8`;
+const getWhepUrl = (camera: Camera) => `/webrtc/cam_${camera.id}/whep`;
 
 const toggleStream = (camera: Camera) => {
     if (camera.is_streaming_to_youtube) {
@@ -82,9 +81,10 @@ const togglePublic = (camera: Camera) => {
             <div class="grid gap-6 md:grid-cols-3">
                 <Card class="md:col-span-2 overflow-hidden bg-black border-0 ring-1 ring-border">
                     <div :class="(camera.rotation || 0) % 180 !== 0 ? 'aspect-[9/16] max-h-[80vh] mx-auto' : 'aspect-video'" class="relative w-full transition-all duration-300">
-                         <VideoPlayer 
-                            v-if="camera.is_active" 
-                            :stream-url="getStreamUrl(camera)" 
+                         <VideoPlayer
+                            v-if="camera.is_active"
+                            :stream-url="getStreamUrl(camera)"
+                            :whep-url="getWhepUrl(camera)"
                             :autoplay="true"
                             :rotation="camera.rotation"
                         />

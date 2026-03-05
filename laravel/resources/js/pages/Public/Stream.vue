@@ -17,9 +17,8 @@ const selectedCamera = computed(() =>
     props.cameras.find(c => c.id === selectedCameraId.value)
 );
 
-const getStreamUrl = (camera: Camera) => {
-    return `/hls/cam_${camera.id}/index.m3u8`;
-};
+const getStreamUrl = (camera: Camera) => `/hls/cam_${camera.id}/index.m3u8`;
+const getWhepUrl = (camera: Camera) => `/webrtc/cam_${camera.id}/whep`;
 </script>
 
 <template>
@@ -76,10 +75,11 @@ const getStreamUrl = (camera: Camera) => {
                 <!-- Column 2: Video Player -->
                 <div class="lg:col-span-3 flex flex-col gap-4">
                     <Card class="flex-1 overflow-hidden bg-black relative flex items-center justify-center border-0 ring-1 ring-border">
-                        <VideoPlayer 
-                            v-if="selectedCamera" 
+                        <VideoPlayer
+                            v-if="selectedCamera"
                             :key="selectedCamera.id"
-                            :stream-url="getStreamUrl(selectedCamera)" 
+                            :stream-url="getStreamUrl(selectedCamera)"
+                            :whep-url="getWhepUrl(selectedCamera)"
                             :autoplay="true"
                         />
                         <div v-else class="text-white/50">

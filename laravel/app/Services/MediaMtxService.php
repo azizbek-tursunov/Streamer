@@ -26,31 +26,28 @@ class MediaMtxService
     public function addPath(Camera $camera): void
     {
         $pathName = $this->getPathName($camera);
-        $rtspUrl = $camera->rtsp_url;
 
-        // On-demand FFmpeg relay: starts ONLY when a viewer requests this stream,
-        // stops 30 seconds after the last viewer disconnects.
-        // This scales to 200+ cameras (only ~5-15 active at any time).
-        //
-        // -c:v copy = no video transcoding (near 0% CPU)
-        // -c:a aac = transcode audio to AAC for browser compatibility
-        // Using 127.0.0.1 to avoid IPv6 issues
-        $innerCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp -i {$rtspUrl} -c:v copy -c:a aac -f rtsp rtsp://".config('services.mediamtx.user').':'.config('services.mediamtx.password')."@127.0.0.1:8554/{$pathName}";
-
-        $ffmpegCmd = "sh -c '{$innerCmd} > /tmp/ffmpeg_{$camera->id}.log 2>&1'";
-
+        // Native RTSP source proxy: MediaMTX pulls directly from camera.
+        // No FFmpeg middleman = faster startup (~1s vs ~3s).
+        // sourceOnDemand: only connects when a viewer requests the stream.
         $payload = [
-            'source' => 'publisher',
-            'runOnDemand' => $ffmpegCmd,
-            'runOnDemandRestart' => true,
-            'runOnDemandStartTimeout' => '10s',
-            'runOnDemandCloseAfter' => '30s',
+            'source' => $camera->rtsp_url,
+            'sourceProtocol' => 'tcp',
+            'sourceOnDemand' => true,
+            'sourceOnDemandStartTimeout' => '10s',
+            'sourceOnDemandCloseAfter' => '30s',
         ];
 
         if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
-            // YouTube stream: starts when the on-demand stream becomes ready
-            $payload['runOnReady'] = "sh -c '/usr/bin/ffmpeg -i rtsp://127.0.0.1:8554/{$pathName} -c copy -f flv \"{$camera->youtube_url}\" >> /tmp/ffmpeg_{$camera->id}.log 2>&1'";
+            // YouTube needs FFmpeg for RTMP push + AAC audio transcoding.
+            // Runs only when the stream is ready (viewer watching or YouTube active).
+            $ytCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
+                ." -i rtsp://".config('services.mediamtx.user').':'.config('services.mediamtx.password')."@127.0.0.1:8554/{$pathName}"
+                ." -c:v copy -c:a aac -f flv \"{$camera->youtube_url}\"";
+            $payload['runOnReady'] = "sh -c '{$ytCmd} > /tmp/yt_{$camera->id}.log 2>&1'";
             $payload['runOnReadyRestart'] = true;
+            // Keep stream always on so YouTube doesn't drop
+            $payload['sourceOnDemand'] = false;
         }
 
         Log::info('MediaMTX: Adding path', ['camera_id' => $camera->id, 'path' => $pathName]);

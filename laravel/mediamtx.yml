@@ -1,17 +1,12 @@
 ###############################################
 # General
 
-# Log level
 logLevel: info
-
-# Destination of the logs
 logDestinations: [stdout]
 
 ###############################################
 # API
 
-# Enable the HTTP API
-# Enable the HTTP API
 api: yes
 apiAddress: :9997
 
@@ -32,25 +27,34 @@ authInternalUsers:
 ###############################################
 # RTSP
 
-# Enable the RTSP server
 rtsp: yes
 rtspAddress: :8554
 
 ###############################################
 # RTMP
 
-# Enable the RTMP server
 rtmp: yes
 rtmpAddress: :1935
 
 ###############################################
 # HLS
 
-# Enable the HLS server
 hls: yes
 hlsAddress: :8888
 hlsAlwaysRemux: no
 hlsVariant: lowLatency
+hlsSegmentCount: 3
+hlsPartDuration: 200ms
+
+###############################################
+# WebRTC
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+webrtcIPsFromInterfaces: yes
+webrtcAdditionalHosts: [84.54.115.89]
 
 ###############################################
 # Path settings

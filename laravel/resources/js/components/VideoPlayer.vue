@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 
 const props = defineProps<{
     streamUrl: string;
+    whepUrl?: string;
     autoplay?: boolean;
     rotation?: number;
 }>();
@@ -18,6 +19,7 @@ const isMuted = ref(true);
 const isFullscreen = ref(false);
 const showControls = ref(false);
 let hls: Hls | null = null;
+let peerConnection: RTCPeerConnection | null = null;
 let retryCount = 0;
 const MAX_RETRIES = 10;
 const RETRY_DELAY = 2000;
@@ -28,14 +30,11 @@ const containerWidth = ref(0);
 const containerHeight = ref(0);
 
 const transformStyle = computed(() => {
-    const r = Number(props.rotation || 0); // Ensure number
+    const r = Number(props.rotation || 0);
     let style: any = {
         transform: `rotate(${r}deg)`
     };
     if (r % 180 !== 0) {
-        // Rotated 90 or 270 degrees
-        // Make the video element's width match container's height, and height match container's width.
-        // Once rotated, it will perfectly cover the container bounds without scaling tricks.
         style.width = `${containerHeight.value}px`;
         style.height = `${containerWidth.value}px`;
     } else {
@@ -64,7 +63,7 @@ const toggleMute = () => {
 
 const toggleFullscreen = async () => {
     if (!containerRef.value) return;
-    
+
     if (!document.fullscreenElement) {
         await containerRef.value.requestFullscreen();
         isFullscreen.value = true;
@@ -84,13 +83,95 @@ const onMouseMove = () => {
     }, 3000);
 };
 
-const initPlayer = () => {
+const cleanupWebRTC = () => {
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+};
+
+const cleanupHls = () => {
+    if (hls) {
+        hls.destroy();
+        hls = null;
+    }
+};
+
+const initWebRTC = async (): Promise<boolean> => {
+    if (!videoRef.value || !props.whepUrl) return false;
+
+    cleanupWebRTC();
+
+    try {
+        const pc = new RTCPeerConnection({
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        });
+        peerConnection = pc;
+
+        pc.addTransceiver('video', { direction: 'recvonly' });
+        pc.addTransceiver('audio', { direction: 'recvonly' });
+
+        pc.ontrack = (event) => {
+            if (videoRef.value && event.streams[0]) {
+                videoRef.value.srcObject = event.streams[0];
+                isLoading.value = false;
+                if (props.autoplay) {
+                    videoRef.value.play().catch(() => {});
+                    isPlaying.value = true;
+                }
+            }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+            if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                cleanupWebRTC();
+                initHls();
+            }
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        // Wait for ICE gathering to complete (or timeout after 1s)
+        await new Promise<void>((resolve) => {
+            if (pc.iceGatheringState === 'complete') { resolve(); return; }
+            const timeout = setTimeout(resolve, 1000);
+            pc.onicegatheringstatechange = () => {
+                if (pc.iceGatheringState === 'complete') {
+                    clearTimeout(timeout);
+                    resolve();
+                }
+            };
+        });
+
+        const response = await fetch(props.whepUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/sdp' },
+            body: pc.localDescription!.sdp,
+        });
+
+        if (!response.ok) return false;
+
+        const answerSdp = await response.text();
+        await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+        return true;
+    } catch {
+        cleanupWebRTC();
+        return false;
+    }
+};
+
+const initHls = () => {
     if (!videoRef.value) return;
-    isLoading.value = true;
-    retryCount = 0;
+
+    // Clear any WebRTC srcObject before using HLS
+    if (videoRef.value.srcObject) {
+        videoRef.value.srcObject = null;
+    }
 
     if (Hls.isSupported()) {
-        if (hls) hls.destroy();
+        cleanupHls();
 
         hls = new Hls({
             debug: false,
@@ -99,15 +180,11 @@ const initPlayer = () => {
             backBufferLength: 90,
         });
 
-        const loadStream = () => {
-            hls?.loadSource(props.streamUrl);
-            hls?.attachMedia(videoRef.value!);
-        };
-
-        loadStream();
+        hls.loadSource(props.streamUrl);
+        hls.attachMedia(videoRef.value);
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-             isLoading.value = false;
+            isLoading.value = false;
             if (props.autoplay) {
                 videoRef.value?.play().catch(() => {});
                 isPlaying.value = true;
@@ -115,7 +192,7 @@ const initPlayer = () => {
         });
 
         hls.on(Hls.Events.ERROR, (event, data) => {
-             if (data.fatal) {
+            if (data.fatal) {
                 switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
                     if (data.response?.code === 404 && retryCount < MAX_RETRIES) {
@@ -131,39 +208,42 @@ const initPlayer = () => {
                     hls?.recoverMediaError();
                     break;
                 default:
-                    hls?.destroy();
+                    cleanupHls();
                     break;
                 }
             }
         });
     } else if (videoRef.value.canPlayType('application/vnd.apple.mpegurl')) {
         videoRef.value.src = props.streamUrl;
-        
-        // Listen once for loaded metadata to clear loading state reliably
         const onLoaded = () => {
-             isLoading.value = false;
-             if (props.autoplay) {
-                 videoRef.value?.play().catch(() => {});
-             }
-             videoRef.value?.removeEventListener('loadedmetadata', onLoaded);
+            isLoading.value = false;
+            if (props.autoplay) {
+                videoRef.value?.play().catch(() => {});
+            }
+            videoRef.value?.removeEventListener('loadedmetadata', onLoaded);
         };
         videoRef.value.addEventListener('loadedmetadata', onLoaded);
-        
-        if (props.autoplay) {
-             videoRef.value.addEventListener('waiting', () => isLoading.value = true);
-             videoRef.value.addEventListener('playing', () => {
-                 isLoading.value = false;
-                 isPlaying.value = true;
-             });
-        }
     }
+};
+
+const initPlayer = async () => {
+    if (!videoRef.value) return;
+    isLoading.value = true;
+    retryCount = 0;
+
+    // Try WebRTC first (sub-second latency), fall back to HLS
+    if (props.whepUrl) {
+        const ok = await initWebRTC();
+        if (ok) return;
+    }
+
+    initHls();
 };
 
 onMounted(() => {
     initPlayer();
-    
+
     if (containerRef.value) {
-        // Track container size for accurate rotation dimension swapping
         resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 containerWidth.value = entry.contentRect.width;
@@ -179,7 +259,8 @@ watch(() => props.streamUrl, () => {
 });
 
 onBeforeUnmount(() => {
-    if (hls) hls.destroy();
+    cleanupWebRTC();
+    cleanupHls();
     clearTimeout(controlsTimeout);
     if (resizeObserver) resizeObserver.disconnect();
 });

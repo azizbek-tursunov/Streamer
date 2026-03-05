@@ -71,8 +71,12 @@ const pastLessons = computed(() => {
 
 const streamUrl = computed(() => {
     if (!props.auditorium.camera) return '';
-    if (typeof window === 'undefined') return '';
     return `/hls/cam_${props.auditorium.camera.id}/index.m3u8`;
+});
+
+const whepUrl = computed(() => {
+    if (!props.auditorium.camera) return '';
+    return `/webrtc/cam_${props.auditorium.camera.id}/whep`;
 });
 
 const showFeedbackDialog = ref(false);
@@ -130,9 +134,10 @@ const submitFeedback = () => {
                 <!-- Left Column: Video -->
                 <div class="lg:col-span-2 flex flex-col gap-4">
                     <div class="aspect-video w-full overflow-hidden rounded-xl border bg-black shadow-sm relative">
-                        <VideoPlayer 
+                        <VideoPlayer
                             v-if="auditorium.camera"
-                            :stream-url="streamUrl" 
+                            :stream-url="streamUrl"
+                            :whep-url="whepUrl"
                             autoplay
                             :rotation="auditorium.camera.rotation"
                             class="h-full w-full"

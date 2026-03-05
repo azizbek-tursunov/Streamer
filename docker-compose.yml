@@ -98,7 +98,9 @@ services:
       - "8554:8554" # RTSP
       - "1935:1935" # RTMP
       - "8888:8888" # HLS
-      - "8889:8889" # WebRTC
+      - "8889:8889" # WebRTC signaling
+      - "8189:8189/udp" # WebRTC media (UDP)
+      - "8189:8189/tcp" # WebRTC media (TCP fallback)
       - "9997:9997" # API
     volumes:
       - ./laravel/mediamtx.yml:/mediamtx.yml:ro
