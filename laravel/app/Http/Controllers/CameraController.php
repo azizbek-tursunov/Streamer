@@ -55,22 +55,23 @@ class CameraController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $paginator->getCollection()->transform(function ($camera) {
-            // Find latest snapshot
-            $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
-            $latestFile = null;
-
-            if (! empty($files)) {
-                // Sort by name desc (timestamp is in name) or filemtime
-                usort($files, function ($a, $b) {
-                    return filemtime($b) - filemtime($a);
-                });
-                $latestFile = $files[0];
+        // Single directory scan instead of per-camera glob (avoids 502 timeouts)
+        $snapshotDir = storage_path('app/public/snapshots');
+        $allFiles = glob($snapshotDir.'/camera_*.jpg');
+        $latestPerCamera = [];
+        foreach ($allFiles as $file) {
+            if (preg_match('/camera_(\d+)_/', basename($file), $m)) {
+                $camId = (int) $m[1];
+                if (! isset($latestPerCamera[$camId]) || filemtime($file) > filemtime($latestPerCamera[$camId])) {
+                    $latestPerCamera[$camId] = $file;
+                }
             }
+        }
 
-            $camera->snapshot_url = $latestFile
-                ? asset('storage/snapshots/'.basename($latestFile))
-                : null; // Or a placeholder URL
+        $paginator->getCollection()->transform(function ($camera) use ($latestPerCamera) {
+            $camera->snapshot_url = isset($latestPerCamera[$camera->id])
+                ? asset('storage/snapshots/'.basename($latestPerCamera[$camera->id]))
+                : null;
 
             return $camera;
         });
@@ -86,23 +87,30 @@ class CameraController extends Controller
      */
     public function snapshots()
     {
-        $cameras = Camera::where('is_active', true)->get();
+        $cameraIds = Camera::where('is_active', true)->pluck('id')->all();
+
+        // Single directory scan instead of per-camera glob (avoids 502 timeouts)
+        $snapshotDir = storage_path('app/public/snapshots');
+        $allFiles = glob($snapshotDir.'/camera_*.jpg');
+        $latestPerCamera = [];
+        foreach ($allFiles as $file) {
+            if (preg_match('/camera_(\d+)_/', basename($file), $m)) {
+                $camId = (int) $m[1];
+                if (! isset($latestPerCamera[$camId]) || filemtime($file) > filemtime($latestPerCamera[$camId])) {
+                    $latestPerCamera[$camId] = $file;
+                }
+            }
+        }
 
         $snapshots = [];
-        foreach ($cameras as $camera) {
-            $files = glob(storage_path("app/public/snapshots/camera_{$camera->id}_*.jpg"));
-
-            if (! empty($files)) {
-                usort($files, function ($a, $b) {
-                    return filemtime($b) - filemtime($a);
-                });
-                $latestFile = $files[0];
-                $snapshots[$camera->id] = [
-                    'url' => asset('storage/snapshots/'.basename($latestFile)),
-                    'timestamp' => filemtime($latestFile),
+        foreach ($cameraIds as $id) {
+            if (isset($latestPerCamera[$id])) {
+                $snapshots[$id] = [
+                    'url' => asset('storage/snapshots/'.basename($latestPerCamera[$id])),
+                    'timestamp' => filemtime($latestPerCamera[$id]),
                 ];
             } else {
-                $snapshots[$camera->id] = null;
+                $snapshots[$id] = null;
             }
         }
 
