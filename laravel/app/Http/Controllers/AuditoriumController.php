@@ -39,14 +39,23 @@ class AuditoriumController extends Controller
             ->get()
             ->keyBy('auditorium_code');
 
-        // Fetch snapshots
+        // Fetch snapshots — single directory scan instead of per-camera glob
         $cameraIds = $auditoriums->whereNotNull('camera_id')->pluck('camera_id')->unique();
         $snapshots = [];
+        $snapshotDir = storage_path('app/public/snapshots');
+        $allFiles = glob($snapshotDir.'/camera_*.jpg');
+        $latestPerCamera = [];
+        foreach ($allFiles as $file) {
+            if (preg_match('/camera_(\d+)_/', basename($file), $m)) {
+                $camId = (int) $m[1];
+                if (!isset($latestPerCamera[$camId]) || filemtime($file) > filemtime($latestPerCamera[$camId])) {
+                    $latestPerCamera[$camId] = $file;
+                }
+            }
+        }
         foreach ($cameraIds as $cameraId) {
-            $files = glob(storage_path("app/public/snapshots/camera_{$cameraId}_*.jpg"));
-            if (!empty($files)) {
-                usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
-                $snapshots[$cameraId] = asset('storage/snapshots/'.basename($files[0]));
+            if (isset($latestPerCamera[$cameraId])) {
+                $snapshots[$cameraId] = asset('storage/snapshots/'.basename($latestPerCamera[$cameraId]));
             }
         }
 
