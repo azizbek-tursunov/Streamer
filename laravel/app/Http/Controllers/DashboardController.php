@@ -17,9 +17,8 @@ class DashboardController extends Controller
                 'streaming' => Camera::where('is_streaming_to_youtube', true)->count(),
             ],
             'auditoriums' => [
-                'total' => \App\Models\Hemis\Auditorium::count(),
-                'active' => \App\Models\Hemis\Auditorium::where('active', true)->count(),
-                'with_camera' => \App\Models\Hemis\Auditorium::whereNotNull('camera_id')->count(),
+                'total' => \App\Models\Hemis\Auditorium::where('active', true)->count(),
+                'with_camera' => \App\Models\Hemis\Auditorium::where('active', true)->whereNotNull('camera_id')->count(),
             ],
             'faculties' => \App\Models\Faculty::count(),
         ];
