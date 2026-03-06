@@ -32,12 +32,12 @@ class MediaMtxService
 
         // FFmpeg relay with fast-start flags for quick on-demand startup.
         // -c:v copy = no video transcoding (near 0% CPU)
-        // -c:a aac = transcode audio to AAC for HLS/browser compatibility
+        // -c:a libopus = transcode audio to Opus (works with both WebRTC and HLS)
         // -fflags nobuffer -flags low_delay = reduce startup latency
         $ffmpegCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
             ." -fflags nobuffer -flags low_delay -analyzeduration 500000 -probesize 500000"
             ." -rtsp_transport tcp -i {$rtspUrl}"
-            ." -c:v copy -c:a aac -f rtsp rtsp://{$mtxUser}:{$mtxPass}@127.0.0.1:8554/{$pathName}";
+            ." -c:v copy -c:a libopus -b:a 48k -f rtsp rtsp://{$mtxUser}:{$mtxPass}@127.0.0.1:8554/{$pathName}";
 
         $payload = [
             'source' => 'publisher',
