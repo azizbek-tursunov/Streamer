@@ -50,10 +50,20 @@ class CameraController extends Controller
     {
         $perPage = in_array((int) $request->input('per_page'), [16, 24, 32]) ? (int) $request->input('per_page') : 16;
 
-        $paginator = Camera::with(['faculty'])
-            ->where('is_active', true)
-            ->paginate($perPage)
-            ->withQueryString();
+        $query = Camera::with(['faculty'])
+            ->where('is_active', true);
+
+        if ($building = $request->input('building')) {
+            $query->whereIn('id', function ($q) use ($building) {
+                $q->select('camera_id')
+                    ->from('auditoriums')
+                    ->where('active', true)
+                    ->whereNotNull('camera_id')
+                    ->where('building_name', $building);
+            });
+        }
+
+        $paginator = $query->paginate($perPage)->withQueryString();
 
         // Single directory scan instead of per-camera glob (avoids 502 timeouts)
         $snapshotDir = storage_path('app/public/snapshots');
@@ -76,8 +86,17 @@ class CameraController extends Controller
             return $camera;
         });
 
+        $buildings = \App\Models\Hemis\Auditorium::where('active', true)
+            ->whereNotNull('camera_id')
+            ->whereNotNull('building_name')
+            ->distinct()
+            ->orderBy('building_name')
+            ->pluck('building_name');
+
         return Inertia::render('Cameras/Grid', [
             'cameras' => $paginator,
+            'buildings' => $buildings,
+            'filters' => $request->only(['building']),
         ]);
     }
 

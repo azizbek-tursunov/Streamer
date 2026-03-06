@@ -4,6 +4,13 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import Pagination from '@/components/Pagination.vue';
 
 interface SnapshotInfo {
@@ -17,13 +24,28 @@ const props = defineProps<{
         links: any[];
         per_page: number;
     };
+    buildings?: string[];
+    filters?: {
+        building?: string;
+    };
 }>();
 
 const gridSizes = [16, 24, 32] as const;
 const currentPerPage = computed(() => props.cameras.per_page || 16);
 
+const selectedBuilding = ref(props.filters?.building || '');
+
 const changeGridSize = (size: number) => {
-    router.get('/cameras/grid', { per_page: size }, { preserveState: true, preserveScroll: true });
+    const params: Record<string, any> = { per_page: size };
+    if (selectedBuilding.value) params.building = selectedBuilding.value;
+    router.get('/cameras/grid', params, { preserveState: true, preserveScroll: true });
+};
+
+const changeBuilding = (value: string) => {
+    selectedBuilding.value = value;
+    const params: Record<string, any> = { per_page: currentPerPage.value };
+    if (value && value !== 'all') params.building = value;
+    router.get('/cameras/grid', params, { preserveState: true, preserveScroll: true });
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -102,9 +124,20 @@ onUnmounted(() => {
         <div class="flex h-full flex-1 flex-col gap-4">
             <!-- Toolbar -->
             <div class="flex items-center justify-between gap-4 px-4 pt-4 flex-wrap">
-                <span class="text-sm text-muted-foreground">
-                    {{ camerasWithSnapshots.length }} ta kamera
-                </span>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-muted-foreground">
+                        {{ camerasWithSnapshots.length }} ta kamera
+                    </span>
+                    <Select :model-value="selectedBuilding || 'all'" @update:model-value="changeBuilding">
+                        <SelectTrigger class="w-[220px] h-8 text-xs">
+                            <SelectValue placeholder="Barcha binolar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Barcha binolar</SelectItem>
+                            <SelectItem v-for="b in buildings" :key="b" :value="b">{{ b }}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 <div class="flex items-center gap-1">
                     <span class="text-xs text-muted-foreground mr-2">Ko'rsatish:</span>
                     <Button
