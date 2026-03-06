@@ -15,7 +15,7 @@ const videoRef = ref<HTMLVideoElement | null>(null);
 const containerRef = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
 const isPlaying = ref(false);
-const isMuted = ref(true);
+const isMuted = ref(false);
 const isFullscreen = ref(false);
 const showControls = ref(false);
 let hls: Hls | null = null;
@@ -116,7 +116,14 @@ const initWebRTC = async (): Promise<boolean> => {
                 videoRef.value.srcObject = event.streams[0];
                 isLoading.value = false;
                 if (props.autoplay) {
-                    videoRef.value.play().catch(() => {});
+                    videoRef.value.play().catch(() => {
+                        // Browser blocked unmuted autoplay — retry muted
+                        if (videoRef.value) {
+                            videoRef.value.muted = true;
+                            isMuted.value = true;
+                            videoRef.value.play().catch(() => {});
+                        }
+                    });
                     isPlaying.value = true;
                 }
             }
@@ -186,7 +193,14 @@ const initHls = () => {
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
             isLoading.value = false;
             if (props.autoplay) {
-                videoRef.value?.play().catch(() => {});
+                videoRef.value?.play().catch(() => {
+                    // Browser blocked unmuted autoplay — retry muted
+                    if (videoRef.value) {
+                        videoRef.value.muted = true;
+                        isMuted.value = true;
+                        videoRef.value.play().catch(() => {});
+                    }
+                });
                 isPlaying.value = true;
             }
         });
@@ -273,9 +287,8 @@ onBeforeUnmount(() => {
         @mousemove="onMouseMove"
         @mouseleave="showControls = false"
     >
-        <video 
-            ref="videoRef" 
-            muted 
+        <video
+            ref="videoRef"
             playsinline 
             class="object-contain transition-transform duration-300 pointer-events-none"
             :style="transformStyle"
