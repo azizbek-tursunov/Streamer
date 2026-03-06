@@ -52,8 +52,9 @@ class LessonFeedbackController extends Controller
             return $feedback;
         });
 
-        // Get unique building names from all auditoriums for the filter dropdown
-        $buildings = \App\Models\Hemis\Auditorium::whereNotNull('building_name')
+        // Get unique building names from active auditoriums for the filter dropdown
+        $buildings = \App\Models\Hemis\Auditorium::where('active', true)
+            ->whereNotNull('building_name')
             ->distinct()
             ->orderBy('building_name')
             ->pluck('building_name');
