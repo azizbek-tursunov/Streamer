@@ -46,26 +46,26 @@ const modalConfig = computed<{
 }>(() => {
     if (props.twoFactorEnabled) {
         return {
-            title: 'Two-Factor Authentication Enabled',
+            title: 'Ikki bosqichli tasdiqlash yoqildi',
             description:
-                'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-            buttonText: 'Close',
+                'Ikki bosqichli tasdiqlash yoqildi. QR kodni skanerlang yoki sozlash kalitini autentifikator ilovangizga kiriting.',
+            buttonText: 'Yopish',
         };
     }
 
     if (showVerificationStep.value) {
         return {
-            title: 'Verify Authentication Code',
-            description: 'Enter the 6-digit code from your authenticator app',
-            buttonText: 'Continue',
+            title: 'Tasdiqlash kodini tekshirish',
+            description: 'Autentifikator ilovangizdan 6 xonali kodni kiriting',
+            buttonText: 'Davom etish',
         };
     }
 
     return {
-        title: 'Enable Two-Factor Authentication',
+        title: 'Ikki bosqichli tasdiqlashni yoqish',
         description:
-            'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-        buttonText: 'Continue',
+            'Ikki bosqichli tasdiqlashni yakunlash uchun QR kodni skanerlang yoki sozlash kalitini autentifikator ilovangizga kiriting',
+        buttonText: 'Davom etish',
     };
 });
 
@@ -190,7 +190,7 @@ watch(
                                 class="absolute inset-0 top-1/2 h-px w-full bg-border"
                             />
                             <span class="relative bg-card px-2 py-1"
-                                >or, enter the code manually</span
+                                >yoki kodni qo'lda kiriting</span
                             >
                         </div>
 
@@ -275,14 +275,14 @@ watch(
                                     @click="showVerificationStep = false"
                                     :disabled="processing"
                                 >
-                                    Back
+                                    Orqaga
                                 </Button>
                                 <Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     :disabled="processing || code.length < 6"
                                 >
-                                    Confirm
+                                    Tasdiqlash
                                 </Button>
                             </div>
                         </div>

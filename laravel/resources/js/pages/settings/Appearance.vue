@@ -11,7 +11,7 @@ import { edit } from '@/routes/appearance';
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
-        title: 'Appearance settings',
+        title: 'Ko\'rinish sozlamalari',
         href: edit().url,
     },
 ];
@@ -19,13 +19,13 @@ const breadcrumbItems: BreadcrumbItem[] = [
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbItems">
-        <Head title="Appearance settings" />
+        <Head title="Ko'rinish sozlamalari" />
 
         <SettingsLayout>
             <div class="space-y-6">
                 <HeadingSmall
-                    title="Appearance settings"
-                    description="Update your account's appearance settings"
+                    title="Ko'rinish sozlamalari"
+                    description="Hisobingizning ko'rinish sozlamalarini o'zgartiring"
                 />
                 <AppearanceTabs />
             </div>
