@@ -17,7 +17,7 @@ Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'in
 Route::middleware(['auth', 'verified'])->group(function () {
     // --- Cameras ---
     // View routes: require view-cameras OR view-camera-grid (for snapshots used by both)
-    Route::middleware(['permission:view-cameras|view-camera-grid'])->group(function () {
+    Route::middleware(['permission:view-cameras|view-camera-grid', 'throttle:60,1'])->group(function () {
         Route::get('cameras/snapshots', [\App\Http\Controllers\CameraController::class, 'snapshots'])->name('cameras.snapshots');
     });
     Route::get('cameras/grid', [\App\Http\Controllers\CameraController::class, 'grid'])->middleware('permission:view-camera-grid')->name('cameras.grid');
@@ -46,8 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Auditoriums ---
     Route::middleware(['permission:view-auditoriums'])->group(function () {
         Route::get('auditoriums', [\App\Http\Controllers\AuditoriumController::class, 'index'])->name('auditoriums.index');
-        Route::get('auditoriums/active-lessons', [\App\Http\Controllers\AuditoriumController::class, 'activeLessons'])->name('auditoriums.active-lessons');
-        Route::get('auditoriums/people-counts', [\App\Http\Controllers\AuditoriumController::class, 'peopleCounts'])->name('auditoriums.people-counts');
+        Route::get('auditoriums/active-lessons', [\App\Http\Controllers\AuditoriumController::class, 'activeLessons'])->middleware('throttle:30,1')->name('auditoriums.active-lessons');
+        Route::get('auditoriums/people-counts', [\App\Http\Controllers\AuditoriumController::class, 'peopleCounts'])->middleware('throttle:30,1')->name('auditoriums.people-counts');
         Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
     });
     Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->middleware('permission:sync-auditoriums')->name('auditoriums.sync');

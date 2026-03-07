@@ -26,14 +26,18 @@ class Camera extends Model
         'rotation',
     ];
 
+    protected $hidden = [
+        'password',
+        'username',
+        'stream_path',
+    ];
+
     protected $casts = [
         'is_active' => 'boolean',
         'is_public' => 'boolean',
         'is_streaming_to_youtube' => 'boolean',
         'rotation' => 'integer',
     ];
-
-    protected $appends = ['rtsp_url'];
 
     public function faculty(): BelongsTo
     {

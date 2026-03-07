@@ -46,7 +46,7 @@ watch(() => props.open, (isOpen) => {
         if (props.camera) {
             form.name = props.camera.name;
             form.username = props.camera.username ?? '';
-            form.password = props.camera.password ?? '';
+            form.password = ''; // Never pre-fill password from server
             form.ip_address = props.camera.ip_address;
             form.port = props.camera.port;
             form.is_active = Boolean(props.camera.is_active);
