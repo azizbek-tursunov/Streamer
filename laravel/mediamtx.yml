@@ -12,14 +12,14 @@ apiAddress: :9997
 
 authInternalUsers:
   - user: admin
-    pass: "12345"
+    pass: "7wJ7RMCT5w2fC8VMJmhx"
     ips: ["0.0.0.0/0", "::/0"]
     permissions:
       - action: api
       - action: read
       - action: publish
   - user: viewer
-    pass: viewer
+    pass: "nCvyIBzmwR4ZBHCa"
     ips: ["0.0.0.0/0", "::/0"]
     permissions:
       - action: read
