@@ -11,15 +11,15 @@ api: yes
 apiAddress: :9997
 
 authInternalUsers:
-  - user: admin
-    pass: "7wJ7RMCT5w2fC8VMJmhx"
+  - user: ${MEDIAMTX_ADMIN_USER}
+    pass: "${MEDIAMTX_ADMIN_PASSWORD}"
     ips: ["0.0.0.0/0", "::/0"]
     permissions:
       - action: api
       - action: read
       - action: publish
-  - user: viewer
-    pass: "nCvyIBzmwR4ZBHCa"
+  - user: ${MEDIAMTX_VIEWER_USER}
+    pass: "${MEDIAMTX_VIEWER_PASSWORD}"
     ips: ["0.0.0.0/0", "::/0"]
     permissions:
       - action: read

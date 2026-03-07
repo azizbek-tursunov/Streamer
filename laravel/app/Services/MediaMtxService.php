@@ -18,7 +18,7 @@ class MediaMtxService
         $host = config('services.mediamtx.host', 'localhost');
         $port = config('services.mediamtx.port', '9997');
         $user = config('services.mediamtx.user', 'admin');
-        $pass = config('services.mediamtx.password', '12345');
+        $pass = config('services.mediamtx.password');
 
         $this->baseUrl = "http://{$user}:{$pass}@{$host}:{$port}/v3";
     }

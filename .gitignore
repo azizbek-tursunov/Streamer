@@ -6,6 +6,9 @@ fastapi/yolov8n.pt
 # Docker
 docker_ai_prompt.md
 
+# Secrets
+.env
+
 # OS
 .DS_Store
 Thumbs.db

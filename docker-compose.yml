@@ -38,9 +38,13 @@ services:
       - "443:443"
     volumes:
       - ./laravel:/var/www/html:ro
-      - ./laravel/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./laravel/docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./laravel/docker/nginx/docker-entrypoint.sh:/docker-entrypoint.sh:ro
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+    environment:
+      MEDIAMTX_VIEWER_AUTH: ${MEDIAMTX_VIEWER_AUTH}
+    entrypoint: ["/docker-entrypoint.sh"]
     networks:
       - univision-network
     depends_on:
@@ -104,7 +108,14 @@ services:
       - "8189:8189/tcp" # WebRTC media (TCP fallback)
       - "9997:9997" # API
     volumes:
-      - ./laravel/mediamtx.yml:/mediamtx.yml:ro
+      - ./laravel/mediamtx.yml.template:/mediamtx.yml.template:ro
+      - ./laravel/docker/mediamtx/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+    environment:
+      MEDIAMTX_ADMIN_USER: ${MEDIAMTX_USER:-admin}
+      MEDIAMTX_ADMIN_PASSWORD: ${MEDIAMTX_PASSWORD}
+      MEDIAMTX_VIEWER_USER: ${MEDIAMTX_VIEWER_USER:-viewer}
+      MEDIAMTX_VIEWER_PASSWORD: ${MEDIAMTX_VIEWER_PASSWORD}
+    entrypoint: ["/docker-entrypoint.sh"]
     networks:
       - univision-network
     healthcheck:
