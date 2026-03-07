@@ -44,7 +44,14 @@ class Camera extends Model
     protected function password(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => $value ? Crypt::decryptString($value) : null,
+            get: function (?string $value) {
+                if (! $value) return null;
+                try {
+                    return Crypt::decryptString($value);
+                } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+                    return $value; // Graceful fallback for pre-existing plaintext
+                }
+            },
             set: fn (?string $value) => $value ? Crypt::encryptString($value) : null,
         );
     }
