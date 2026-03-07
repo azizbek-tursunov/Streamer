@@ -153,10 +153,13 @@ class CameraController extends Controller
 
     public function show(Camera $camera)
     {
-        return Inertia::render('Cameras/Show', [
-            'camera' => $camera,
-            'faculties' => Faculty::all(),
-        ]);
+        $data = ['camera' => $camera];
+
+        if (auth()->user()->can('manage-cameras')) {
+            $data['faculties'] = Faculty::all();
+        }
+
+        return Inertia::render('Cameras/Show', $data);
     }
 
     public function update(UpdateCameraRequest $request, Camera $camera)

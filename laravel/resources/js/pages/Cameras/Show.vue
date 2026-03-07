@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Camera, BreadcrumbItem, Faculty } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
+import { usePermissions } from '@/composables/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,9 @@ import { Switch } from '@/components/ui/switch';
 import { Play, Square, Edit, ArrowLeft } from 'lucide-vue-next';
 import CameraDialog from '@/components/CameraDialog.vue';
 import YouTubeDialog from '@/components/YouTubeDialog.vue';
+
+const { hasPermission } = usePermissions();
+const canManage = hasPermission('manage-cameras');
 
 const props = defineProps<{
     camera: Camera;
@@ -70,9 +74,9 @@ const togglePublic = (camera: Camera) => {
                             YouTube Jonli Efirda
                         </Badge>
                     </h1>
-                    <p class="text-sm text-muted-foreground">{{ camera.ip_address }}:{{ camera.port }}</p>
+                    <p v-if="canManage" class="text-sm text-muted-foreground">{{ camera.ip_address }}:{{ camera.port }}</p>
                 </div>
-                <Button variant="secondary" @click="showDialog = true">
+                <Button v-if="canManage" variant="secondary" @click="showDialog = true">
                     <Edit class="mr-2 h-4 w-4" />
                     Tahrirlash
                 </Button>
@@ -94,7 +98,7 @@ const togglePublic = (camera: Camera) => {
                     </div>
                 </Card>
 
-                <Card>
+                <Card v-if="canManage">
                     <CardHeader>
                         <CardTitle>Boshqaruv Paneli</CardTitle>
                         <CardDescription>Stream va sozlamalarni boshqarish</CardDescription>
@@ -107,19 +111,19 @@ const togglePublic = (camera: Camera) => {
                                     <h3 class="font-medium text-sm">Kamera Holati</h3>
                                     <p class="text-xs text-muted-foreground">Kamerani yoqish yoki o'chirish</p>
                                 </div>
-                                <Switch 
+                                <Switch
                                     :checked="camera.is_active"
                                     @update:checked="toggleActive(camera)"
                                 />
                             </div>
-                            
+
                             <!-- Public Status Section -->
                             <div class="flex items-center justify-between pt-4 border-t">
                                 <div class="space-y-0.5">
                                     <h3 class="font-medium text-sm">Ommaviy ko'rish ruxsati</h3>
                                     <p class="text-[0.65rem] text-muted-foreground mr-6">Kamerani barchaga ochiq stream sahifasida ko'rsatish yoki yashirish</p>
                                 </div>
-                                <Switch 
+                                <Switch
                                     :checked="camera.is_public"
                                     @update:checked="togglePublic(camera)"
                                 />
@@ -138,9 +142,9 @@ const togglePublic = (camera: Camera) => {
                             </p>
                             <p v-else class="text-xs text-destructive">Sozlanmagan</p>
                         </div>
-                        
+
                         <div class="pt-2">
-                            <Button 
+                            <Button
                                 class="w-full"
                                 :variant="camera.is_streaming_to_youtube ? 'destructive' : 'default'"
                                 @click="toggleStream(camera)"
@@ -154,13 +158,15 @@ const togglePublic = (camera: Camera) => {
                 </Card>
             </div>
             
-            <CameraDialog 
+            <CameraDialog
+                v-if="canManage"
                 v-model:open="showDialog"
                 :camera="camera"
                 :faculties="faculties"
             />
-            
+
             <YouTubeDialog
+                v-if="canManage"
                 v-model:open="showYouTubeDialog"
                 :camera="camera"
             />
