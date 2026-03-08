@@ -20,19 +20,16 @@ class NetworkScanController extends Controller
         '192.168.15',
     ];
 
-    public function __construct()
+    private function authorizeOwner(): void
     {
-        $this->middleware(function ($request, $next) {
-            if (auth()->user()?->email !== self::ALLOWED_EMAIL) {
-                abort(404);
-            }
-
-            return $next($request);
-        });
+        if (auth()->user()?->email !== self::ALLOWED_EMAIL) {
+            abort(404);
+        }
     }
 
     public function index()
     {
+        $this->authorizeOwner();
         $results = Cache::get('network_scan_results');
         $scanRunning = Cache::get('network_scan_running', false);
 
@@ -45,6 +42,8 @@ class NetworkScanController extends Controller
 
     public function scan()
     {
+        $this->authorizeOwner();
+
         if (Cache::get('network_scan_running')) {
             return back()->with('error', 'Skanerlash allaqachon ishlayapti.');
         }
