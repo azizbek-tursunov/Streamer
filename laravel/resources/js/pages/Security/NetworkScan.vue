@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
 import { BreadcrumbItem } from '@/types';
-import { ref } from 'vue';
-import { Radar, Globe, Video, MonitorSmartphone, RefreshCw } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import { Radar, Globe, Video, RefreshCw, Play, X } from 'lucide-vue-next';
 
 interface ScanResult {
     ip: string;
@@ -32,13 +42,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const scanning = ref(props.scanRunning);
 
+// Preview state
+const previewOpen = ref(false);
+const previewDevice = ref<ScanResult | null>(null);
+const previewUsername = ref('admin');
+const previewPassword = ref('');
+const previewStreamPath = ref('Streaming/Channels/101');
+const previewLoading = ref(false);
+const previewError = ref('');
+const previewHlsUrl = ref('');
+const previewWhepUrl = ref('');
+const previewActive = ref(false);
+
 const startScan = () => {
     scanning.value = true;
     router.post('/network-scan', {}, {
         preserveScroll: true,
-        onFinish: () => {
-            // Keep scanning true, it runs in background
-        },
     });
 };
 
@@ -51,6 +70,83 @@ const getSubnet = (ip: string) => {
     const parts = ip.split('.');
     return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
 };
+
+const openPreview = (device: ScanResult) => {
+    previewDevice.value = device;
+    previewError.value = '';
+    previewActive.value = false;
+    previewHlsUrl.value = '';
+    previewWhepUrl.value = '';
+    previewOpen.value = true;
+};
+
+const startPreview = async () => {
+    if (!previewDevice.value) return;
+    previewLoading.value = true;
+    previewError.value = '';
+
+    try {
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+        const res = await fetch('/network-scan/preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                ip: previewDevice.value.ip,
+                port: previewDevice.value.port,
+                username: previewUsername.value,
+                password: previewPassword.value,
+                stream_path: previewStreamPath.value,
+            }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            previewError.value = data.error || 'Xatolik yuz berdi';
+            return;
+        }
+
+        previewHlsUrl.value = data.hlsUrl;
+        previewWhepUrl.value = data.whepUrl;
+        previewActive.value = true;
+    } catch (e) {
+        previewError.value = 'Serverga ulanib bo\'lmadi';
+    } finally {
+        previewLoading.value = false;
+    }
+};
+
+const stopPreview = async () => {
+    if (!previewDevice.value) return;
+
+    previewActive.value = false;
+    previewHlsUrl.value = '';
+    previewWhepUrl.value = '';
+
+    try {
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+        await fetch('/network-scan/stop-preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || '',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ ip: previewDevice.value.ip }),
+        });
+    } catch {
+        // ignore
+    }
+};
+
+watch(previewOpen, (open) => {
+    if (!open && previewActive.value) {
+        stopPreview();
+    }
+});
 </script>
 
 <template>
@@ -87,9 +183,12 @@ const getSubnet = (ip: string) => {
                 </p>
             </div>
 
-            <p v-if="lastScanAt" class="text-xs text-muted-foreground">
-                Oxirgi skanerlash: {{ lastScanAt }}
-            </p>
+            <div v-if="results" class="flex items-center gap-3">
+                <p v-if="lastScanAt" class="text-xs text-muted-foreground">
+                    Oxirgi skanerlash: {{ lastScanAt }}
+                </p>
+                <Badge variant="outline">{{ results.length }} qurilma topildi</Badge>
+            </div>
 
             <div v-if="!results && !scanning" class="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <Radar class="h-16 w-16 mb-4 opacity-20" />
@@ -102,8 +201,10 @@ const getSubnet = (ip: string) => {
                 <p class="text-sm">Barcha tarmoqdagi kameralar allaqachon bazada mavjud</p>
             </div>
 
-            <div v-else-if="results" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                <Card v-for="device in results" :key="device.ip" class="relative">
+            <div v-else-if="results" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <Card v-for="device in results" :key="device.ip"
+                    class="relative cursor-pointer transition-colors hover:bg-muted/50"
+                    @click="openPreview(device)">
                     <CardHeader class="pb-3">
                         <div class="flex items-center justify-between">
                             <CardTitle class="text-base font-mono">{{ device.ip }}</CardTitle>
@@ -113,30 +214,88 @@ const getSubnet = (ip: string) => {
                             <Badge v-else variant="secondary">Port 554</Badge>
                         </div>
                         <CardDescription>
-                            Tarmoq: {{ getSubnet(device.ip) }}
+                            {{ getSubnet(device.ip) }}
                         </CardDescription>
                     </CardHeader>
-                    <CardContent class="space-y-2">
-                        <div v-if="device.details" class="space-y-1">
-                            <div v-for="(stream, idx) in device.details" :key="idx"
-                                class="text-xs bg-muted rounded px-2 py-1 font-mono">
-                                <span class="text-muted-foreground">{{ stream.type }}:</span>
-                                {{ stream.codec }}
-                                <span v-if="stream.resolution" class="text-muted-foreground ml-1">{{ stream.resolution }}</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 pt-1">
+                    <CardContent>
+                        <div class="flex items-center gap-2">
                             <Badge v-if="device.has_web" variant="outline" class="text-xs">
-                                <Globe class="h-3 w-3 mr-1" /> Web UI
+                                <Globe class="h-3 w-3 mr-1" /> Web
                             </Badge>
-                            <a v-if="device.has_web" :href="'http://' + device.ip"
-                                target="_blank" class="text-xs text-blue-500 hover:underline">
-                                Ochish
-                            </a>
+                            <Button variant="ghost" size="sm" class="ml-auto h-7 text-xs"
+                                @click.stop="openPreview(device)">
+                                <Play class="h-3 w-3 mr-1" /> Ko'rish
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
             </div>
         </div>
+
+        <!-- Preview Dialog -->
+        <Dialog v-model:open="previewOpen">
+            <DialogContent class="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle class="font-mono">{{ previewDevice?.ip }}</DialogTitle>
+                    <DialogDescription>
+                        Kamera tasvirini ko'rish uchun login ma'lumotlarini kiriting
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="space-y-4">
+                    <!-- Credentials form -->
+                    <div v-if="!previewActive" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <Label for="prev-user">Foydalanuvchi</Label>
+                                <Input id="prev-user" v-model="previewUsername" placeholder="admin" />
+                            </div>
+                            <div class="space-y-1">
+                                <Label for="prev-pass">Parol</Label>
+                                <Input id="prev-pass" v-model="previewPassword" type="password" placeholder="Parol" />
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="prev-path">RTSP yo'li</Label>
+                            <Input id="prev-path" v-model="previewStreamPath" placeholder="Streaming/Channels/101" />
+                            <p class="text-xs text-muted-foreground">Hikvision: Streaming/Channels/101 | Dahua: cam/realmonitor?channel=1&subtype=0</p>
+                        </div>
+
+                        <p v-if="previewError" class="text-sm text-red-500">{{ previewError }}</p>
+
+                        <div class="flex gap-2">
+                            <Button @click="startPreview" :disabled="previewLoading" class="flex-1">
+                                <Play class="h-4 w-4 mr-1" />
+                                {{ previewLoading ? 'Ulanmoqda...' : 'Ko\'rish' }}
+                            </Button>
+                            <Button v-if="previewDevice?.has_web" variant="outline" as-child>
+                                <a :href="'http://' + previewDevice.ip" target="_blank">
+                                    <Globe class="h-4 w-4 mr-1" /> Web UI
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <!-- Video Player -->
+                    <div v-else class="space-y-3">
+                        <div class="aspect-video w-full overflow-hidden rounded-lg bg-black">
+                            <VideoPlayer
+                                :stream-url="previewHlsUrl"
+                                :whep-url="previewWhepUrl"
+                                :autoplay="true"
+                            />
+                        </div>
+                        <div class="flex gap-2">
+                            <Button variant="destructive" size="sm" @click="stopPreview">
+                                <X class="h-4 w-4 mr-1" /> To'xtatish
+                            </Button>
+                            <p class="text-xs text-muted-foreground self-center">
+                                30 soniya faoliyatsizlikdan keyin avtomatik to'xtaydi
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

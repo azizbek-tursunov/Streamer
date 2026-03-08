@@ -83,6 +83,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('network-scan', [\App\Http\Controllers\NetworkScanController::class, 'index'])->name('network-scan.index');
         Route::post('network-scan', [\App\Http\Controllers\NetworkScanController::class, 'scan'])->name('network-scan.scan');
+        Route::post('network-scan/preview', [\App\Http\Controllers\NetworkScanController::class, 'preview'])->name('network-scan.preview');
+        Route::post('network-scan/stop-preview', [\App\Http\Controllers\NetworkScanController::class, 'stopPreview'])->name('network-scan.stop-preview');
     });
 
     // --- Hemis Settings (super-admin only) ---
