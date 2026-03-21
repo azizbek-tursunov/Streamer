@@ -24,6 +24,10 @@ const sidebarNavItems: NavItem[] = [
         href: show(),
     },
     {
+        title: 'Sessiyalar',
+        href: '/settings/sessions',
+    },
+    {
         title: 'Ko\'rinish',
         href: editAppearance(),
     },
