@@ -107,9 +107,11 @@ class HemisOAuthController extends Controller
             return redirect()->route('dashboard');
 
         } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
-            return redirect()->route('login')->withErrors(['email' => 'HEMIS avtorizatsiyasida xatolik: ' . $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::error('HEMIS OAuth error', ['error' => $e->getMessage()]);
+            return redirect()->route('login')->withErrors(['email' => 'HEMIS avtorizatsiyasida xatolik yuz berdi. Qayta urinib ko\'ring.']);
         } catch (\Exception $e) {
-            return redirect()->route('login')->withErrors(['email' => 'Tizim xatosi: ' . $e->getMessage()]);
+            \Illuminate\Support\Facades\Log::error('HEMIS OAuth system error', ['error' => $e->getMessage()]);
+            return redirect()->route('login')->withErrors(['email' => 'Tizim xatosi yuz berdi. Qayta urinib ko\'ring.']);
         }
     }
 }

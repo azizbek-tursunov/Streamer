@@ -16,7 +16,7 @@ const errorMessage = computed(() => (page.props.flash as Record<string, string> 
 
 const props = defineProps<{
     baseUrl: string;
-    token: string;
+    tokenSet: boolean;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,7 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const form = useForm({
     base_url: props.baseUrl,
-    token: props.token,
+    token: '',
 });
 
 const updateSettings = () => {
@@ -127,13 +127,12 @@ const testConnection = () => {
                                 </Label>
                                 <div class="flex flex-col gap-1.5">
                                     <div class="relative">
-                                        <Input 
-                                            id="token" 
-                                            v-model="form.token" 
-                                            :type="showToken ? 'text' : 'password'" 
-                                            placeholder="••••••••••••••••" 
+                                        <Input
+                                            id="token"
+                                            v-model="form.token"
+                                            :type="showToken ? 'text' : 'password'"
+                                            :placeholder="props.tokenSet ? 'Joriy token saqlangan — o\'zgartirish uchun yangi kiriting' : 'Token kiriting'"
                                             :class="{ 'border-destructive': form.errors.token }"
-                                            required
                                             class="pr-10"
                                         />
                                         <button 

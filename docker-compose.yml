@@ -115,6 +115,7 @@ services:
       MEDIAMTX_ADMIN_PASSWORD: ${MEDIAMTX_PASSWORD}
       MEDIAMTX_VIEWER_USER: ${MEDIAMTX_VIEWER_USER:-viewer}
       MEDIAMTX_VIEWER_PASSWORD: ${MEDIAMTX_VIEWER_PASSWORD}
+      MEDIAMTX_PUBLIC_IP: ${MEDIAMTX_PUBLIC_IP:-127.0.0.1}
     entrypoint: ["/docker-entrypoint.sh"]
     networks:
       - univision-network
@@ -156,7 +157,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_DATABASE:-laravel}
       POSTGRES_USER: ${DB_USERNAME:-laravel}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - pgsql-data:/var/lib/postgresql/data

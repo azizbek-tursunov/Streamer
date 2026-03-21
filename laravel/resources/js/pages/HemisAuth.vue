@@ -16,7 +16,7 @@ const errorMessage = computed(() => (page.props.flash as Record<string, string> 
 
 const props = defineProps<{
     clientId: string;
-    clientSecret: string;
+    clientSecretSet: boolean;
     urlAuthorize: string;
     urlAccessToken: string;
     urlUserInfo: string;
@@ -30,7 +30,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const form = useForm({
     client_id: props.clientId,
-    client_secret: props.clientSecret,
+    client_secret: '',
     url_authorize: props.urlAuthorize,
     url_access_token: props.urlAccessToken,
     url_user_info: props.urlUserInfo,
@@ -185,13 +185,12 @@ const updateSettings = () => {
                                 </Label>
                                 <div class="flex flex-col gap-1.5">
                                     <div class="relative">
-                                        <Input 
-                                            id="client_secret" 
-                                            v-model="form.client_secret" 
-                                            :type="showSecret ? 'text' : 'password'" 
-                                            placeholder="••••••••••••••••" 
+                                        <Input
+                                            id="client_secret"
+                                            v-model="form.client_secret"
+                                            :type="showSecret ? 'text' : 'password'"
+                                            :placeholder="props.clientSecretSet ? 'Joriy secret saqlangan — o\'zgartirish uchun yangi kiriting' : 'Client Secret kiriting'"
                                             :class="{ 'border-destructive': form.errors.client_secret }"
-                                            required
                                             class="pr-10"
                                         />
                                         <button 

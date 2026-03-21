@@ -7,6 +7,7 @@ sed \
     -e "s|\${MEDIAMTX_ADMIN_PASSWORD}|${MEDIAMTX_ADMIN_PASSWORD}|g" \
     -e "s|\${MEDIAMTX_VIEWER_USER}|${MEDIAMTX_VIEWER_USER}|g" \
     -e "s|\${MEDIAMTX_VIEWER_PASSWORD}|${MEDIAMTX_VIEWER_PASSWORD}|g" \
+    -e "s|\${MEDIAMTX_PUBLIC_IP}|${MEDIAMTX_PUBLIC_IP}|g" \
     /mediamtx.yml.template > /mediamtx.yml
 
 exec /mediamtx

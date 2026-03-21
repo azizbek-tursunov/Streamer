@@ -13,9 +13,11 @@ class SettingController extends Controller
      */
     public function hemis()
     {
+        $token = Setting::get('hemis.token', config('services.hemis.token'));
+
         return Inertia::render('Hemis', [
             'baseUrl' => Setting::get('hemis.base_url', config('services.hemis.base_url')),
-            'token' => Setting::get('hemis.token', config('services.hemis.token')),
+            'tokenSet' => ! empty($token),
         ]);
     }
 
@@ -26,11 +28,20 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'base_url' => ['required', 'url'],
-            'token' => ['required', 'string'],
+            'token' => ['nullable', 'string'],
         ]);
 
+        // Prevent SSRF: only allow hemis.uz domains
+        $host = parse_url($validated['base_url'], PHP_URL_HOST);
+        if (! $host || ! str_ends_with($host, '.hemis.uz') && $host !== 'hemis.uz') {
+            return back()->with('error', "Faqat hemis.uz domeniga ruxsat berilgan.");
+        }
+
         Setting::set('hemis.base_url', $validated['base_url']);
-        Setting::set('hemis.token', $validated['token']);
+        // Only update token if a new one was provided
+        if (! empty($validated['token'])) {
+            Setting::set('hemis.token', $validated['token']);
+        }
 
         return back()->with('success', 'HEMIS sozlamalari muvaffaqiyatli saqlandi.');
     }
@@ -40,9 +51,11 @@ class SettingController extends Controller
      */
     public function hemisAuth()
     {
+        $clientSecret = Setting::get('hemis.oauth.client_secret', '');
+
         return Inertia::render('HemisAuth', [
             'clientId' => Setting::get('hemis.oauth.client_id', ''),
-            'clientSecret' => Setting::get('hemis.oauth.client_secret', ''),
+            'clientSecretSet' => ! empty($clientSecret),
             'urlAuthorize' => Setting::get('hemis.oauth.url_authorize', 'https://hemis.namdu.uz/oauth/authorize'),
             'urlAccessToken' => Setting::get('hemis.oauth.url_access_token', 'https://hemis.namdu.uz/oauth/access-token'),
             'urlUserInfo' => Setting::get('hemis.oauth.url_user_info', 'https://hemis.namdu.uz/oauth/api/user'),
@@ -57,7 +70,7 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'client_id' => ['required', 'string'],
-            'client_secret' => ['required', 'string'],
+            'client_secret' => ['nullable', 'string'],
             'url_authorize' => ['required', 'url'],
             'url_access_token' => ['required', 'url'],
             'url_user_info' => ['required', 'url'],
@@ -65,7 +78,10 @@ class SettingController extends Controller
         ]);
 
         Setting::set('hemis.oauth.client_id', $validated['client_id']);
-        Setting::set('hemis.oauth.client_secret', $validated['client_secret']);
+        // Only update secret if a new one was provided
+        if (! empty($validated['client_secret'])) {
+            Setting::set('hemis.oauth.client_secret', $validated['client_secret']);
+        }
         Setting::set('hemis.oauth.url_authorize', $validated['url_authorize']);
         Setting::set('hemis.oauth.url_access_token', $validated['url_access_token']);
         Setting::set('hemis.oauth.url_user_info', $validated['url_user_info']);
@@ -81,11 +97,23 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'base_url' => ['required', 'url'],
-            'token' => ['required', 'string'],
+            'token' => ['nullable', 'string'],
         ]);
 
+        // Prevent SSRF: only allow HTTPS URLs to external hemis domains
+        $host = parse_url($validated['base_url'], PHP_URL_HOST);
+        if (! $host || ! str_ends_with($host, '.hemis.uz') && $host !== 'hemis.uz') {
+            return back()->with('error', "Faqat hemis.uz domeniga ruxsat berilgan.");
+        }
+
+        // Use provided token or fall back to saved token
+        $token = ! empty($validated['token']) ? $validated['token'] : Setting::get('hemis.token', config('services.hemis.token'));
+        if (empty($token)) {
+            return back()->with('error', "Token kiritilmagan va saqlangan token topilmadi.");
+        }
+
         try {
-            $response = \Illuminate\Support\Facades\Http::withToken($validated['token'])
+            $response = \Illuminate\Support\Facades\Http::withToken($token)
                 ->timeout(10)
                 ->get(rtrim($validated['base_url'], '/') . '/data/department-list', [
                     'limit' => 1
@@ -97,7 +125,7 @@ class SettingController extends Controller
 
             return back()->with('error', "API ulanishida xatolik: HTTP " . $response->status());
         } catch (\Exception $e) {
-            return back()->with('error', "Serverga ulanib bo'lmadi: " . $e->getMessage());
+            return back()->with('error', "Serverga ulanib bo'lmadi.");
         }
     }
 }

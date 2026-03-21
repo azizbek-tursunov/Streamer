@@ -12,7 +12,7 @@ Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'inde
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'index'])->name('public.streams');
+Route::get('/streams', [\App\Http\Controllers\PublicStreamController::class, 'index'])->middleware('throttle:60,1')->name('public.streams');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // --- Cameras ---

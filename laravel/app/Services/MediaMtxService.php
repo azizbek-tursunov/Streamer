@@ -34,10 +34,13 @@ class MediaMtxService
         // -c:v copy = no video transcoding (near 0% CPU)
         // -c:a libopus = transcode audio to Opus (works with both WebRTC and HLS)
         // -fflags nobuffer -flags low_delay = reduce startup latency
+        $safeRtspUrl = escapeshellarg($rtspUrl);
+        $safeMtxUser = escapeshellarg($mtxUser);
+        $safeMtxPass = escapeshellarg($mtxPass);
         $ffmpegCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
             ." -fflags nobuffer -flags low_delay -analyzeduration 500000 -probesize 500000"
-            ." -rtsp_transport tcp -i {$rtspUrl}"
-            ." -c:v copy -c:a libopus -b:a 48k -f rtsp rtsp://{$mtxUser}:{$mtxPass}@127.0.0.1:8554/{$pathName}";
+            ." -rtsp_transport tcp -i {$safeRtspUrl}"
+            ." -c:v copy -c:a libopus -b:a 48k -f rtsp rtsp://{$safeMtxUser}:{$safeMtxPass}@127.0.0.1:8554/{$pathName}";
 
         $payload = [
             'source' => 'publisher',
@@ -49,9 +52,10 @@ class MediaMtxService
 
         if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
             // YouTube RTMP push starts when stream is ready, uses already-transcoded AAC audio
+            $safeYtUrl = escapeshellarg($camera->youtube_url);
             $ytCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
-                ." -i rtsp://{$mtxUser}:{$mtxPass}@127.0.0.1:8554/{$pathName}"
-                ." -c copy -f flv \"{$camera->youtube_url}\"";
+                ." -i rtsp://{$safeMtxUser}:{$safeMtxPass}@127.0.0.1:8554/{$pathName}"
+                ." -c copy -f flv {$safeYtUrl}";
             $payload['runOnReady'] = "sh -c '{$ytCmd} > /tmp/yt_{$camera->id}.log 2>&1'";
             $payload['runOnReadyRestart'] = true;
         }

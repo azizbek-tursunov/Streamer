@@ -13,14 +13,14 @@ apiAddress: :9997
 authInternalUsers:
   - user: ${MEDIAMTX_ADMIN_USER}
     pass: "${MEDIAMTX_ADMIN_PASSWORD}"
-    ips: ["0.0.0.0/0", "::/0"]
+    ips: ["127.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "10.0.0.0/8"]
     permissions:
       - action: api
       - action: read
       - action: publish
   - user: ${MEDIAMTX_VIEWER_USER}
     pass: "${MEDIAMTX_VIEWER_PASSWORD}"
-    ips: ["0.0.0.0/0", "::/0"]
+    ips: ["127.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "10.0.0.0/8"]
     permissions:
       - action: read
 
@@ -54,7 +54,7 @@ webrtcAddress: :8889
 webrtcLocalUDPAddress: :8189
 webrtcLocalTCPAddress: :8189
 webrtcIPsFromInterfaces: yes
-webrtcAdditionalHosts: [84.54.115.89]
+webrtcAdditionalHosts: [${MEDIAMTX_PUBLIC_IP}]
 
 ###############################################
 # Path settings
