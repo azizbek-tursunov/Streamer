@@ -89,10 +89,48 @@ class MediaMtxService
 
     public function updatePath(Camera $camera): void
     {
-        Log::info('MediaMTX: Updating path', ['camera_id' => $camera->id]);
+        $pathName = $this->getPathName($camera);
 
-        $this->removePath($camera);
-        $this->addPath($camera);
+        Log::info('MediaMTX: Updating path via PATCH', ['camera_id' => $camera->id]);
+
+        $rtspUrl = $camera->rtsp_url;
+        $mtxUser = config('services.mediamtx.user');
+        $mtxPass = config('services.mediamtx.password');
+
+        $safeRtspUrl = escapeshellarg($rtspUrl);
+        $safeMtxUser = escapeshellarg($mtxUser);
+        $safeMtxPass = escapeshellarg($mtxPass);
+        $ffmpegCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
+            ." -fflags nobuffer -flags low_delay -analyzeduration 500000 -probesize 500000"
+            ." -rtsp_transport tcp -i {$safeRtspUrl}"
+            ." -c:v copy -c:a libopus -b:a 48k -frame_duration 20 -f rtsp rtsp://{$safeMtxUser}:{$safeMtxPass}@127.0.0.1:8554/{$pathName}";
+
+        $payload = [
+            'runOnDemand' => "sh -c '{$ffmpegCmd} > /tmp/ffmpeg_{$camera->id}.log 2>&1'",
+            'runOnDemandRestart' => true,
+            'runOnDemandStartTimeout' => '10s',
+            'runOnDemandCloseAfter' => '120s',
+        ];
+
+        if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
+            $safeYtUrl = escapeshellarg($camera->youtube_url);
+            $ytCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
+                ." -i rtsp://{$safeMtxUser}:{$safeMtxPass}@127.0.0.1:8554/{$pathName}"
+                ." -c copy -f flv {$safeYtUrl}";
+            $payload['runOnReady'] = "sh -c '{$ytCmd} > /tmp/yt_{$camera->id}.log 2>&1'";
+            $payload['runOnReadyRestart'] = true;
+        }
+
+        $response = Http::timeout($this->timeout)->patch("{$this->baseUrl}/config/paths/patch/{$pathName}", $payload);
+
+        if ($response->failed()) {
+            Log::error('MediaMTX: Failed to patch path', [
+                'camera_id' => $camera->id,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+            throw new RuntimeException('Failed to patch path in MediaMTX: '.$response->body());
+        }
     }
 
     public function getPathName(Camera $camera): string
