@@ -652,10 +652,11 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
             <!-- Building Accordions -->
             <Accordion v-else type="multiple" class="space-y-3" ref="accordionRef">
                 <AccordionItem
-                    v-for="(building, index) in mutableGroups"
+                    v-for="building in mutableGroups"
                     :key="building.id"
                     :value="building.id.toString()"
                     class="rounded-lg border bg-card shadow-sm overflow-hidden"
+                    v-slot="{ open }"
                 >
                     <AccordionTrigger 
                         class="px-4 py-3 hover:no-underline hover:bg-muted/50 [&[data-state=open]]:border-b transition-all"
@@ -685,7 +686,10 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         </div>
                     </AccordionTrigger>
                     <AccordionContent class="px-3 pb-3 pt-2">
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div
+                            v-if="open"
+                            class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        >
                             <Card
                                 v-for="item in building.auditoriums"
                                 :key="item.id"
