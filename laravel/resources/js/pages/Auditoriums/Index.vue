@@ -368,8 +368,8 @@ onMounted(() => {
     setTimeout(pollActiveLessons, 3000);
     setTimeout(pollPeopleCounts, 4000);
     
-    // Poll snapshots every 2 minutes (snapshots refresh every 5 min)
-    pollInterval = setInterval(pollSnapshots, 120000);
+    // Poll snapshots every 30 seconds
+    pollInterval = setInterval(pollSnapshots, 30000);
     
     // Poll lessons every 60 seconds
     lessonsPollInterval = setInterval(pollActiveLessons, 60000);

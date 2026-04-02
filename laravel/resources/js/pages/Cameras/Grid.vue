@@ -110,9 +110,9 @@ const camerasWithSnapshots = computed(() => {
 
 onMounted(() => {
     initializeSnapshots();
-    // Poll immediately, then every 2 minutes (snapshots refresh every 5 min)
+    // Poll immediately, then every 30 seconds
     pollSnapshots();
-    pollInterval = setInterval(pollSnapshots, 120000);
+    pollInterval = setInterval(pollSnapshots, 30000);
 });
 
 onUnmounted(() => {
