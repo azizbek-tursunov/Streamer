@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Hls from 'hls.js';
 import { onBeforeUnmount, onMounted, ref, watch, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RefreshCw } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +12,12 @@ const props = defineProps<{
     rotation?: number;
 }>();
 
+const page = usePage();
+const iceServers = computed(() => {
+    const turn = (page.props.turnServers as RTCIceServer[] | undefined) ?? [];
+    return [{ urls: 'stun:stun.l.google.com:19302' }, ...turn];
+});
+
 const videoRef = ref<HTMLVideoElement | null>(null);
 const containerRef = ref<HTMLDivElement | null>(null);
 const isLoading = ref(true);
@@ -20,10 +27,17 @@ const isFullscreen = ref(false);
 const showControls = ref(false);
 let hls: Hls | null = null;
 let peerConnection: RTCPeerConnection | null = null;
+let webrtcFetchController: AbortController | null = null;
 let retryCount = 0;
+let initAttempt = 0;
 const MAX_RETRIES = 10;
 const RETRY_DELAY = 2000;
+const WEBRTC_ICE_GATHER_TIMEOUT = 250;
+const WEBRTC_START_TIMEOUT = 4000;
+const WEBRTC_DISCONNECT_GRACE_PERIOD = 3000;
 let controlsTimeout: ReturnType<typeof setTimeout>;
+let webrtcStartTimeout: ReturnType<typeof setTimeout> | null = null;
+let webrtcDisconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 const containerWidth = ref(0);
@@ -31,7 +45,7 @@ const containerHeight = ref(0);
 
 const transformStyle = computed(() => {
     const r = Number(props.rotation || 0);
-    let style: any = {
+    const style: any = {
         transform: `rotate(${r}deg)`
     };
     if (r % 180 !== 0) {
@@ -84,6 +98,18 @@ const onMouseMove = () => {
 };
 
 const cleanupWebRTC = () => {
+    if (webrtcFetchController) {
+        webrtcFetchController.abort();
+        webrtcFetchController = null;
+    }
+    if (webrtcStartTimeout) {
+        clearTimeout(webrtcStartTimeout);
+        webrtcStartTimeout = null;
+    }
+    if (webrtcDisconnectTimeout) {
+        clearTimeout(webrtcDisconnectTimeout);
+        webrtcDisconnectTimeout = null;
+    }
     if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
@@ -97,14 +123,20 @@ const cleanupHls = () => {
     }
 };
 
-const initWebRTC = async (): Promise<boolean> => {
+const startHlsFallback = (attempt: number) => {
+    if (attempt !== initAttempt) return;
+    cleanupWebRTC();
+    initHls();
+};
+
+const initWebRTC = async (attempt: number): Promise<boolean> => {
     if (!videoRef.value || !props.whepUrl) return false;
 
     cleanupWebRTC();
 
     try {
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+            iceServers: iceServers.value,
         });
         peerConnection = pc;
 
@@ -112,6 +144,11 @@ const initWebRTC = async (): Promise<boolean> => {
         pc.addTransceiver('audio', { direction: 'recvonly' });
 
         pc.ontrack = (event) => {
+            if (attempt !== initAttempt) return;
+            if (webrtcStartTimeout) {
+                clearTimeout(webrtcStartTimeout);
+                webrtcStartTimeout = null;
+            }
             if (videoRef.value && event.streams[0]) {
                 videoRef.value.srcObject = event.streams[0];
                 isLoading.value = false;
@@ -129,38 +166,86 @@ const initWebRTC = async (): Promise<boolean> => {
             }
         };
 
-        pc.oniceconnectionstatechange = () => {
-            if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-                cleanupWebRTC();
-                initHls();
+        pc.onconnectionstatechange = () => {
+            if (attempt !== initAttempt) return;
+
+            if (pc.connectionState === 'connected') {
+                if (webrtcDisconnectTimeout) {
+                    clearTimeout(webrtcDisconnectTimeout);
+                    webrtcDisconnectTimeout = null;
+                }
+                return;
+            }
+
+            if (pc.connectionState === 'disconnected') {
+                if (!webrtcDisconnectTimeout) {
+                    webrtcDisconnectTimeout = setTimeout(() => {
+                        startHlsFallback(attempt);
+                    }, WEBRTC_DISCONNECT_GRACE_PERIOD);
+                }
+                return;
+            }
+
+            if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                startHlsFallback(attempt);
             }
         };
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        // Wait for ICE gathering to complete (or timeout after 1s)
+        // Don't hold the WHEP request for a full ICE gather; send after the
+        // first candidate appears or a short timeout expires.
         await new Promise<void>((resolve) => {
-            if (pc.iceGatheringState === 'complete') { resolve(); return; }
-            const timeout = setTimeout(resolve, 1000);
-            pc.onicegatheringstatechange = () => {
-                if (pc.iceGatheringState === 'complete') {
-                    clearTimeout(timeout);
-                    resolve();
-                }
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                resolve();
             };
+
+            if (pc.iceGatheringState === 'complete' || pc.localDescription?.sdp.includes('\na=candidate:')) {
+                finish();
+                return;
+            }
+
+            const timeout = setTimeout(finish, WEBRTC_ICE_GATHER_TIMEOUT);
+
+            pc.addEventListener('icecandidate', (event) => {
+                if (event.candidate || event.candidate === null) {
+                    finish();
+                }
+            });
+
+            pc.addEventListener('icegatheringstatechange', () => {
+                if (pc.iceGatheringState === 'complete') {
+                    finish();
+                }
+            });
         });
 
+        webrtcFetchController = new AbortController();
         const response = await fetch(props.whepUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/sdp' },
             body: pc.localDescription!.sdp,
+            signal: webrtcFetchController.signal,
         });
+        webrtcFetchController = null;
 
-        if (!response.ok) return false;
+        if (!response.ok) {
+            cleanupWebRTC();
+            return false;
+        }
 
         const answerSdp = await response.text();
         await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+        webrtcStartTimeout = setTimeout(() => {
+            if (videoRef.value?.srcObject) return;
+            startHlsFallback(attempt);
+        }, WEBRTC_START_TIMEOUT);
 
         return true;
     } catch {
@@ -242,15 +327,19 @@ const initHls = () => {
 
 const initPlayer = async () => {
     if (!videoRef.value) return;
+    const attempt = ++initAttempt;
     isLoading.value = true;
     retryCount = 0;
+    cleanupHls();
 
     // Try WebRTC first (sub-second latency), fall back to HLS
     if (props.whepUrl) {
-        const ok = await initWebRTC();
+        const ok = await initWebRTC(attempt);
+        if (attempt !== initAttempt) return;
         if (ok) return;
     }
 
+    if (attempt !== initAttempt) return;
     initHls();
 };
 
@@ -268,7 +357,7 @@ onMounted(() => {
     }
 });
 
-watch(() => props.streamUrl, () => {
+watch(() => [props.streamUrl, props.whepUrl], () => {
     initPlayer();
 });
 

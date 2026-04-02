@@ -42,6 +42,12 @@ return [
         'password' => env('MEDIAMTX_PASSWORD'),
     ],
 
+    'turn' => [
+        'url' => env('TURN_URL'),
+        'username' => env('TURN_USERNAME'),
+        'credential' => env('TURN_PASSWORD'),
+    ],
+
     'hemis' => [
         'base_url' => env('HEMIS_API_BASE_URL', 'https://student.namdu.uz/rest/v1'),
         'token' => env('HEMIS_API_TOKEN'),

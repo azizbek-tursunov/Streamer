@@ -50,6 +50,13 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'turnServers' => array_values(array_filter([
+                config('services.turn.url') ? [
+                    'urls' => config('services.turn.url'),
+                    'username' => config('services.turn.username'),
+                    'credential' => config('services.turn.credential'),
+                ] : null,
+            ])),
             'flash' => fn () => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

@@ -51,7 +51,7 @@ services:
       laravel:
         condition: service_started
     healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost/health" ]
+      test: [ "CMD", "wget", "-q", "--spider", "http://127.0.0.1/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -116,6 +116,9 @@ services:
       MEDIAMTX_VIEWER_USER: ${MEDIAMTX_VIEWER_USER:-viewer}
       MEDIAMTX_VIEWER_PASSWORD: ${MEDIAMTX_VIEWER_PASSWORD}
       MEDIAMTX_PUBLIC_IP: ${MEDIAMTX_PUBLIC_IP:-127.0.0.1}
+      TURN_URL: ${TURN_URL:-}
+      TURN_USERNAME: ${TURN_USERNAME:-}
+      TURN_PASSWORD: ${TURN_PASSWORD:-}
     entrypoint: ["/docker-entrypoint.sh"]
     networks:
       - univision-network
