@@ -20,11 +20,12 @@ class LessonFeedbackController extends Controller
             ->latest();
 
         if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('lesson_name', 'ilike', "%{$search}%")
-                  ->orWhere('employee_name', 'ilike', "%{$search}%")
-                  ->orWhere('group_name', 'ilike', "%{$search}%")
-                  ->orWhere('message', 'ilike', "%{$search}%");
+            $term = '%'.mb_strtolower($search).'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(lesson_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(employee_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(group_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(message) LIKE ?', [$term]);
             });
         }
 
@@ -105,11 +106,12 @@ class LessonFeedbackController extends Controller
         $query = LessonFeedback::query()->latest();
 
         if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('lesson_name', 'ilike', "%{$search}%")
-                  ->orWhere('employee_name', 'ilike', "%{$search}%")
-                  ->orWhere('group_name', 'ilike', "%{$search}%")
-                  ->orWhere('message', 'ilike', "%{$search}%");
+            $term = '%'.mb_strtolower($search).'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(lesson_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(employee_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(group_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(message) LIKE ?', [$term]);
             });
         }
 

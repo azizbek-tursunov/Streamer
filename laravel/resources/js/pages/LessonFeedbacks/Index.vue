@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
-import { ThumbsUp, ThumbsDown, MessageSquareText, Calendar, Clock, MapPin, Users, User, Search, Edit, Eye, Trash2, Download, ImageIcon } from 'lucide-vue-next';
+import { MessageSquareText, Search, Download, ImageIcon, ThumbsUp, ThumbsDown } from 'lucide-vue-next';
 
 const props = defineProps<{
     feedbacks: {
@@ -63,15 +63,47 @@ const exportUrl = computed(() => {
     return '/feedbacks/export' + (qs ? '?' + qs : '');
 });
 
-const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
+const DAYS_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+
+const formatDateHeader = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy} — ${DAYS_UZ[d.getDay()]}`;
 };
+
+const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const getDateKey = (dateStr: string) => {
+    return new Date(dateStr).toISOString().slice(0, 10);
+};
+
+const getPara = (startTime: string | null): string => {
+    if (!startTime) return '—';
+    const [h, m] = startTime.split(':').map(Number);
+    const mins = h * 60 + m;
+    if (mins < 9 * 60 + 15) return '1';
+    if (mins < 10 * 60 + 45) return '2';
+    if (mins < 12 * 60 + 30) return '3';
+    if (mins < 15 * 60) return '4';
+    if (mins < 16 * 60 + 30) return '5';
+    return '6';
+};
+
+// Group feedbacks by date
+const grouped = computed(() => {
+    const groups: Record<string, typeof props.feedbacks.data> = {};
+    for (const fb of props.feedbacks.data) {
+        const key = getDateKey(fb.created_at);
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(fb);
+    }
+    return groups;
+});
 </script>
 
 <template>
@@ -82,14 +114,12 @@ const formatDate = (dateStr: string) => {
         { title: 'Dars tahlili', href: '/feedbacks' },
     ]">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
+
+            <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                        Dars tahlili
-                    </h1>
-                    <p class="text-sm text-muted-foreground mt-1">
-                        O'qituvchilar va ma'muriyat tomonidan dars jarayonlari haqida qoldirilgan fikr-mulohazalar.
-                    </p>
+                    <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Dars tahlili</h1>
+                    <p class="text-sm text-muted-foreground mt-1">O'qituvchilar va ma'muriyat tomonidan dars jarayonlari haqida qoldirilgan fikr-mulohazalar.</p>
                 </div>
                 <a :href="exportUrl">
                     <Button variant="outline" size="sm" class="gap-2">
@@ -100,19 +130,17 @@ const formatDate = (dateStr: string) => {
             </div>
 
             <!-- Filters -->
-            <div class="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 w-full">
-                <!-- Search Input -->
+            <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full">
                 <div class="relative w-full sm:max-w-sm flex-1">
                     <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        v-model="search" 
-                        type="search" 
-                        placeholder="Fan, o'qituvchi, guruh yoki matn orqali izlash..." 
-                        class="pl-8 bg-background border-input"
+                    <Input
+                        v-model="search"
+                        type="search"
+                        placeholder="Fan, o'qituvchi, guruh yoki matn..."
+                        class="pl-8 bg-background"
                     />
                 </div>
 
-                <!-- Building Filter -->
                 <Select v-model="building">
                     <SelectTrigger class="w-full sm:w-[180px] bg-background">
                         <SelectValue placeholder="Bino tanlang" />
@@ -123,10 +151,9 @@ const formatDate = (dateStr: string) => {
                     </SelectContent>
                 </Select>
 
-                <!-- Type Filter -->
                 <Select v-model="type">
-                    <SelectTrigger class="w-full sm:w-[150px] bg-background">
-                        <SelectValue placeholder="Baholash turi" />
+                    <SelectTrigger class="w-full sm:w-[140px] bg-background">
+                        <SelectValue placeholder="Holati" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Barchasi</SelectItem>
@@ -135,18 +162,13 @@ const formatDate = (dateStr: string) => {
                     </SelectContent>
                 </Select>
 
-                <!-- Date Filter -->
-                <div class="relative w-full sm:w-[150px]">
-                    <Input 
-                        v-model="date" 
-                        type="date" 
-                        class="w-full bg-background" 
-                        title="Sana bo'yicha filtrlash"
-                    />
-                </div>
-                
-                <!-- Clear Filters Button -->
-                <button 
+                <Input
+                    v-model="date"
+                    type="date"
+                    class="w-full sm:w-[150px] bg-background"
+                />
+
+                <button
                     v-if="search || type !== 'all' || date || building !== 'all'"
                     @click="search = ''; type = 'all'; date = ''; building = 'all';"
                     class="text-sm text-primary hover:underline self-center whitespace-nowrap px-2"
@@ -155,120 +177,127 @@ const formatDate = (dateStr: string) => {
                 </button>
             </div>
 
-            <div class="border rounded-lg overflow-hidden bg-background">
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50 border-b">
-                        <tr>
-                            <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground">Rasm</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Dars</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">O'qituvchi</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[100px]">Guruh</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Auditoriya</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Vaqt</th>
-                            <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground">Holati</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground min-w-[200px]">Mulohaza</th>
-                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Kiritdi</th>
+            <!-- Empty state -->
+            <div v-if="feedbacks.data.length === 0" class="border rounded-lg p-12 text-center text-muted-foreground bg-background">
+                <div class="flex flex-col items-center gap-2">
+                    <MessageSquareText class="h-8 w-8 opacity-20" />
+                    <span>Hech qanday tahlil topilmadi.</span>
+                </div>
+            </div>
+
+            <!-- Schedule Table -->
+            <div v-else class="border rounded-lg overflow-hidden bg-background">
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-muted border-b-2 border-border">
+                            <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground w-[70px] border-r border-border">Para</th>
+                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border">Fan</th>
+                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[190px]">O'qituvchi</th>
+                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[110px]">Guruh</th>
+                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[160px]">Auditoriya</th>
+                            <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground border-r border-border w-[80px]">Holat</th>
+                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border">Mulohaza</th>
+                            <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground border-r border-border w-[52px]">Rasm</th>
+                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground w-[130px]">Kiritdi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="feedbacks.data.length === 0">
-                            <td colspan="9" class="p-8 text-center text-muted-foreground">
-                                <div class="flex flex-col items-center justify-center gap-2">
-                                    <MessageSquareText class="h-8 w-8 opacity-20" />
-                                    <span>Hozircha hech qanday tahlil qoldirilmagan.</span>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-for="feedback in feedbacks.data" :key="feedback.id" class="border-b transition-colors hover:bg-muted/50">
-                            <!-- Snapshot -->
-                            <td class="p-4 align-top text-center w-[60px]">
-                                <button
-                                    v-if="feedback.snapshot_url"
-                                    @click="previewImage = feedback.snapshot_url"
-                                    class="inline-block rounded overflow-hidden border border-border hover:ring-2 hover:ring-primary transition-all cursor-pointer"
-                                >
-                                    <img :src="feedback.snapshot_url" class="h-10 w-16 object-cover" alt="Snapshot" />
-                                </button>
-                                <span v-else class="text-muted-foreground/30">
-                                    <ImageIcon class="h-4 w-4 mx-auto" />
-                                </span>
-                            </td>
+                        <template v-for="(items, dateKey) in grouped" :key="dateKey">
+                            <!-- Date header row -->
+                            <tr class="bg-primary/8 dark:bg-primary/10 border-y border-primary/20">
+                                <td colspan="9" class="px-4 py-1.5">
+                                    <div class="flex items-center gap-3">
+                                        <span class="font-semibold text-primary text-sm">{{ formatDateHeader(items[0].created_at) }}</span>
+                                        <span class="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{{ items.length }} ta yozuv</span>
+                                    </div>
+                                </td>
+                            </tr>
 
-                            <!-- Lesson -->
-                            <td class="p-4 align-top w-[200px]">
-                                <span class="font-medium" :title="feedback.lesson_name ?? ''">
-                                    {{ feedback.lesson_name || 'Noma\'lum fan' }}
-                                </span>
-                            </td>
+                            <!-- Feedback rows for that date -->
+                            <tr
+                                v-for="(fb, idx) in items"
+                                :key="fb.id"
+                                class="border-b border-border/60 transition-colors hover:bg-muted/40"
+                                :class="idx % 2 === 1 ? 'bg-muted/20' : ''"
+                            >
+                                <!-- Para + time -->
+                                <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
+                                    <div class="flex flex-col items-center gap-0.5">
+                                        <span class="font-bold text-base leading-none text-foreground">{{ getPara(fb.start_time) }}</span>
+                                        <span class="text-[10px] text-muted-foreground leading-none">para</span>
+                                        <span class="text-[10px] text-muted-foreground mt-1 leading-none">
+                                            {{ fb.start_time?.substring(0, 5) || '?' }}-{{ fb.end_time?.substring(0, 5) || '?' }}
+                                        </span>
+                                    </div>
+                                </td>
 
-                            <!-- Teacher -->
-                            <td class="p-4 align-top w-[180px]">
-                                <span class="font-medium">
-                                    {{ feedback.employee_name || 'Noma\'lum o\'qituvchi' }}
-                                </span>
-                            </td>
+                                <!-- Subject -->
+                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                    <span class="font-medium text-sm leading-snug">{{ fb.lesson_name || 'Noma\'lum fan' }}</span>
+                                </td>
 
-                            <!-- Group -->
-                            <td class="p-4 align-top">
-                                <span class="text-sm">
-                                    {{ feedback.group_name || 'Guruhsiz' }}
-                                </span>
-                            </td>
+                                <!-- Teacher -->
+                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                    <span class="text-sm">{{ fb.employee_name || '—' }}</span>
+                                </td>
 
-                            <!-- Auditorium -->
-                            <td class="p-4 align-top w-[180px]">
-                                <div class="flex flex-col gap-1 text-sm">
-                                    <span class="font-medium truncate" :title="feedback.auditorium?.building?.name">
-                                        {{ feedback.auditorium?.building?.name || 'Binoga biriktirilmagan' }}
-                                    </span>
-                                    <span class="text-xs text-muted-foreground" :title="feedback.auditorium?.name">
-                                        {{ feedback.auditorium?.name || 'Topilmadi' }}
-                                    </span>
-                                </div>
-                            </td>
+                                <!-- Group -->
+                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                    <span class="text-sm font-mono">{{ fb.group_name || '—' }}</span>
+                                </td>
 
-                            <!-- Time -->
-                            <td class="p-4 align-top">
-                                <span class="text-sm border border-border/40 rounded px-1.5 py-0.5 bg-muted/60" v-if="feedback.start_time || feedback.end_time">
-                                    {{ feedback.start_time?.substring(0, 5) || '?' }} - {{ feedback.end_time?.substring(0, 5) || '?' }}
-                                </span>
-                            </td>
+                                <!-- Auditorium -->
+                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                    <div class="text-sm leading-snug">
+                                        <div class="text-muted-foreground text-xs">{{ fb.auditorium?.building?.name || '' }}</div>
+                                        <div class="font-medium">{{ fb.auditorium?.name || '—' }}</div>
+                                    </div>
+                                </td>
 
-                            <!-- Type badge -->
-                            <td class="p-4 align-top text-center">
-                                <Badge 
-                                    v-if="feedback.type === 'good'" 
-                                    class="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800 shadow-none px-2.5 mx-auto w-fit font-medium"
-                                >
-                                    Ijobiy
-                                </Badge>
-                                <Badge 
-                                    v-else 
-                                    class="bg-red-100 text-red-800 border-red-200 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-400 dark:border-red-800 shadow-none px-2.5 mx-auto w-fit font-medium"
-                                >
-                                    Salbiy
-                                </Badge>
-                            </td>
+                                <!-- Status -->
+                                <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
+                                    <div v-if="fb.type === 'good'" class="flex flex-col items-center gap-0.5">
+                                        <ThumbsUp class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                        <span class="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Ijobiy</span>
+                                    </div>
+                                    <div v-else class="flex flex-col items-center gap-0.5">
+                                        <ThumbsDown class="h-4 w-4 text-red-500 dark:text-red-400" />
+                                        <span class="text-[10px] text-red-600 dark:text-red-400 font-medium">Salbiy</span>
+                                    </div>
+                                </td>
 
-                            <!-- Message -->
-                            <td class="p-4 align-top max-w-[300px]">
-                                <p class="whitespace-pre-wrap text-sm" v-if="feedback.message">{{ feedback.message }}</p>
-                                <p class="text-muted-foreground/50 text-xs italic" v-else>Izohlarsiz...</p>
-                            </td>
+                                <!-- Message -->
+                                <td class="px-3 py-2.5 align-middle border-r border-border/40 max-w-[260px]">
+                                    <p class="text-sm whitespace-pre-wrap" v-if="fb.message">{{ fb.message }}</p>
+                                    <p class="text-xs text-muted-foreground/40 italic" v-else>—</p>
+                                </td>
 
-                            <!-- User & Date -->
-                            <td class="p-4 align-top">
-                                <div class="flex flex-col gap-1 text-xs">
-                                    <span class="font-medium">{{ feedback.user?.name || 'Tizim' }}</span>
-                                    <span class="text-muted-foreground">{{ formatDate(feedback.created_at) }}</span>
-                                </div>
-                            </td>
-                        </tr>
+                                <!-- Snapshot -->
+                                <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
+                                    <button
+                                        v-if="fb.snapshot_url"
+                                        @click="previewImage = fb.snapshot_url"
+                                        class="inline-block rounded overflow-hidden border border-border hover:ring-2 hover:ring-primary transition-all"
+                                    >
+                                        <img :src="fb.snapshot_url" class="h-9 w-14 object-cover" alt="Snapshot" />
+                                    </button>
+                                    <ImageIcon v-else class="h-4 w-4 mx-auto text-muted-foreground/30" />
+                                </td>
+
+                                <!-- Entered by -->
+                                <td class="px-3 py-2.5 align-middle">
+                                    <div class="flex flex-col gap-0.5 text-xs">
+                                        <span class="font-medium text-foreground">{{ fb.user?.name || 'Tizim' }}</span>
+                                        <span class="text-muted-foreground">{{ formatTime(fb.created_at) }}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
             </div>
 
-            <div class="mt-4">
+            <div class="mt-2">
                 <Pagination :links="feedbacks.links" />
             </div>
         </div>
