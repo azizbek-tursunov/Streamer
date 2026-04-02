@@ -314,6 +314,8 @@ const snapshotUrls = reactive<Record<number, string>>({});
 const cachedTimestamps = reactive<Record<number, number>>({});
 const activeLessons = reactive<Record<number, any>>({});
 const peopleCounts = reactive<Record<number, number>>({});
+// Per-auditorium image state: 'loading' | 'loaded' | 'error'
+const imgState = reactive<Record<number, 'loading' | 'loaded' | 'error'>>({});
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 let lessonsPollInterval: ReturnType<typeof setInterval> | null = null;
 let peopleCountsPollInterval: ReturnType<typeof setInterval> | null = null;
@@ -328,6 +330,10 @@ const pollSnapshots = async () => {
             if (info && info.timestamp !== cachedTimestamps[id]) {
                 snapshotUrls[id] = `${info.url}?t=${info.timestamp}`;
                 cachedTimestamps[id] = info.timestamp;
+                // Reset image state for auditoriums using this camera
+                props.auditoriums.forEach(a => {
+                    if (a.camera_id === id) imgState[a.id] = 'loading';
+                });
             }
         });
     } catch (error) {
@@ -362,8 +368,8 @@ onMounted(() => {
     setTimeout(pollActiveLessons, 3000);
     setTimeout(pollPeopleCounts, 4000);
     
-    // Poll snapshots every 30 seconds
-    pollInterval = setInterval(pollSnapshots, 30000);
+    // Poll snapshots every 2 minutes (snapshots refresh every 5 min)
+    pollInterval = setInterval(pollSnapshots, 120000);
     
     // Poll lessons every 60 seconds
     lessonsPollInterval = setInterval(pollActiveLessons, 60000);
@@ -371,8 +377,9 @@ onMounted(() => {
     // Poll people counts every 30 seconds
     peopleCountsPollInterval = setInterval(pollPeopleCounts, 30000);
     
-    // Initialize activeLessons from props
+    // Initialize imgState and activeLessons from props
     props.auditoriums.forEach(a => {
+        imgState[a.id] = a.camera_snapshot ? 'loading' : 'error';
         if (a.current_lesson) {
             activeLessons[a.code] = a.current_lesson;
         }
@@ -685,13 +692,25 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden"
                                 :class="{ 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) }"
                             >
-                                <div 
-                                    v-if="item.camera_snapshot" 
+                                <div
+                                    v-if="item.camera_snapshot && imgState[item.id] !== 'error'"
                                     class="w-full aspect-video bg-muted border-b relative group/image"
                                     :class="{'cursor-pointer': !isReordering}"
                                     @click.stop="isAssigning ? toggleSelection(item.id) : (!isReordering ? router.visit(`/auditoriums/${item.id}`) : null)"
                                 >
-                                    <img :src="item.camera_id && snapshotUrls[item.camera_id] ? snapshotUrls[item.camera_id] : item.camera_snapshot" class="object-cover w-full h-full" alt="Camera Snapshot" />
+                                    <!-- Skeleton shimmer while loading -->
+                                    <div v-if="imgState[item.id] === 'loading'" class="absolute inset-0 bg-muted animate-pulse" />
+
+                                    <img
+                                        :src="item.camera_id && snapshotUrls[item.camera_id] ? snapshotUrls[item.camera_id] : item.camera_snapshot"
+                                        class="object-cover w-full h-full transition-opacity duration-300"
+                                        :class="{ 'opacity-0': imgState[item.id] === 'loading' }"
+                                        alt="Camera Snapshot"
+                                        loading="lazy"
+                                        decoding="async"
+                                        @load="imgState[item.id] = 'loaded'"
+                                        @error="imgState[item.id] = 'error'"
+                                    />
                                     <div class="absolute inset-0 bg-black/10 transition-colors" :class="!isAssigning && !isReordering ? 'group-hover/image:bg-transparent' : ''"></div>
                                     <div v-if="!isAssigning && !isReordering" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity">
                                         <div class="bg-black/50 text-white rounded-full p-3 backdrop-blur-sm">

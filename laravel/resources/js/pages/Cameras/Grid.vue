@@ -58,11 +58,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 const snapshotUrls = reactive<Record<number, SnapshotInfo | null>>({});
 const cachedTimestamps = reactive<Record<number, number>>({});
 
+// Per-camera image state: 'loading' | 'loaded' | 'error'
+const imgState = reactive<Record<number, 'loading' | 'loaded' | 'error'>>({});
+
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 // Initialize snapshot URLs from props
 const initializeSnapshots = () => {
     props.cameras.data.forEach(camera => {
+        imgState[camera.id] = camera.snapshot_url ? 'loading' : 'error';
         if (camera.snapshot_url) {
             snapshotUrls[camera.id] = {
                 url: camera.snapshot_url,
@@ -74,20 +78,21 @@ const initializeSnapshots = () => {
 };
 
 // Poll for new snapshots - only update if timestamp changed
+// Snapshots are captured every 5 min, so polling every 2 min is sufficient
 const pollSnapshots = async () => {
     try {
         const response = await fetch('/cameras/snapshots');
         const data: Record<number, SnapshotInfo | null> = await response.json();
-        
+
         Object.entries(data).forEach(([cameraId, info]) => {
             const id = parseInt(cameraId);
             if (info && info.timestamp !== cachedTimestamps[id]) {
-                // New snapshot detected! Update the URL
                 snapshotUrls[id] = {
                     url: `${info.url}?t=${info.timestamp}`,
                     timestamp: info.timestamp
                 };
                 cachedTimestamps[id] = info.timestamp;
+                imgState[id] = 'loading'; // reset so skeleton shows briefly on update
             }
         });
     } catch (error) {
@@ -105,9 +110,9 @@ const camerasWithSnapshots = computed(() => {
 
 onMounted(() => {
     initializeSnapshots();
-    // Poll immediately, then every 30 seconds
+    // Poll immediately, then every 2 minutes (snapshots refresh every 5 min)
     pollSnapshots();
-    pollInterval = setInterval(pollSnapshots, 30000);
+    pollInterval = setInterval(pollSnapshots, 120000);
 });
 
 onUnmounted(() => {
@@ -161,15 +166,26 @@ onUnmounted(() => {
                     class="relative bg-black group overflow-hidden rounded-lg flex flex-col"
                 >
                     <div class="relative aspect-video w-full overflow-hidden">
+                        <!-- Skeleton shimmer while loading -->
+                        <div
+                            v-if="imgState[camera.id] === 'loading'"
+                            class="absolute inset-0 bg-zinc-800 animate-pulse"
+                        />
+
                         <img
-                            v-if="camera.displaySnapshotUrl"
+                            v-if="camera.displaySnapshotUrl && imgState[camera.id] !== 'error'"
                             :src="camera.displaySnapshotUrl"
                             :alt="camera.name"
+                            loading="lazy"
+                            decoding="async"
                             class="h-full w-full object-cover transition-transform duration-300"
+                            :class="{ 'opacity-0': imgState[camera.id] === 'loading' }"
                             :style="{ transform: `rotate(${camera.rotation || 0}deg) ${Math.abs(camera.rotation || 0) % 180 === 90 ? 'scale(1.777)' : ''}` }"
+                            @load="imgState[camera.id] = 'loaded'"
+                            @error="imgState[camera.id] = 'error'"
                         />
-                        <div v-else class="flex h-full w-full items-center justify-center bg-zinc-800">
-                            <span class="text-xs text-muted-foreground p-4 text-center">Rasm yo'q</span>
+                        <div v-if="imgState[camera.id] === 'error'" class="flex h-full w-full items-center justify-center bg-zinc-800">
+                            <span class="text-xs text-zinc-500 p-4 text-center">Rasm yo'q</span>
                         </div>
 
                         <!-- Live indicator -->
