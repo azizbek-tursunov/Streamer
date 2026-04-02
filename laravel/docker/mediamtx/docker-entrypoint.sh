@@ -10,10 +10,11 @@ sed \
     -e "s|\${MEDIAMTX_PUBLIC_IP}|${MEDIAMTX_PUBLIC_IP}|g" \
     /mediamtx.yml.template > /mediamtx.yml
 
-# Append TURN server if configured (needed when WebRTC UDP port is blocked by NAT/firewall)
+# Inject TURN server into webrtcICEServers2 (needed when WebRTC UDP port is blocked by NAT/firewall)
 if [ -n "${TURN_URL}" ]; then
-    printf '  - url: "%s"\n    username: "%s"\n    password: "%s"\n' \
-        "${TURN_URL}" "${TURN_USERNAME}" "${TURN_PASSWORD}" >> /mediamtx.yml
+    sed -i "s|# TURN_SERVER_PLACEHOLDER|  - url: \"${TURN_URL}\"\n    username: \"${TURN_USERNAME}\"\n    password: \"${TURN_PASSWORD}\"|" /mediamtx.yml
+else
+    sed -i "/# TURN_SERVER_PLACEHOLDER/d" /mediamtx.yml
 fi
 
 exec /mediamtx
