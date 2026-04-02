@@ -8,6 +8,7 @@ sed \
     -e "s|\${MEDIAMTX_VIEWER_USER}|${MEDIAMTX_VIEWER_USER}|g" \
     -e "s|\${MEDIAMTX_VIEWER_PASSWORD}|${MEDIAMTX_VIEWER_PASSWORD}|g" \
     -e "s|\${MEDIAMTX_PUBLIC_IP}|${MEDIAMTX_PUBLIC_IP}|g" \
+    -e "s|\${MEDIAMTX_INTERNAL_IP}|${MEDIAMTX_INTERNAL_IP}|g" \
     /mediamtx.yml.template > /mediamtx.yml
 
 # Inject TURN server into webrtcICEServers2 (needed when WebRTC UDP port is blocked by NAT/firewall)
