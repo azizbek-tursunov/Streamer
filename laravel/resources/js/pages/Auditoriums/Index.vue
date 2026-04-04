@@ -693,8 +693,13 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             <Card
                                 v-for="item in building.auditoriums"
                                 :key="item.id"
-                                class="group relative flex flex-col justify-between py-0 transition-all hover:shadow-md hover:border-primary/30 overflow-hidden"
-                                :class="{ 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) }"
+                                class="group relative flex flex-col justify-between py-0 transition-all overflow-hidden"
+                                :class="[
+                                    !item.camera_id
+                                        ? 'border-dashed border-border/60 opacity-60 hover:opacity-80'
+                                        : 'hover:shadow-md hover:border-primary/30',
+                                    { 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) }
+                                ]"
                             >
                                 <div
                                     v-if="item.camera_snapshot && imgState[item.id] !== 'error'"
@@ -722,8 +727,8 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                         </div>
                                     </div>
                                 </div>
-                                <div 
-                                    v-else-if="item.camera_id" 
+                                <div
+                                    v-else-if="item.camera_id"
                                     class="w-full aspect-video bg-muted border-b flex items-center justify-center text-muted-foreground relative"
                                     :class="{'cursor-pointer': !isReordering}"
                                     @click.stop="isAssigning ? toggleSelection(item.id) : (!isReordering ? router.visit(`/auditoriums/${item.id}`) : null)"
@@ -731,6 +736,18 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     <div class="flex flex-col items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
                                         <Video class="h-8 w-8" />
                                         <span class="text-xs">Ulanmoqda... / Ko'rish</span>
+                                    </div>
+                                </div>
+                                <!-- No camera assigned — visible only to managers -->
+                                <div
+                                    v-else
+                                    class="w-full aspect-video bg-muted/30 border-b border-dashed flex items-center justify-center"
+                                    :class="{'cursor-pointer': !isReordering && hasPermission('manage-auditorium-cameras')}"
+                                    @click.stop="hasPermission('manage-auditorium-cameras') && !isReordering && openCameraDialog(item)"
+                                >
+                                    <div class="flex flex-col items-center gap-1.5 text-muted-foreground/50">
+                                        <LinkIcon class="h-7 w-7" />
+                                        <span class="text-[11px]">Kamera ulanmagan</span>
                                     </div>
                                 </div>
                                 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Camera;
 use App\Models\Hemis\Auditorium;
-use App\Models\PeopleCount;
 use App\Services\HemisIntegrations\HemisApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +26,12 @@ class AuditoriumController extends Controller
 
         if ($request->filled('faculty_id')) {
             $query->where('faculty_id', $request->faculty_id);
+        }
+
+        // Regular users only see auditoriums that have a camera assigned.
+        // IT-technicians, admins, and super-admins see all (so they can assign cameras).
+        if (!auth()->user()->hasPermissionTo('manage-auditorium-cameras')) {
+            $query->whereNotNull('camera_id');
         }
 
         $auditoriums = $query->orderBy('building_sort_order')->orderBy('building_name')->orderBy('sort_order')->orderBy('name')->get();
@@ -120,13 +125,7 @@ class AuditoriumController extends Controller
                 'id' => $l->id,
                 'subject' => ['name' => $l->subject_name],
                 'employee' => ['name' => $l->employee_name],
-                'group' => [
-                        'name' => $l->group_name,
-                        'student_count' => $l->raw_data['group']['studentsCount']
-                            ?? $l->raw_data['group']['students_count']
-                            ?? $l->raw_data['group']['count']
-                            ?? null,
-                    ],
+                'group' => ['name' => $l->group_name],
                 'trainingType' => ['name' => $l->training_type_name ?? ''],
                 'lessonPair' => [
                     'start_time' => $l->start_time instanceof \Carbon\Carbon ? $l->start_time->format('H:i') : $l->start_time,
@@ -139,17 +138,10 @@ class AuditoriumController extends Controller
             ])
             ->toArray();
 
-        $peopleCount = $auditorium->camera_id
-            ? PeopleCount::where('camera_id', $auditorium->camera_id)
-                ->latest('counted_at')
-                ->value('people_count')
-            : null;
-
         return Inertia::render('Auditoriums/Show', [
             'auditorium' => $auditorium,
             'schedule' => $lessons,
             'now' => now()->timestamp,
-            'people_count' => $peopleCount,
         ]);
     }
 

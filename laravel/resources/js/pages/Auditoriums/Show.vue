@@ -21,7 +21,6 @@ const props = defineProps<{
     auditorium: Auditorium;
     schedule: Lesson[];
     now: number;
-    people_count: number | null;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -197,18 +196,6 @@ const submitFeedback = () => {
                                     </div>
                                 </div>
                             </div>
-                            <!-- Attendance (mobile) -->
-                            <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
-                                <div class="flex flex-1 flex-col items-center text-center">
-                                    <span class="text-xl font-bold leading-none">{{ props.people_count ?? '—' }}</span>
-                                    <span class="mt-0.5 text-[10px] text-muted-foreground">Kameradan</span>
-                                </div>
-                                <div class="h-8 w-px bg-border"></div>
-                                <div class="flex flex-1 flex-col items-center text-center">
-                                    <span class="text-xl font-bold leading-none">{{ currentLesson.group.student_count ?? '—' }}</span>
-                                    <span class="mt-0.5 text-[10px] text-muted-foreground">Ro'yxatda</span>
-                                </div>
-                            </div>
                             <div class="flex items-center gap-2 mt-2 text-sm font-medium text-primary bg-primary/10 p-2 rounded-md justify-center">
                                 {{ currentLesson.startTime }} - {{ currentLesson.endTime }}
                             </div>
@@ -261,18 +248,6 @@ const submitFeedback = () => {
                                         <div class="flex flex-col">
                                             <span class="text-xs text-muted-foreground">Guruh</span>
                                             <span class="font-medium">{{ currentLesson.group.name }}</span>
-                                        </div>
-                                    </div>
-                                    <!-- Attendance comparison -->
-                                    <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
-                                        <div class="flex flex-1 flex-col items-center text-center">
-                                            <span class="text-xl font-bold leading-none">{{ props.people_count ?? '—' }}</span>
-                                            <span class="mt-0.5 text-[10px] text-muted-foreground">Kameradan</span>
-                                        </div>
-                                        <div class="h-8 w-px bg-border"></div>
-                                        <div class="flex flex-1 flex-col items-center text-center">
-                                            <span class="text-xl font-bold leading-none">{{ currentLesson.group.student_count ?? '—' }}</span>
-                                            <span class="mt-0.5 text-[10px] text-muted-foreground">Ro'yxatda</span>
                                         </div>
                                     </div>
                                     <div class="flex items-start gap-3">
