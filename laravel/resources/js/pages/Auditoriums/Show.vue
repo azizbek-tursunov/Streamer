@@ -21,6 +21,7 @@ const props = defineProps<{
     auditorium: Auditorium;
     schedule: Lesson[];
     now: number;
+    people_count: number | null;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -250,6 +251,13 @@ const submitFeedback = () => {
                                             <span class="font-medium">{{ currentLesson.group.name }}</span>
                                         </div>
                                     </div>
+                                    <div v-if="props.people_count !== null && auditorium.camera_id" class="flex items-start gap-3">
+                                        <Users class="h-4 w-4 mt-0.5 text-primary" />
+                                        <div class="flex flex-col">
+                                            <span class="text-xs text-muted-foreground">Xonada (AI)</span>
+                                            <span class="font-bold text-primary">{{ props.people_count }} kishi</span>
+                                        </div>
+                                    </div>
                                     <div class="flex items-start gap-3">
                                         <Clock class="h-4 w-4 mt-0.5 text-muted-foreground" />
                                         <div class="flex flex-col">
@@ -259,9 +267,15 @@ const submitFeedback = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div v-else class="py-8 flex flex-col items-center justify-center text-center text-muted-foreground">
+                            <div v-else class="flex flex-col items-center justify-center text-center text-muted-foreground"
+                                :class="props.people_count !== null && auditorium.camera_id ? 'pt-6 pb-3' : 'py-8'"
+                            >
                                 <BookOpen class="h-10 w-10 mb-3 opacity-20" />
                                 <p>Xona bo'sh</p>
+                                <div v-if="props.people_count !== null && auditorium.camera_id" class="mt-4 flex flex-col items-center">
+                                    <span class="text-3xl font-bold text-primary">{{ props.people_count }}</span>
+                                    <span class="text-xs text-muted-foreground mt-0.5">kishi (AI)</span>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
