@@ -31,7 +31,8 @@ class AuditoriumController extends Controller
 
         // Regular users only see auditoriums that have a camera assigned.
         // IT-technicians, admins, and super-admins see all (so they can assign cameras).
-        if (!auth()->user()->hasPermissionTo('manage-auditorium-cameras')) {
+        // Use can() not hasPermissionTo() — the latter skips Gate::before, breaking super-admin.
+        if (!auth()->user()->can('manage-auditorium-cameras')) {
             $query->whereNotNull('camera_id');
         }
 
