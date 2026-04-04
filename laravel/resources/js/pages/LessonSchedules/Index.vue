@@ -33,6 +33,7 @@ const props = defineProps<{
     };
     filters: {
         search?: string;
+        para?: string;
     };
 }>();
 
@@ -44,6 +45,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const search = ref(props.filters.search || '');
+const selectedPara = ref(props.filters.para || '');
+
+const navigate = (overrides: Record<string, string>) => {
+    const params: Record<string, string> = {};
+    if (search.value) params.search = search.value;
+    if (selectedPara.value) params.para = selectedPara.value;
+    Object.assign(params, overrides);
+    // clear keys that are now empty
+    Object.keys(params).forEach(k => { if (!params[k]) delete params[k]; });
+    router.get('/lesson-schedules', params, { preserveState: true, replace: true });
+};
+
+const setPara = (p: string) => {
+    selectedPara.value = p === selectedPara.value ? '' : p;
+    navigate({ para: selectedPara.value });
+};
 
 // Sync Progress State
 const showSyncDialog = ref(false);
@@ -53,11 +70,7 @@ const syncLog = ref<string[]>([]);
 const syncedCount = ref(0);
 
 watch(search, debounce((value: string) => {
-    router.get(
-        '/lesson-schedules',
-        { search: value },
-        { preserveState: true, replace: true }
-    );
+    navigate({ search: value });
 }, 300));
 
 const startSync = async () => {
@@ -164,7 +177,7 @@ const typeColor = (name: string | undefined): string => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Head title="Dars Jadvali" />
 
-        <div class="flex h-full flex-1 flex-col gap-4 p-4">
+        <div class="flex h-full flex-1 flex-col gap-3 p-4">
 
             <!-- Header -->
             <div class="flex items-center justify-between flex-wrap gap-3">
@@ -178,15 +191,28 @@ const typeColor = (name: string | undefined): string => {
                 </Button>
             </div>
 
-            <!-- Search -->
-            <div class="relative w-full max-w-sm">
-                <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    v-model="search"
-                    type="search"
-                    placeholder="Fan, o'qituvchi, guruh yoki auditoriya..."
-                    class="pl-8 bg-background"
-                />
+            <!-- Search + Para filter -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="relative w-full max-w-sm">
+                    <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        v-model="search"
+                        type="search"
+                        placeholder="Fan, o'qituvchi, guruh yoki auditoriya..."
+                        class="pl-8 bg-background"
+                    />
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="text-xs text-muted-foreground mr-1">Para:</span>
+                    <Button
+                        v-for="p in ['1','2','3','4','5','6']"
+                        :key="p"
+                        size="sm"
+                        :variant="selectedPara === p ? 'default' : 'outline'"
+                        class="h-8 w-8 p-0 text-xs"
+                        @click="setPara(p)"
+                    >{{ p }}</Button>
+                </div>
             </div>
 
             <!-- Empty state -->
@@ -202,12 +228,12 @@ const typeColor = (name: string | undefined): string => {
                 <table class="w-full text-sm border-collapse">
                     <thead>
                         <tr class="bg-muted border-b-2 border-border">
-                            <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground w-[70px] border-r border-border">Para</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border">Fan</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[200px]">O'qituvchi</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[110px]">Guruh</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[150px]">Auditoriya</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground w-[130px]">Tur</th>
+                            <th class="px-3 py-2 text-center font-semibold text-muted-foreground w-[50px] border-r border-border">Para</th>
+                            <th class="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-border">Fan</th>
+                            <th class="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-border w-[200px]">O'qituvchi</th>
+                            <th class="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-border w-[110px]">Guruh</th>
+                            <th class="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-border w-[150px]">Auditoriya</th>
+                            <th class="px-3 py-2 text-left font-semibold text-muted-foreground w-[130px]">Tur</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -247,19 +273,13 @@ const typeColor = (name: string | undefined): string => {
                                     isNow(s) ? 'ring-1 ring-inset ring-red-400/30' : '',
                                 ]"
                             >
-                                <!-- Para + time -->
-                                <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
-                                    <div class="flex flex-col items-center gap-0.5">
-                                        <span class="font-bold text-base leading-none text-foreground">{{ getPara(s.start_time) }}</span>
-                                        <span class="text-[10px] text-muted-foreground leading-none">para</span>
-                                        <span class="text-[10px] text-muted-foreground mt-1 leading-none">
-                                            {{ formatTime(s.start_time) }}-{{ formatTime(s.end_time) }}
-                                        </span>
-                                    </div>
+                                <!-- Para -->
+                                <td class="px-2 py-2 text-center align-middle border-r border-border/40">
+                                    <span class="font-bold text-lg leading-none text-foreground">{{ getPara(s.start_time) }}</span>
                                 </td>
 
                                 <!-- Subject -->
-                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                <td class="px-3 py-2 align-middle border-r border-border/40">
                                     <div class="flex items-start gap-2">
                                         <div>
                                             <p class="font-medium text-sm leading-snug">{{ s.subject_name || "Noma'lum fan" }}</p>
@@ -274,7 +294,7 @@ const typeColor = (name: string | undefined): string => {
                                 </td>
 
                                 <!-- Teacher -->
-                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                <td class="px-3 py-2 align-middle border-r border-border/40">
                                     <div class="flex items-center gap-1.5">
                                         <GraduationCap class="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                                         <span class="text-sm leading-snug">{{ s.employee_name || '—' }}</span>
@@ -282,17 +302,17 @@ const typeColor = (name: string | undefined): string => {
                                 </td>
 
                                 <!-- Group -->
-                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                <td class="px-3 py-2 align-middle border-r border-border/40">
                                     <span class="text-sm font-mono">{{ s.group_name || '—' }}</span>
                                 </td>
 
                                 <!-- Auditorium -->
-                                <td class="px-3 py-2.5 align-middle border-r border-border/40">
+                                <td class="px-3 py-2 align-middle border-r border-border/40">
                                     <span class="text-sm font-medium">{{ s.auditorium?.name || s.auditorium_code || '—' }}</span>
                                 </td>
 
                                 <!-- Training type -->
-                                <td class="px-3 py-2.5 align-middle">
+                                <td class="px-3 py-2 align-middle">
                                     <span
                                         class="inline-block text-xs font-medium px-2 py-0.5 rounded-full"
                                         :class="typeColor(s.training_type_name)"

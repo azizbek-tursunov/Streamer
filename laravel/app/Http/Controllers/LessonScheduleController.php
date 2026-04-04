@@ -23,24 +23,37 @@ class LessonScheduleController extends Controller
             ->where('lesson_date', $today)
             ->orderBy('start_timestamp');
 
-        // Optional search filtering by subject, employee, or group
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('subject_name', 'like', "%{$search}%")
-                  ->orWhere('employee_name', 'like', "%{$search}%")
-                  ->orWhere('group_name', 'like', "%{$search}%")
-                  ->orWhereHas('auditorium', function ($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%");
-                  });
+            $term = '%'.mb_strtolower($request->input('search')).'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(subject_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(employee_name) LIKE ?', [$term])
+                  ->orWhereRaw('LOWER(group_name) LIKE ?', [$term])
+                  ->orWhereHas('auditorium', fn ($q2) =>
+                      $q2->whereRaw('LOWER(name) LIKE ?', [$term])
+                  );
             });
         }
 
-        $schedules = $query->paginate(20)->withQueryString();
+        $paraRanges = [
+            1 => ['00:00:00', '09:14:59'],
+            2 => ['09:15:00', '10:44:59'],
+            3 => ['10:45:00', '12:29:59'],
+            4 => ['12:30:00', '14:59:59'],
+            5 => ['15:00:00', '16:29:59'],
+            6 => ['16:30:00', '23:59:59'],
+        ];
+        if ($para = (int) $request->input('para')) {
+            if (isset($paraRanges[$para])) {
+                $query->whereBetween('start_time', $paraRanges[$para]);
+            }
+        }
+
+        $schedules = $query->paginate(50)->withQueryString();
 
         return Inertia::render('LessonSchedules/Index', [
             'schedules' => $schedules,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'para']),
         ]);
     }
 

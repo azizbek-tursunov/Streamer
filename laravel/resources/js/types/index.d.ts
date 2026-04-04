@@ -142,6 +142,7 @@ export interface Subject {
 export interface Group {
     id: number;
     name: string;
+    student_count?: number | null;
 }
 
 export interface Lesson {
