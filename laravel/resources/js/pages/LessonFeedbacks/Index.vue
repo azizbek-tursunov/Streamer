@@ -190,6 +190,7 @@ const grouped = computed(() => {
                 <table class="w-full text-sm border-collapse">
                     <thead>
                         <tr class="bg-muted border-b-2 border-border">
+                            <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground border-r border-border w-[52px]">Rasm</th>
                             <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground w-[70px] border-r border-border">Para</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border">Fan</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[190px]">O'qituvchi</th>
@@ -197,7 +198,6 @@ const grouped = computed(() => {
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border w-[160px]">Auditoriya</th>
                             <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground border-r border-border w-[80px]">Holat</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border">Mulohaza</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground border-r border-border w-[52px]">Rasm</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground w-[130px]">Kiritdi</th>
                         </tr>
                     </thead>
@@ -220,6 +220,18 @@ const grouped = computed(() => {
                                 class="border-b border-border/60 transition-colors hover:bg-muted/40"
                                 :class="idx % 2 === 1 ? 'bg-muted/20' : ''"
                             >
+                                <!-- Snapshot -->
+                                <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
+                                    <button
+                                        v-if="fb.snapshot_url"
+                                        @click="previewImage = fb.snapshot_url"
+                                        class="inline-block rounded overflow-hidden border border-border hover:ring-2 hover:ring-primary transition-all"
+                                    >
+                                        <img :src="fb.snapshot_url" class="h-9 w-14 object-cover" alt="Snapshot" />
+                                    </button>
+                                    <ImageIcon v-else class="h-4 w-4 mx-auto text-muted-foreground/30" />
+                                </td>
+
                                 <!-- Para + time -->
                                 <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
                                     <div class="flex flex-col items-center gap-0.5">
@@ -270,18 +282,6 @@ const grouped = computed(() => {
                                 <td class="px-3 py-2.5 align-middle border-r border-border/40 max-w-[260px]">
                                     <p class="text-sm whitespace-pre-wrap" v-if="fb.message">{{ fb.message }}</p>
                                     <p class="text-xs text-muted-foreground/40 italic" v-else>—</p>
-                                </td>
-
-                                <!-- Snapshot -->
-                                <td class="px-2 py-2.5 text-center align-middle border-r border-border/40">
-                                    <button
-                                        v-if="fb.snapshot_url"
-                                        @click="previewImage = fb.snapshot_url"
-                                        class="inline-block rounded overflow-hidden border border-border hover:ring-2 hover:ring-primary transition-all"
-                                    >
-                                        <img :src="fb.snapshot_url" class="h-9 w-14 object-cover" alt="Snapshot" />
-                                    </button>
-                                    <ImageIcon v-else class="h-4 w-4 mx-auto text-muted-foreground/30" />
                                 </td>
 
                                 <!-- Entered by -->

@@ -36,6 +36,7 @@ import {
     MapPin,
     Layers,
     RefreshCw,
+    Check,
     CheckCircle,
     Eye,
     EyeOff,
@@ -698,14 +699,25 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     !item.camera_id
                                         ? 'border-dashed border-border/60 opacity-60 hover:opacity-80'
                                         : 'hover:shadow-md hover:border-primary/30',
-                                    { 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) }
+                                    { 'opacity-50': !item.active, 'ring-2 ring-primary': selectedAuditoriums.includes(item.id) },
+                                    isAssigning ? 'cursor-pointer' : '',
                                 ]"
+                                @click="isAssigning && toggleSelection(item.id)"
                             >
+                                <!-- Selection checkbox overlay -->
+                                <div v-if="isAssigning" class="absolute top-2 left-2 z-10">
+                                    <div
+                                        class="h-5 w-5 rounded border-2 flex items-center justify-center transition-colors"
+                                        :class="selectedAuditoriums.includes(item.id) ? 'bg-primary border-primary text-white' : 'bg-white/80 border-muted-foreground/40'"
+                                    >
+                                        <Check v-if="selectedAuditoriums.includes(item.id)" class="h-3.5 w-3.5" />
+                                    </div>
+                                </div>
                                 <div
                                     v-if="item.camera_snapshot && imgState[item.id] !== 'error'"
                                     class="w-full aspect-video bg-muted border-b relative group/image"
-                                    :class="{'cursor-pointer': !isReordering}"
-                                    @click.stop="isAssigning ? toggleSelection(item.id) : (!isReordering ? router.visit(`/auditoriums/${item.id}`) : null)"
+                                    :class="{'cursor-pointer': !isReordering && !isAssigning}"
+                                    @click="!isAssigning && !isReordering && router.visit(`/auditoriums/${item.id}`)"
                                 >
                                     <!-- Skeleton shimmer while loading -->
                                     <div v-if="imgState[item.id] === 'loading'" class="absolute inset-0 bg-muted animate-pulse" />
@@ -730,8 +742,8 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 <div
                                     v-else-if="item.camera_id"
                                     class="w-full aspect-video bg-muted border-b flex items-center justify-center text-muted-foreground relative"
-                                    :class="{'cursor-pointer': !isReordering}"
-                                    @click.stop="isAssigning ? toggleSelection(item.id) : (!isReordering ? router.visit(`/auditoriums/${item.id}`) : null)"
+                                    :class="{'cursor-pointer': !isReordering && !isAssigning}"
+                                    @click="!isAssigning && !isReordering && router.visit(`/auditoriums/${item.id}`)"
                                 >
                                     <div class="flex flex-col items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
                                         <Video class="h-8 w-8" />
@@ -742,8 +754,8 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 <div
                                     v-else
                                     class="w-full aspect-video bg-muted/30 border-b border-dashed flex items-center justify-center"
-                                    :class="{'cursor-pointer': !isReordering && hasPermission('manage-auditorium-cameras')}"
-                                    @click.stop="hasPermission('manage-auditorium-cameras') && !isReordering && openCameraDialog(item)"
+                                    :class="{'cursor-pointer': !isReordering && !isAssigning && hasPermission('manage-auditorium-cameras')}"
+                                    @click="!isAssigning && hasPermission('manage-auditorium-cameras') && !isReordering && openCameraDialog(item)"
                                 >
                                     <div class="flex flex-col items-center gap-1.5 text-muted-foreground/50">
                                         <LinkIcon class="h-7 w-7" />
@@ -753,7 +765,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 
                                 <CardHeader class="pb-1 pt-3 px-3">
                                     <div class="flex items-start justify-between gap-1">
-                                        <div class="flex items-center gap-1.5" :class="{'cursor-pointer': isAssigning}" @click.stop="isAssigning && toggleSelection(item.id)">
+                                        <div class="flex items-center gap-1.5">
                                             <CardTitle class="text-[13px] font-semibold leading-tight line-clamp-2 select-none" :title="item.name">
                                                 {{ item.name }}
                                             </CardTitle>
