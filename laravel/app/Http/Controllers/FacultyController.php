@@ -21,7 +21,7 @@ class FacultyController extends Controller
     {
         $query = Faculty::query()
             ->withCount('auditoriums')
-            ->with('dean:id,name,email');
+            ->with('dean:id,name,email,faculty_id');
 
         if ($request->search) {
             $query->where('name', 'like', '%'.$request->search.'%');
