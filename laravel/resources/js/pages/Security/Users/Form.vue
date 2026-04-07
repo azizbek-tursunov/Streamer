@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useForm, Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { index, store, update } from '@/routes/users';
 
 const props = defineProps<{
@@ -15,11 +13,9 @@ const props = defineProps<{
         id: number;
         name: string;
         email: string;
-        faculty_id?: number | null;
     };
     roles: Array<{ id: number; name: string }>;
     userRoles?: number[];
-    faculties: Array<{ id: number; name: string }>;
 }>();
 
 const form = useForm<{
@@ -28,26 +24,15 @@ const form = useForm<{
     password: string;
     password_confirmation: string;
     roles: number[];
-    faculty_id: string;
 }>({
     name: props.user?.name ?? '',
     email: props.user?.email ?? '',
     password: '',
     password_confirmation: '',
     roles: props.userRoles ?? [],
-    faculty_id: props.user?.faculty_id?.toString() ?? '',
 });
 
-const deansRoleId = computed(() => props.roles.find(r => r.name === 'deans')?.id);
-const showFacultyField = computed(() => deansRoleId.value && form.roles.includes(deansRoleId.value));
-
 const submit = () => {
-    // Convert faculty_id string to number or null for the request
-    form.transform((data) => ({
-        ...data,
-        faculty_id: data.faculty_id ? parseInt(data.faculty_id) : null,
-    }));
-
     if (props.user) {
         form.put(update(props.user.id).url);
     } else {
@@ -135,33 +120,6 @@ const submit = () => {
                                 </div>
                             </div>
                              <div v-if="form.errors.roles" class="text-sm text-red-500 mt-2">{{ form.errors.roles }}</div>
-                        </CardContent>
-                    </Card>
-
-                    <!-- Faculty Assignment (for deans) -->
-                    <Card v-if="showFacultyField">
-                        <CardHeader>
-                            <CardTitle>Fakultet</CardTitle>
-                            <CardDescription>
-                                Dekan ko'ra oladigan fakultetni tanlang. Faqat shu fakultetga biriktirilgan auditoriyalar ko'rinadi.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="max-w-sm space-y-2">
-                                <Label for="faculty">Fakultet</Label>
-                                <Select v-model="form.faculty_id">
-                                    <SelectTrigger id="faculty">
-                                        <SelectValue placeholder="Fakultetni tanlang" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="">Tanlanmagan</SelectItem>
-                                        <SelectItem v-for="fac in faculties" :key="fac.id" :value="fac.id.toString()">
-                                            {{ fac.name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <div v-if="form.errors.faculty_id" class="text-sm text-red-500">{{ form.errors.faculty_id }}</div>
-                            </div>
                         </CardContent>
                     </Card>
 

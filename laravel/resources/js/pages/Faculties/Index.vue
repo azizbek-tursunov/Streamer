@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
-import { BreadcrumbItem, Faculty } from '@/types';
+import { Head, router, usePage, Link } from '@inertiajs/vue3';
+import { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Building2, RefreshCw, CheckCircle } from 'lucide-vue-next';
+import { Search, Building2, RefreshCw, CheckCircle, UserCheck } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 
+interface FacultyWithDean {
+    id: number;
+    name: string;
+    code?: string | null;
+    hemis_id?: number | null;
+    active?: boolean;
+    auditoriums_count?: number;
+    dean?: { id: number; name: string; email: string } | null;
+}
+
 const props = defineProps<{
-    faculties: Faculty[];
+    faculties: FacultyWithDean[];
     filters: {
         search?: string;
     };
@@ -125,15 +135,28 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         <tr>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground w-16">#</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Nomi</th>
+                            <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Dekan</th>
                             <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground w-32">Auditoriyalar</th>
                             <th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Kod</th>
                             <th class="h-10 px-4 text-center align-middle font-medium text-muted-foreground w-20">Holati</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(faculty, index) in faculties" :key="faculty.id" class="border-b transition-colors hover:bg-muted/50">
+                        <tr
+                            v-for="(faculty, index) in faculties"
+                            :key="faculty.id"
+                            class="border-b transition-colors hover:bg-muted/50 cursor-pointer"
+                            @click="router.visit(`/faculties/${faculty.id}`)"
+                        >
                             <td class="p-4 align-middle text-muted-foreground w-16">{{ index + 1 }}</td>
-                            <td class="p-4 align-middle font-medium">{{ faculty.name }}</td>
+                            <td class="p-4 align-middle font-medium text-primary hover:underline">{{ faculty.name }}</td>
+                            <td class="p-4 align-middle hidden md:table-cell">
+                                <div v-if="faculty.dean" class="flex items-center gap-1.5 text-sm">
+                                    <UserCheck class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <span>{{ faculty.dean.name }}</span>
+                                </div>
+                                <span v-else class="text-xs text-muted-foreground">—</span>
+                            </td>
                             <td class="p-4 align-middle text-center">
                                 <span class="inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                                     {{ faculty.auditoriums_count || 0 }} ta

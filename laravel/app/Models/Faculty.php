@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Faculty extends Model
 {
@@ -22,6 +23,11 @@ class Faculty extends Model
     public function cameras(): HasMany
     {
         return $this->hasMany(Camera::class);
+    }
+
+    public function dean(): HasOne
+    {
+        return $this->hasOne(User::class, 'faculty_id');
     }
 
     public function auditoriums(): BelongsToMany

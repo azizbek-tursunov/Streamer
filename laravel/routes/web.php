@@ -40,7 +40,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Faculties ---
     Route::middleware(['permission:manage-users'])->group(function () {
         Route::get('faculties', [\App\Http\Controllers\FacultyController::class, 'index'])->name('faculties.index');
+        Route::get('faculties/{faculty}', [\App\Http\Controllers\FacultyController::class, 'show'])->name('faculties.show');
         Route::post('faculties/sync', [\App\Http\Controllers\FacultyController::class, 'sync'])->name('faculties.sync');
+        Route::put('faculties/{faculty}/dean', [\App\Http\Controllers\FacultyController::class, 'assignDean'])->name('faculties.assign-dean');
+        Route::delete('faculties/{faculty}/auditoriums/{auditorium}', [\App\Http\Controllers\FacultyController::class, 'removeAuditorium'])->name('faculties.remove-auditorium');
     });
 
     // --- Auditoriums ---

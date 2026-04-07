@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Faculty;
 use App\Models\User;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -43,7 +42,6 @@ class UserController extends Controller
     {
         return Inertia::render('Security/Users/Form', [
             'roles' => Role::all(),
-            'faculties' => Faculty::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -55,14 +53,12 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'roles' => ['array'],
             'roles.*' => ['integer', 'exists:roles,id'],
-            'faculty_id' => ['nullable', 'exists:faculties,id'],
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'faculty_id' => $request->faculty_id,
         ]);
 
         $roles = Role::whereIn('id', $request->input('roles', []))->get();
@@ -79,7 +75,6 @@ class UserController extends Controller
             'user' => $user,
             'roles' => Role::all(),
             'userRoles' => $user->roles->pluck('id')->toArray(),
-            'faculties' => Faculty::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -91,13 +86,11 @@ class UserController extends Controller
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'roles' => ['array'],
             'roles.*' => ['integer', 'exists:roles,id'],
-            'faculty_id' => ['nullable', 'exists:faculties,id'],
         ]);
 
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
-            'faculty_id' => $request->faculty_id,
         ]);
 
         if ($request->filled('password')) {
