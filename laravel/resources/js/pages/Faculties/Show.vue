@@ -222,7 +222,7 @@ const groupedByBuilding = computed(() => {
                                 </div>
                             </div>
 
-                            <div v-else class="space-y-4">
+                            <div v-else class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                                 <div v-for="group in groupedByBuilding" :key="group.name">
                                     <h3 class="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
                                         <Building2 class="h-3.5 w-3.5" />
