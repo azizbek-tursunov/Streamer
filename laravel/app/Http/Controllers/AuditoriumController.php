@@ -19,20 +19,26 @@ class AuditoriumController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Auditorium::query()->with(['camera', 'faculty']);
+        $query = Auditorium::query()->with(['camera', 'faculties']);
 
         if ($request->search) {
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('faculty_id')) {
-            $query->where('faculty_id', $request->faculty_id);
+            $query->whereHas('faculties', fn ($q) => $q->where('faculties.id', $request->faculty_id));
+        }
+
+        // Deans only see auditoriums assigned to their faculty
+        $user = auth()->user();
+        if ($user->hasRole('deans') && $user->faculty_id) {
+            $query->whereHas('faculties', fn ($q) => $q->where('faculties.id', $user->faculty_id));
         }
 
         // Regular users only see auditoriums that have a camera assigned.
         // IT-technicians, admins, and super-admins see all (so they can assign cameras).
         // Use can() not hasPermissionTo() — the latter skips Gate::before, breaking super-admin.
-        if (!auth()->user()->can('manage-auditorium-cameras')) {
+        if (!$user->can('manage-auditorium-cameras')) {
             $query->whereNotNull('camera_id');
         }
 
@@ -113,7 +119,7 @@ class AuditoriumController extends Controller
 
     public function show(Auditorium $auditorium): Response
     {
-        $auditorium->load('camera', 'faculty');
+        $auditorium->load('camera', 'faculties');
 
         $timezone = config('app.timezone');
         $today = now($timezone)->toDateString();
@@ -200,12 +206,21 @@ class AuditoriumController extends Controller
             'faculty_id' => 'nullable|exists:faculties,id',
         ]);
 
-        Auditorium::whereIn('id', $validated['auditorium_ids'])
-            ->update(['faculty_id' => $validated['faculty_id']]);
+        $auditoriums = Auditorium::whereIn('id', $validated['auditorium_ids'])->get();
 
-        $message = $validated['faculty_id'] 
-            ? count($validated['auditorium_ids']) . ' ta auditoriya fakultetga biriktirildi.'
-            : count($validated['auditorium_ids']) . ' ta auditoriyadan fakultet ochirildi.';
+        if ($validated['faculty_id']) {
+            // Attach faculty without removing existing ones
+            foreach ($auditoriums as $auditorium) {
+                $auditorium->faculties()->syncWithoutDetaching([$validated['faculty_id']]);
+            }
+            $message = count($validated['auditorium_ids']) . ' ta auditoriya fakultetga biriktirildi.';
+        } else {
+            // Detach all faculties
+            foreach ($auditoriums as $auditorium) {
+                $auditorium->faculties()->detach();
+            }
+            $message = count($validated['auditorium_ids']) . ' ta auditoriyadan barcha fakultetlar ochirildi.';
+        }
 
         return back()->with('success', $message);
     }

@@ -117,8 +117,7 @@ export interface Auditorium {
     camera_snapshot?: string | null;
     current_lesson?: any | null;
     people_count?: number | null;
-    faculty_id?: number | null;
-    faculty?: Faculty | null;
+    faculties?: Faculty[];
 }
 
 export interface LessonPair {

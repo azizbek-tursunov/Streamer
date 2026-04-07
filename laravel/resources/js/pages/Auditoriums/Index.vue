@@ -802,9 +802,9 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                             <span v-if="item.auditoriumType?.name" class="inline-flex items-center rounded bg-opacity-10 px-1.5 py-0.5 text-[9px] font-medium" :class="getTypeColor(item.auditoriumType.code)">
                                                 {{ item.auditoriumType.name }}
                                             </span>
-                                            <div v-if="item.faculty" class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/50 truncate max-w-full" :title="item.faculty.name">
+                                            <div v-for="fac in item.faculties" :key="fac.id" class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/50 truncate max-w-full" :title="fac.name">
                                                 <GraduationCap class="h-2.5 w-2.5 text-primary/70 shrink-0" />
-                                                <span class="truncate">{{ item.faculty.name }}</span>
+                                                <span class="truncate">{{ fac.name }}</span>
                                             </div>
                                         </div>
 
@@ -957,7 +957,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                     <DialogHeader>
                         <DialogTitle>Fakultetga biriktirish</DialogTitle>
                         <DialogDescription>
-                            Tanlangan <b>{{ selectedAuditoriums.length }}</b> ta auditoriyani fakultetga biriktiring yoki joriy fakultetdan o'chiring.
+                            Tanlangan <b>{{ selectedAuditoriums.length }}</b> ta auditoriyaga fakultet qo'shing yoki barcha fakultetlarni olib tashlang.
                         </DialogDescription>
                     </DialogHeader>
                     <div class="grid gap-4 py-4">
@@ -968,7 +968,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 </SelectTrigger>
                                 <SelectContent class="max-h-[300px]">
                                     <SelectItem value="">
-                                        <span class="text-destructive font-medium">Fakultetdan o'chirish (Hech qaysi)</span>
+                                        <span class="text-destructive font-medium">Barcha fakultetlarni olib tashlash</span>
                                     </SelectItem>
                                     <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">
                                         {{ faculty.name }}

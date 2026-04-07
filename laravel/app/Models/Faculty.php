@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Faculty extends Model
@@ -23,9 +24,9 @@ class Faculty extends Model
         return $this->hasMany(Camera::class);
     }
 
-    public function auditoriums(): HasMany
+    public function auditoriums(): BelongsToMany
     {
-        return $this->hasMany(\App\Models\Hemis\Auditorium::class);
+        return $this->belongsToMany(\App\Models\Hemis\Auditorium::class, 'auditorium_faculty')->withTimestamps();
     }
 
     protected function casts(): array
