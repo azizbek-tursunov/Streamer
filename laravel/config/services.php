@@ -53,8 +53,4 @@ return [
         'token' => env('HEMIS_API_TOKEN'),
     ],
 
-    'yolo_realtime' => [
-        'url' => env('YOLO_REALTIME_URL', 'http://localhost:8000'),
-    ],
-
 ];
