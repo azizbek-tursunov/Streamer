@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CaptureSnapshot;
 use App\Models\Camera;
 use App\Models\Hemis\Auditorium;
 use App\Models\PeopleCount;
 use App\Services\HemisIntegrations\HemisApiService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -146,17 +149,83 @@ class AuditoriumController extends Controller
             ])
             ->toArray();
 
-        $peopleCount = $auditorium->camera_id
+        $latestPeopleCount = $auditorium->camera_id
             ? PeopleCount::where('camera_id', $auditorium->camera_id)
                 ->latest('counted_at')
-                ->value('people_count')
+                ->first()
             : null;
 
         return Inertia::render('Auditoriums/Show', [
             'auditorium' => $auditorium,
             'schedule' => $lessons,
             'now' => now()->timestamp,
-            'people_count' => $peopleCount,
+            'people_count' => $latestPeopleCount?->people_count,
+            'people_counted_at' => $latestPeopleCount?->counted_at?->toIso8601String(),
+        ]);
+    }
+
+    public function triggerRealtimePeopleCount(Auditorium $auditorium): JsonResponse
+    {
+        $auditorium->load('camera');
+
+        if (! $auditorium->camera) {
+            return response()->json([
+                'message' => 'Auditoriumga kamera biriktirilmagan.',
+            ], 422);
+        }
+
+        CaptureSnapshot::dispatchSync($auditorium->camera);
+
+        $latestSnapshot = $this->getLatestSnapshotPath($auditorium->camera->id);
+
+        if (! $latestSnapshot) {
+            return response()->json([
+                'message' => 'Yangi snapshot olinmadi.',
+            ], 422);
+        }
+
+        $queuedAt = now()->toIso8601String();
+
+        Redis::lpush('yolo:jobs', json_encode([
+            'camera_id' => $auditorium->camera->id,
+            'image_path' => $latestSnapshot,
+            'requested_at' => $queuedAt,
+        ]));
+
+        return response()->json([
+            'queued' => true,
+            'queued_at' => $queuedAt,
+            'snapshot_path' => basename($latestSnapshot),
+        ]);
+    }
+
+    public function realtimePeopleCountStatus(Request $request, Auditorium $auditorium): JsonResponse
+    {
+        if (! $auditorium->camera_id) {
+            return response()->json([
+                'completed' => false,
+                'people_count' => null,
+                'counted_at' => null,
+            ]);
+        }
+
+        $latestPeopleCount = PeopleCount::where('camera_id', $auditorium->camera_id)
+            ->latest('counted_at')
+            ->first();
+
+        $after = $request->query('after');
+        $completed = false;
+
+        if ($latestPeopleCount && $after) {
+            $completed = $latestPeopleCount->counted_at->greaterThanOrEqualTo(\Carbon\Carbon::parse($after));
+        } elseif ($latestPeopleCount) {
+            $completed = true;
+        }
+
+        return response()->json([
+            'completed' => $completed,
+            'people_count' => $latestPeopleCount?->people_count,
+            'counted_at' => $latestPeopleCount?->counted_at?->toIso8601String(),
         ]);
     }
 
@@ -246,5 +315,19 @@ class AuditoriumController extends Controller
         })->pluck('people_count', 'camera_id');
 
         return response()->json($counts);
+    }
+
+    private function getLatestSnapshotPath(int $cameraId): ?string
+    {
+        $snapshotDir = storage_path('app/public/snapshots');
+        $files = glob("{$snapshotDir}/camera_{$cameraId}_*.jpg");
+
+        if (empty($files)) {
+            return null;
+        }
+
+        usort($files, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+
+        return $files[0];
     }
 }
