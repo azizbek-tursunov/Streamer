@@ -10,7 +10,7 @@ use App\Services\HemisIntegrations\HemisApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -185,47 +185,34 @@ class AuditoriumController extends Controller
         }
 
         $queuedAt = now()->toIso8601String();
+        $response = Http::timeout(120)
+            ->acceptJson()
+            ->post(rtrim(config('services.yolo_realtime.url'), '/').'/count', [
+                'camera_id' => $auditorium->camera->id,
+                'image_path' => $latestSnapshot,
+            ]);
 
-        Redis::lpush('yolo:jobs', json_encode([
+        if (! $response->successful()) {
+            return response()->json([
+                'message' => 'Realtime AI count xizmati javob bermadi.',
+                'error' => $response->json('detail') ?? $response->body(),
+            ], 503);
+        }
+
+        $peopleCount = PeopleCount::create([
             'camera_id' => $auditorium->camera->id,
-            'image_path' => $latestSnapshot,
-            'requested_at' => $queuedAt,
-        ]));
+            'people_count' => (int) $response->json('people_count'),
+            'snapshot_path' => basename($latestSnapshot),
+            'counted_at' => $queuedAt,
+        ]);
 
         return response()->json([
-            'queued' => true,
+            'queued' => false,
             'queued_at' => $queuedAt,
             'snapshot_path' => basename($latestSnapshot),
-        ]);
-    }
-
-    public function realtimePeopleCountStatus(Request $request, Auditorium $auditorium): JsonResponse
-    {
-        if (! $auditorium->camera_id) {
-            return response()->json([
-                'completed' => false,
-                'people_count' => null,
-                'counted_at' => null,
-            ]);
-        }
-
-        $latestPeopleCount = PeopleCount::where('camera_id', $auditorium->camera_id)
-            ->latest('counted_at')
-            ->first();
-
-        $after = $request->query('after');
-        $completed = false;
-
-        if ($latestPeopleCount && $after) {
-            $completed = $latestPeopleCount->counted_at->greaterThanOrEqualTo(\Carbon\Carbon::parse($after));
-        } elseif ($latestPeopleCount) {
-            $completed = true;
-        }
-
-        return response()->json([
-            'completed' => $completed,
-            'people_count' => $latestPeopleCount?->people_count,
-            'counted_at' => $latestPeopleCount?->counted_at?->toIso8601String(),
+            'people_count' => $peopleCount->people_count,
+            'counted_at' => $peopleCount->counted_at?->toIso8601String(),
+            'model' => $response->json('model'),
         ]);
     }
 

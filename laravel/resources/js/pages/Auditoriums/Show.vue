@@ -89,7 +89,6 @@ const showFeedbackDialog = ref(false);
 const realtimeCount = ref<number | null>(props.people_count);
 const realtimeCountedAt = ref<string | null>(props.people_counted_at);
 const isCountingPeople = ref(false);
-let peopleCountPollTimer: number | null = null;
 
 const feedbackForm = useForm({
     auditorium_id: 0,
@@ -126,64 +125,6 @@ const submitFeedback = () => {
 
 const displayedPeopleCount = computed(() => realtimeCount.value);
 
-const stopPeopleCountPolling = () => {
-    if (peopleCountPollTimer !== null) {
-        window.clearInterval(peopleCountPollTimer);
-        peopleCountPollTimer = null;
-    }
-};
-
-const pollRealtimePeopleCount = (queuedAt: string) => {
-    stopPeopleCountPolling();
-    let attempts = 0;
-    const maxAttempts = 30;
-
-    const poll = async () => {
-        try {
-            attempts += 1;
-            const response = await fetch(`/auditoriums/${props.auditorium.id}/people-count/realtime?after=${encodeURIComponent(queuedAt)}`, {
-                headers: {
-                    Accept: 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('People count status request failed');
-            }
-
-            const data = await response.json();
-
-            if (data.completed && typeof data.people_count === 'number') {
-                realtimeCount.value = data.people_count;
-                realtimeCountedAt.value = data.counted_at ?? null;
-            }
-
-            if (data.completed) {
-                isCountingPeople.value = false;
-                stopPeopleCountPolling();
-                toast.success(`Xonada ${data.people_count} kishi aniqlandi.`);
-                return;
-            }
-
-            if (attempts >= maxAttempts) {
-                isCountingPeople.value = false;
-                stopPeopleCountPolling();
-                toast.error('Realtime people count javobi kutish vaqtidan oshdi.');
-            }
-        } catch (error) {
-            isCountingPeople.value = false;
-            stopPeopleCountPolling();
-            toast.error('Realtime people count olishda xatolik yuz berdi.');
-            console.error(error);
-        }
-    };
-
-    void poll();
-    peopleCountPollTimer = window.setInterval(() => {
-        void poll();
-    }, 2000);
-};
-
 const triggerRealtimePeopleCount = async () => {
     if (isCountingPeople.value || !props.auditorium.camera_id) {
         return;
@@ -207,18 +148,19 @@ const triggerRealtimePeopleCount = async () => {
             throw new Error(data.message || 'Realtime people count trigger failed');
         }
 
-        pollRealtimePeopleCount(data.queued_at);
+        if (typeof data.people_count === 'number') {
+            realtimeCount.value = data.people_count;
+            realtimeCountedAt.value = data.counted_at ?? null;
+        }
+
+        isCountingPeople.value = false;
+        toast.success(`Xonada ${data.people_count} kishi aniqlandi (${data.model ?? 'best model'}).`);
     } catch (error: any) {
         isCountingPeople.value = false;
-        stopPeopleCountPolling();
         toast.error(error.message || 'Realtime people count boshlanmadi.');
         console.error(error);
     }
 };
-
-onUnmounted(() => {
-    stopPeopleCountPolling();
-});
 </script>
 
 <template>

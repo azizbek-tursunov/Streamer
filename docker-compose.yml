@@ -16,6 +16,7 @@ services:
       - ./laravel/.env
     environment:
       - MEDIAMTX_HOST=mediamtx
+      - YOLO_REALTIME_URL=http://yolo-realtime:8000
     networks:
       - univision-network
     depends_on:
@@ -91,6 +92,27 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+
+  # ===========================================
+  # YOLO Realtime (High-Accuracy Manual Counter)
+  # ===========================================
+  yolo-realtime:
+    build:
+      context: ./fastapi
+      dockerfile: Dockerfile
+    image: univision-yolo
+    container_name: univision-yolo-realtime
+    restart: unless-stopped
+    command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ./fastapi:/app
+      - ./laravel/storage/app/public/snapshots:/var/www/html/storage/app/public/snapshots:ro
+    environment:
+      - YOLO_CONFIDENCE=0.25
+      - YOLO_MODEL=yolov8x.pt
+      - SNAPSHOT_ROOT=/var/www/html/storage/app/public/snapshots
+    networks:
+      - univision-network
 
   # ===========================================
   # MEDIAMTX (RTSP/HLS Streaming Server)
