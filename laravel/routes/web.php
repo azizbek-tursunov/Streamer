@@ -53,14 +53,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('auditoriums/people-counts', [\App\Http\Controllers\AuditoriumController::class, 'peopleCounts'])->middleware('throttle:30,1')->name('auditoriums.people-counts');
         Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
     });
-    Route::middleware(['role:super-admin'])->group(function () {
-        Route::post('auditoriums/{auditorium}/people-count/realtime', [\App\Http\Controllers\AuditoriumController::class, 'triggerRealtimePeopleCount'])
-            ->middleware('throttle:10,1')
-            ->name('auditoriums.people-count.realtime');
-        Route::get('auditoriums/{auditorium}/people-count/realtime', [\App\Http\Controllers\AuditoriumController::class, 'realtimePeopleCountStatus'])
-            ->middleware('throttle:30,1')
-            ->name('auditoriums.people-count.realtime-status');
-    });
     Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->middleware('permission:sync-auditoriums')->name('auditoriums.sync');
     Route::put('auditoriums/reorder', [\App\Http\Controllers\AuditoriumController::class, 'reorder'])->middleware('permission:view-auditoriums')->name('auditoriums.reorder');
     Route::put('auditoriums/reorder-buildings', [\App\Http\Controllers\AuditoriumController::class, 'reorderBuildings'])->middleware('permission:view-auditoriums')->name('auditoriums.reorder-buildings');

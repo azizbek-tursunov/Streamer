@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem, Auditorium, Lesson } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
@@ -16,7 +15,6 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { toast } from 'vue-sonner';
 import { Calendar, Clock, User, Users, BookOpen, MapPin, VideoOff, MessageSquareText, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -24,10 +22,7 @@ const props = defineProps<{
     schedule: Lesson[];
     now: number;
     people_count: number | null;
-    people_counted_at: string | null;
 }>();
-
-const { isSuperAdmin } = usePermissions();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: "Ma'lumotnomalar", href: '#' },
@@ -86,11 +81,6 @@ const whepUrl = computed(() => {
 });
 
 const showFeedbackDialog = ref(false);
-const realtimeCount = ref<number | null>(props.people_count);
-const realtimeCountedAt = ref<string | null>(props.people_counted_at);
-const isCountingPeople = ref(false);
-let peopleCountPollTimer: number | null = null;
-
 const feedbackForm = useForm({
     auditorium_id: 0,
     lesson_name: '',
@@ -123,102 +113,6 @@ const submitFeedback = () => {
         },
     });
 };
-
-const displayedPeopleCount = computed(() => realtimeCount.value);
-
-const stopPeopleCountPolling = () => {
-    if (peopleCountPollTimer !== null) {
-        window.clearInterval(peopleCountPollTimer);
-        peopleCountPollTimer = null;
-    }
-};
-
-const pollRealtimePeopleCount = (queuedAt: string) => {
-    stopPeopleCountPolling();
-    let attempts = 0;
-    const maxAttempts = 30;
-
-    const poll = async () => {
-        try {
-            attempts += 1;
-            const response = await fetch(`/auditoriums/${props.auditorium.id}/people-count/realtime?after=${encodeURIComponent(queuedAt)}`, {
-                headers: {
-                    Accept: 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('People count status request failed');
-            }
-
-            const data = await response.json();
-
-            if (data.completed && typeof data.people_count === 'number') {
-                realtimeCount.value = data.people_count;
-                realtimeCountedAt.value = data.counted_at ?? null;
-            }
-
-            if (data.completed) {
-                isCountingPeople.value = false;
-                stopPeopleCountPolling();
-                toast.success(`Xonada ${data.people_count} kishi aniqlandi.`);
-                return;
-            }
-
-            if (attempts >= maxAttempts) {
-                isCountingPeople.value = false;
-                stopPeopleCountPolling();
-                toast.error('Realtime people count javobi kutish vaqtidan oshdi.');
-            }
-        } catch (error) {
-            isCountingPeople.value = false;
-            stopPeopleCountPolling();
-            toast.error('Realtime people count olishda xatolik yuz berdi.');
-            console.error(error);
-        }
-    };
-
-    void poll();
-    peopleCountPollTimer = window.setInterval(() => {
-        void poll();
-    }, 2000);
-};
-
-const triggerRealtimePeopleCount = async () => {
-    if (isCountingPeople.value || !props.auditorium.camera_id) {
-        return;
-    }
-
-    isCountingPeople.value = true;
-
-    try {
-        const response = await fetch(`/auditoriums/${props.auditorium.id}/people-count/realtime`, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]')?.getAttribute('content') ?? '',
-            },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Realtime people count trigger failed');
-        }
-
-        pollRealtimePeopleCount(data.queued_at);
-    } catch (error: any) {
-        isCountingPeople.value = false;
-        stopPeopleCountPolling();
-        toast.error(error.message || 'Realtime people count boshlanmadi.');
-        console.error(error);
-    }
-};
-
-onUnmounted(() => {
-    stopPeopleCountPolling();
-});
 </script>
 
 <template>
@@ -357,14 +251,11 @@ onUnmounted(() => {
                                             <span class="font-medium">{{ currentLesson.group.name }}</span>
                                         </div>
                                     </div>
-                                    <div v-if="displayedPeopleCount !== null && auditorium.camera_id" class="flex items-start gap-3">
+                                    <div v-if="props.people_count !== null && auditorium.camera_id" class="flex items-start gap-3">
                                         <Users class="h-4 w-4 mt-0.5 text-primary" />
                                         <div class="flex flex-col">
                                             <span class="text-xs text-muted-foreground">Xonada (AI)</span>
-                                            <span class="font-bold text-primary">{{ displayedPeopleCount }} kishi</span>
-                                            <span v-if="realtimeCountedAt" class="text-[11px] text-muted-foreground">
-                                                {{ isCountingPeople ? 'Yangilanmoqda...' : 'Realtime natija tayyor' }}
-                                            </span>
+                                            <span class="font-bold text-primary">{{ props.people_count }} kishi</span>
                                         </div>
                                     </div>
                                     <div class="flex items-start gap-3">
@@ -377,30 +268,15 @@ onUnmounted(() => {
                                 </div>
                             </div>
                             <div v-else class="flex flex-col items-center justify-center text-center text-muted-foreground"
-                                :class="displayedPeopleCount !== null && auditorium.camera_id ? 'pt-6 pb-3' : 'py-8'"
+                                :class="props.people_count !== null && auditorium.camera_id ? 'pt-6 pb-3' : 'py-8'"
                             >
                                 <BookOpen class="h-10 w-10 mb-3 opacity-20" />
                                 <p>Xona bo'sh</p>
-                                <div v-if="displayedPeopleCount !== null && auditorium.camera_id" class="mt-4 flex flex-col items-center">
-                                    <span class="text-3xl font-bold text-primary">{{ displayedPeopleCount }}</span>
+                                <div v-if="props.people_count !== null && auditorium.camera_id" class="mt-4 flex flex-col items-center">
+                                    <span class="text-3xl font-bold text-primary">{{ props.people_count }}</span>
                                     <span class="text-xs text-muted-foreground mt-0.5">kishi (AI)</span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card v-if="isSuperAdmin && auditorium.camera_id">
-                        <CardHeader class="pb-3">
-                            <CardTitle class="text-base font-medium">Realtime AI count</CardTitle>
-                        </CardHeader>
-                        <CardContent class="space-y-3">
-                            <p class="text-sm text-muted-foreground">
-                                Tugma bosilganda yangi snapshot olinadi va odamlar soni realtime qayta hisoblanadi.
-                            </p>
-                            <Button class="w-full" @click="triggerRealtimePeopleCount" :disabled="isCountingPeople">
-                                <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isCountingPeople }" />
-                                {{ isCountingPeople ? 'Hisoblanmoqda...' : 'Realtime people count' }}
-                            </Button>
                         </CardContent>
                     </Card>
 
