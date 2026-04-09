@@ -128,6 +128,11 @@ const formatTime = (dateStr: string) => {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
+const formatShortDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+};
+
 const getDateKey = (dateStr: string) => {
     return new Date(dateStr).toISOString().slice(0, 10);
 };
@@ -289,13 +294,13 @@ onBeforeUnmount(() => {
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
 
             <!-- Header -->
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Dars tahlili</h1>
                     <p class="text-sm text-muted-foreground mt-1">O'qituvchilar va ma'muriyat tomonidan dars jarayonlari haqida qoldirilgan fikr-mulohazalar.</p>
                 </div>
-                <a :href="exportUrl">
-                    <Button variant="outline" size="sm" class="gap-2">
+                <a :href="exportUrl" class="w-full sm:w-auto">
+                    <Button variant="outline" size="sm" class="w-full gap-2 sm:w-auto">
                         <Download class="h-4 w-4" />
                         Excel
                     </Button>
@@ -356,7 +361,7 @@ onBeforeUnmount(() => {
                         <h2 class="text-base font-semibold text-foreground">Kunlik fikr-mulohazalar</h2>
                         <p class="mt-1 text-sm text-muted-foreground">Filtrlangan natijalar bo'yicha ijobiy va salbiy yozuvlar soni.</p>
                     </div>
-                    <div class="flex items-center gap-4 text-sm">
+                    <div class="flex flex-wrap items-center gap-4 text-sm">
                         <div class="flex items-center gap-2">
                             <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                             <span class="text-muted-foreground">Ijobiy:</span>
@@ -370,7 +375,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <div class="h-72 w-full">
+                <div class="h-64 w-full sm:h-72">
                     <canvas ref="chartCanvas"></canvas>
                 </div>
             </div>
@@ -383,8 +388,92 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
+            <div v-else class="space-y-4 lg:hidden">
+                <template v-for="(items, dateKey) in grouped" :key="dateKey">
+                    <div class="rounded-lg border bg-background">
+                        <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                            <span class="font-semibold text-primary text-sm">{{ formatDateHeader(items[0].created_at) }}</span>
+                            <span class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{{ items.length }} ta</span>
+                        </div>
+
+                        <div class="divide-y divide-border/70">
+                            <div
+                                v-for="fb in items"
+                                :key="fb.id"
+                                class="space-y-3 p-4"
+                            >
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <h3 class="text-sm font-semibold leading-snug text-foreground">
+                                            {{ fb.lesson_name || 'Noma\'lum fan' }}
+                                        </h3>
+                                        <p class="mt-1 text-xs text-muted-foreground">
+                                            {{ fb.employee_name || '—' }} · {{ fb.group_name || '—' }}
+                                        </p>
+                                    </div>
+
+                                    <div v-if="fb.type === 'good'" class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                        Ijobiy
+                                    </div>
+                                    <div v-else class="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                                        Salbiy
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 text-xs">
+                                    <div class="rounded-md bg-muted/40 p-2">
+                                        <div class="text-muted-foreground">Para</div>
+                                        <div class="mt-1 font-semibold text-foreground">{{ getPara(fb.start_time) }}-para</div>
+                                        <div class="text-muted-foreground">
+                                            {{ fb.start_time?.substring(0, 5) || '?' }}-{{ fb.end_time?.substring(0, 5) || '?' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="rounded-md bg-muted/40 p-2">
+                                        <div class="text-muted-foreground">Auditoriya</div>
+                                        <div class="mt-1 font-semibold text-foreground">{{ fb.auditorium?.name || '—' }}</div>
+                                        <div class="text-muted-foreground">{{ fb.auditorium?.building?.name || '—' }}</div>
+                                    </div>
+                                </div>
+
+                                <div v-if="fb.message" class="rounded-md border border-border/70 px-3 py-2 text-sm whitespace-pre-wrap">
+                                    {{ fb.message }}
+                                </div>
+
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="text-xs text-muted-foreground">
+                                        <div>{{ fb.user?.name || 'Tizim' }}</div>
+                                        <div>{{ formatShortDate(fb.created_at) }} {{ formatTime(fb.created_at) }}</div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <button
+                                            v-if="fb.snapshot_url"
+                                            @click="previewImage = fb.snapshot_url"
+                                            class="inline-block overflow-hidden rounded border border-border"
+                                        >
+                                            <img :src="fb.snapshot_url" class="h-10 w-16 object-cover" alt="Snapshot" />
+                                        </button>
+                                        <Button
+                                            v-if="isAdmin"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                            :disabled="deletingId === fb.id"
+                                            @click="destroyFeedback(fb.id)"
+                                        >
+                                            <Trash2 class="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             <!-- Schedule Table -->
-            <div v-else class="border rounded-lg overflow-hidden bg-background">
+            <div v-else class="hidden overflow-hidden rounded-lg border bg-background lg:block">
                 <table class="w-full text-sm border-collapse">
                     <thead>
                         <tr class="bg-muted border-b-2 border-border">
