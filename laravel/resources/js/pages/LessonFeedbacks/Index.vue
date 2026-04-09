@@ -388,7 +388,7 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
-            <div v-else class="space-y-4 lg:hidden">
+            <div v-if="feedbacks.data.length > 0" class="space-y-4 lg:hidden">
                 <template v-for="(items, dateKey) in grouped" :key="dateKey">
                     <div class="rounded-lg border bg-background">
                         <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -473,7 +473,7 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- Schedule Table -->
-            <div v-else class="hidden overflow-hidden rounded-lg border bg-background lg:block">
+            <div v-if="feedbacks.data.length > 0" class="hidden overflow-hidden rounded-lg border bg-background lg:block">
                 <table class="w-full text-sm border-collapse">
                     <thead>
                         <tr class="bg-muted border-b-2 border-border">
