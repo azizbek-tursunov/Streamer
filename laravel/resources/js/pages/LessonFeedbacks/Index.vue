@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
-import { MessageSquareText, Search, Download, ImageIcon, ThumbsUp, ThumbsDown } from 'lucide-vue-next';
+import { MessageSquareText, Search, Download, ImageIcon, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-vue-next';
 
 const props = defineProps<{
     feedbacks: {
@@ -28,6 +27,11 @@ const props = defineProps<{
         }>;
         links: any[];
     };
+    chartData: Array<{
+        date: string;
+        good: number;
+        bad: number;
+    }>;
     buildings: string[];
     filters: {
         search?: string;
@@ -37,10 +41,24 @@ const props = defineProps<{
     };
 }>();
 
+const page = usePage<{
+    auth: {
+        user: null | {
+            roles?: string[];
+        };
+    };
+}>();
+
 const search = ref(props.filters.search || '');
 const type = ref(props.filters.type || 'all');
 const date = ref(props.filters.date || '');
 const building = ref(props.filters.building || 'all');
+const deletingId = ref<number | null>(null);
+
+const isAdmin = computed(() => {
+    const roles = page.props.auth?.user?.roles ?? [];
+    return roles.includes('admin') || roles.includes('super-admin');
+});
 
 watch([search, type, date, building], debounce(([searchVal, typeVal, dateVal, buildingVal]) => {
     router.get('/feedbacks', {
@@ -62,6 +80,22 @@ const exportUrl = computed(() => {
     const qs = params.toString();
     return '/feedbacks/export' + (qs ? '?' + qs : '');
 });
+
+const destroyFeedback = (id: number) => {
+    if (!window.confirm('Rostdan ham ushbu fikr-mulohazani o\'chirmoqchimisiz?')) {
+        return;
+    }
+
+    deletingId.value = id;
+
+    router.delete(`/feedbacks/${id}`, {
+        preserveScroll: true,
+        preserveState: true,
+        onFinish: () => {
+            deletingId.value = null;
+        },
+    });
+};
 
 const DAYS_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
 
@@ -104,6 +138,47 @@ const grouped = computed(() => {
     }
     return groups;
 });
+
+const chartLabels = computed(() =>
+    props.chartData.map((item) => {
+        const d = new Date(item.date);
+        return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }),
+);
+
+const chartMax = computed(() => {
+    const maxValue = props.chartData.reduce((max, item) => Math.max(max, item.good, item.bad), 0);
+    return maxValue || 1;
+});
+
+const chartPoints = (key: 'good' | 'bad') => {
+    if (props.chartData.length === 1) {
+        const value = props.chartData[0][key];
+        const y = 100 - (value / chartMax.value) * 100;
+        return `0,${y} 100,${y}`;
+    }
+
+    return props.chartData
+        .map((item, index) => {
+            const x = (index / (props.chartData.length - 1)) * 100;
+            const y = 100 - (item[key] / chartMax.value) * 100;
+            return `${x},${y}`;
+        })
+        .join(' ');
+};
+
+const summaryTotals = computed(() =>
+    props.chartData.reduce(
+        (totals, item) => {
+            totals.good += item.good;
+            totals.bad += item.bad;
+            return totals;
+        },
+        { good: 0, bad: 0 },
+    ),
+);
+
+const dateHeaderColspan = computed(() => (isAdmin.value ? 10 : 9));
 </script>
 
 <template>
@@ -177,6 +252,72 @@ const grouped = computed(() => {
                 </button>
             </div>
 
+            <div v-if="chartData.length > 0" class="rounded-lg border bg-background p-4">
+                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-foreground">Kunlik fikr-mulohazalar</h2>
+                        <p class="mt-1 text-sm text-muted-foreground">Filtrlangan natijalar bo'yicha ijobiy va salbiy yozuvlar soni.</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-muted-foreground">Ijobiy:</span>
+                            <span class="font-semibold text-foreground">{{ summaryTotals.good }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                            <span class="text-muted-foreground">Salbiy:</span>
+                            <span class="font-semibold text-foreground">{{ summaryTotals.bad }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative h-64 w-full">
+                    <div class="pointer-events-none absolute inset-0 flex flex-col justify-between">
+                        <div
+                            v-for="line in 5"
+                            :key="line"
+                            class="border-t border-dashed border-border/60"
+                        />
+                    </div>
+
+                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 h-full w-full">
+                        <polyline
+                            fill="none"
+                            stroke="rgb(16 185 129)"
+                            stroke-width="2.5"
+                            :points="chartPoints('good')"
+                        />
+                        <polyline
+                            fill="none"
+                            stroke="rgb(239 68 68)"
+                            stroke-width="2.5"
+                            :points="chartPoints('bad')"
+                        />
+                        <g v-for="(item, index) in chartData" :key="item.date">
+                            <circle
+                                :cx="chartData.length === 1 ? 50 : (index / (chartData.length - 1)) * 100"
+                                :cy="100 - (item.good / chartMax) * 100"
+                                r="1.8"
+                                fill="rgb(16 185 129)"
+                            />
+                            <circle
+                                :cx="chartData.length === 1 ? 50 : (index / (chartData.length - 1)) * 100"
+                                :cy="100 - (item.bad / chartMax) * 100"
+                                r="1.8"
+                                fill="rgb(239 68 68)"
+                            />
+                        </g>
+                    </svg>
+
+                    <div class="absolute inset-x-0 bottom-0 grid gap-2 pt-3 text-[11px] text-muted-foreground" :style="{ gridTemplateColumns: `repeat(${chartData.length}, minmax(0, 1fr))` }">
+                        <div v-for="(label, index) in chartLabels" :key="`${label}-${index}`" class="truncate text-center">
+                            {{ label }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty state -->
             <div v-if="feedbacks.data.length === 0" class="border rounded-lg p-12 text-center text-muted-foreground bg-background">
                 <div class="flex flex-col items-center gap-2">
@@ -199,13 +340,14 @@ const grouped = computed(() => {
                             <th class="px-3 py-2.5 text-center font-semibold text-muted-foreground border-r border-border w-[80px]">Holat</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground border-r border-border">Mulohaza</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-muted-foreground w-[130px]">Kiritdi</th>
+                            <th v-if="isAdmin" class="px-3 py-2.5 text-center font-semibold text-muted-foreground w-[88px]">Amal</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template v-for="(items, dateKey) in grouped" :key="dateKey">
                             <!-- Date header row -->
                             <tr class="bg-primary/8 dark:bg-primary/10 border-y border-primary/20">
-                                <td colspan="9" class="px-4 py-1.5">
+                                <td :colspan="dateHeaderColspan" class="px-4 py-1.5">
                                     <div class="flex items-center gap-3">
                                         <span class="font-semibold text-primary text-sm">{{ formatDateHeader(items[0].created_at) }}</span>
                                         <span class="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{{ items.length }} ta yozuv</span>
@@ -290,6 +432,18 @@ const grouped = computed(() => {
                                         <span class="font-medium text-foreground">{{ fb.user?.name || 'Tizim' }}</span>
                                         <span class="text-muted-foreground">{{ formatTime(fb.created_at) }}</span>
                                     </div>
+                                </td>
+
+                                <td v-if="isAdmin" class="px-3 py-2.5 text-center align-middle">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                        :disabled="deletingId === fb.id"
+                                        @click="destroyFeedback(fb.id)"
+                                    >
+                                        <Trash2 class="h-4 w-4" />
+                                    </Button>
                                 </td>
                             </tr>
                         </template>

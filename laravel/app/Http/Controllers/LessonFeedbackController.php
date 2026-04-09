@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\FeedbackExport;
 use App\Jobs\CaptureFeedbackSnapshot;
 use App\Models\LessonFeedback;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
@@ -43,6 +44,20 @@ class LessonFeedbackController extends Controller
             });
         }
 
+        $chartData = (clone $query)
+            ->reorder()
+            ->selectRaw('DATE(created_at) as date')
+            ->selectRaw("SUM(CASE WHEN type = 'good' THEN 1 ELSE 0 END) as good_count")
+            ->selectRaw("SUM(CASE WHEN type = 'bad' THEN 1 ELSE 0 END) as bad_count")
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => [
+                'date' => $row->date,
+                'good' => (int) $row->good_count,
+                'bad' => (int) $row->bad_count,
+            ]);
+
         $feedbacks = $query->paginate(15)->withQueryString();
 
         $feedbacks->getCollection()->transform(function ($feedback) {
@@ -62,6 +77,7 @@ class LessonFeedbackController extends Controller
 
         return Inertia::render('LessonFeedbacks/Index', [
             'feedbacks' => $feedbacks,
+            'chartData' => $chartData,
             'buildings' => $buildings,
             'filters' => $request->only(['search', 'type', 'date', 'building']),
         ]);
@@ -132,5 +148,17 @@ class LessonFeedbackController extends Controller
         $filename = 'dars_tahlili_'.now()->format('Y-m-d').'.xlsx';
 
         return Excel::download(new FeedbackExport($query), $filename);
+    }
+
+    public function destroy(Request $request, LessonFeedback $feedback)
+    {
+        abort_unless(
+            $request->user()?->hasAnyRole(['admin', 'super-admin']),
+            403
+        );
+
+        $feedback->delete();
+
+        return redirect()->back()->with('success', 'Fikr-mulohaza o\'chirildi.');
     }
 }
