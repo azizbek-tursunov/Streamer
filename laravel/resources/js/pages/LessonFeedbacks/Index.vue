@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { MessageSquareText, Search, Download, ImageIcon, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-vue-next';
 import {
     Chart,
-    LineController,
-    LineElement,
+    BarController,
+    BarElement,
     PointElement,
     LinearScale,
     CategoryScale,
@@ -21,7 +21,7 @@ import {
     type ChartConfiguration,
 } from 'chart.js';
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
+Chart.register(BarController, BarElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
 
 const props = defineProps<{
     feedbacks: {
@@ -69,7 +69,7 @@ const date = ref(props.filters.date || '');
 const building = ref(props.filters.building || 'all');
 const deletingId = ref<number | null>(null);
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
-let feedbackChart: Chart<'line'> | null = null;
+let feedbackChart: Chart<'bar'> | null = null;
 
 const isAdmin = computed(() => {
     const roles = page.props.auth?.user?.roles ?? [];
@@ -182,34 +182,32 @@ const renderChart = () => {
 
     feedbackChart?.destroy();
 
-    const configuration: ChartConfiguration<'line'> = {
-        type: 'line',
+    const configuration: ChartConfiguration<'bar'> = {
+        type: 'bar',
         data: {
             labels: chartLabels.value,
             datasets: [
                 {
                     label: 'Ijobiy',
                     data: props.chartData.map((item) => item.good),
+                    backgroundColor: 'rgba(16, 185, 129, 0.82)',
                     borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.14)',
-                    pointBackgroundColor: 'rgb(16, 185, 129)',
-                    pointBorderColor: 'rgb(16, 185, 129)',
-                    tension: 0.35,
-                    fill: false,
-                    pointRadius: 4,
-                    pointHoverRadius: 5,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.82,
+                    categoryPercentage: 0.72,
                 },
                 {
                     label: 'Salbiy',
                     data: props.chartData.map((item) => item.bad),
+                    backgroundColor: 'rgba(239, 68, 68, 0.82)',
                     borderColor: 'rgb(239, 68, 68)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.14)',
-                    pointBackgroundColor: 'rgb(239, 68, 68)',
-                    pointBorderColor: 'rgb(239, 68, 68)',
-                    tension: 0.35,
-                    fill: false,
-                    pointRadius: 4,
-                    pointHoverRadius: 5,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.82,
+                    categoryPercentage: 0.72,
                 },
             ],
         },
