@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { debounce } from 'lodash';
@@ -8,6 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { MessageSquareText, Search, Download, ImageIcon, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-vue-next';
+import {
+    Chart,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Tooltip,
+    Legend,
+    Filler,
+    type ChartConfiguration,
+} from 'chart.js';
+
+Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
 
 const props = defineProps<{
     feedbacks: {
@@ -54,6 +68,8 @@ const type = ref(props.filters.type || 'all');
 const date = ref(props.filters.date || '');
 const building = ref(props.filters.building || 'all');
 const deletingId = ref<number | null>(null);
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+let feedbackChart: Chart<'line'> | null = null;
 
 const isAdmin = computed(() => {
     const roles = page.props.auth?.user?.roles ?? [];
@@ -146,27 +162,6 @@ const chartLabels = computed(() =>
     }),
 );
 
-const chartMax = computed(() => {
-    const maxValue = props.chartData.reduce((max, item) => Math.max(max, item.good, item.bad), 0);
-    return maxValue || 1;
-});
-
-const chartPoints = (key: 'good' | 'bad') => {
-    if (props.chartData.length === 1) {
-        const value = props.chartData[0][key];
-        const y = 100 - (value / chartMax.value) * 100;
-        return `0,${y} 100,${y}`;
-    }
-
-    return props.chartData
-        .map((item, index) => {
-            const x = (index / (props.chartData.length - 1)) * 100;
-            const y = 100 - (item[key] / chartMax.value) * 100;
-            return `${x},${y}`;
-        })
-        .join(' ');
-};
-
 const summaryTotals = computed(() =>
     props.chartData.reduce(
         (totals, item) => {
@@ -179,6 +174,111 @@ const summaryTotals = computed(() =>
 );
 
 const dateHeaderColspan = computed(() => (isAdmin.value ? 10 : 9));
+
+const renderChart = () => {
+    if (!chartCanvas.value) {
+        return;
+    }
+
+    feedbackChart?.destroy();
+
+    const configuration: ChartConfiguration<'line'> = {
+        type: 'line',
+        data: {
+            labels: chartLabels.value,
+            datasets: [
+                {
+                    label: 'Ijobiy',
+                    data: props.chartData.map((item) => item.good),
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.14)',
+                    pointBackgroundColor: 'rgb(16, 185, 129)',
+                    pointBorderColor: 'rgb(16, 185, 129)',
+                    tension: 0.35,
+                    fill: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 5,
+                },
+                {
+                    label: 'Salbiy',
+                    data: props.chartData.map((item) => item.bad),
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+                    pointBackgroundColor: 'rgb(239, 68, 68)',
+                    pointBorderColor: 'rgb(239, 68, 68)',
+                    tension: 0.35,
+                    fill: false,
+                    pointRadius: 4,
+                    pointHoverRadius: 5,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'start',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        color: 'rgb(100, 116, 139)',
+                    },
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (items) => items[0]?.label ?? '',
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+                    },
+                    ticks: {
+                        color: 'rgb(100, 116, 139)',
+                    },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0,
+                        color: 'rgb(100, 116, 139)',
+                    },
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.18)',
+                    },
+                },
+            },
+        },
+    };
+
+    feedbackChart = new Chart(chartCanvas.value, configuration);
+};
+
+watch(
+    () => props.chartData,
+    () => {
+        renderChart();
+    },
+    { deep: true },
+);
+
+onMounted(() => {
+    renderChart();
+});
+
+onBeforeUnmount(() => {
+    feedbackChart?.destroy();
+    feedbackChart = null;
+});
 </script>
 
 <template>
@@ -272,49 +372,8 @@ const dateHeaderColspan = computed(() => (isAdmin.value ? 10 : 9));
                     </div>
                 </div>
 
-                <div class="relative h-64 w-full">
-                    <div class="pointer-events-none absolute inset-0 flex flex-col justify-between">
-                        <div
-                            v-for="line in 5"
-                            :key="line"
-                            class="border-t border-dashed border-border/60"
-                        />
-                    </div>
-
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 h-full w-full">
-                        <polyline
-                            fill="none"
-                            stroke="rgb(16 185 129)"
-                            stroke-width="2.5"
-                            :points="chartPoints('good')"
-                        />
-                        <polyline
-                            fill="none"
-                            stroke="rgb(239 68 68)"
-                            stroke-width="2.5"
-                            :points="chartPoints('bad')"
-                        />
-                        <g v-for="(item, index) in chartData" :key="item.date">
-                            <circle
-                                :cx="chartData.length === 1 ? 50 : (index / (chartData.length - 1)) * 100"
-                                :cy="100 - (item.good / chartMax) * 100"
-                                r="1.8"
-                                fill="rgb(16 185 129)"
-                            />
-                            <circle
-                                :cx="chartData.length === 1 ? 50 : (index / (chartData.length - 1)) * 100"
-                                :cy="100 - (item.bad / chartMax) * 100"
-                                r="1.8"
-                                fill="rgb(239 68 68)"
-                            />
-                        </g>
-                    </svg>
-
-                    <div class="absolute inset-x-0 bottom-0 grid gap-2 pt-3 text-[11px] text-muted-foreground" :style="{ gridTemplateColumns: `repeat(${chartData.length}, minmax(0, 1fr))` }">
-                        <div v-for="(label, index) in chartLabels" :key="`${label}-${index}`" class="truncate text-center">
-                            {{ label }}
-                        </div>
-                    </div>
+                <div class="h-72 w-full">
+                    <canvas ref="chartCanvas"></canvas>
                 </div>
             </div>
 
