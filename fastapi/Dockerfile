@@ -2,6 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+ENV PIP_NO_CACHE_DIR=1
+
 # Install system dependencies for OpenCV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
@@ -11,8 +13,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install CPU-only PyTorch first so ultralytics does not pull CUDA packages.
+RUN pip install --index-url https://download.pytorch.org/whl/cpu \
+    torch \
+    torchvision
+
+# Install application dependencies
+RUN pip install -r requirements.txt
 
 # Copy application code
 COPY . .

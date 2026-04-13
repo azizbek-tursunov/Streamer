@@ -2,6 +2,9 @@
 fastapi/__pycache__/
 fastapi/*.pyc
 fastapi/yolov8n.pt
+fastapi/yolo26*.pt
+fastapi/datasets/
+fastapi/runs/
 
 # Docker
 docker_ai_prompt.md

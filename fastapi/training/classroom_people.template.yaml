@@ -1,0 +1,8 @@
+# Copy this file to fastapi/training/classroom_people.yaml and update the absolute path.
+path: /app/datasets/classroom_people
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: person

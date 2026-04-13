@@ -8,7 +8,7 @@ A self-hosted streaming platform for managing RTSP cameras, monitoring live feed
 - **Camera Management** - add, edit, delete RTSP cameras with encrypted credentials
 - **HLS & WebRTC Streaming** - low-latency video with Opus audio support
 - **YouTube Restreaming** - push any camera feed to YouTube Live
-- **People Counting** - YOLO-based person detection with Redis queue
+- **People Counting** - YOLO26-based person detection with Redis queue
 - **HEMIS Integration** - OAuth login, user/faculty/auditorium sync from university system
 - **Role-Based Access** - Spatie Permission with granular permissions
 - **Public Stream Page** - shareable `/streams` page for public cameras
@@ -321,7 +321,16 @@ docker compose up -d laravel
 - **Database**: PostgreSQL 17
 - **Queue**: Redis + Laravel Horizon
 - **Auth**: Laravel Fortify + Spatie Permission + HEMIS OAuth
-- **AI**: YOLOv8 people counting (Python/FastAPI)
+- **AI**: YOLO26 people counting (Python/FastAPI)
+
+## Classroom Counting
+
+The production worker now defaults to `yolo26n.pt` with person-only detection tuned for CPU deployment. This is suitable as a bootstrap model, but classroom occupancy accuracy should be improved with a custom fine-tuned dataset collected from your own camera views.
+
+Training scaffold files are provided here:
+
+- `fastapi/training/README.md`
+- `fastapi/training/classroom_people.template.yaml`
 
 ## License
 
