@@ -1,6 +1,6 @@
 """
 YOLO People Counter Worker
-Vanilla Python worker that consumes jobs from Redis, runs YOLOv8 person detection,
+Vanilla Python worker that consumes jobs from Redis, runs YOLO person detection,
 and pushes results back to Redis for Laravel to consume.
 """
 import json
@@ -11,13 +11,26 @@ from datetime import datetime, timezone
 import redis
 from ultralytics import YOLO
 
+
+def parse_class_ids(raw_value: str) -> list[int]:
+    """Parse a comma-separated list of YOLO class ids from the environment."""
+    class_ids: list[int] = []
+    for item in raw_value.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        class_ids.append(int(item))
+    return class_ids
+
+
 # Configuration
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PREFIX = os.getenv("REDIS_PREFIX", "univision-database-")
-CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE", 0.3))
-YOLO_MODEL = os.getenv("YOLO_MODEL", "yolov8n.pt")
-PERSON_CLASS_ID = 0  # COCO class 0 = person
+CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE", 0.25))
+YOLO_MODEL = os.getenv("YOLO_MODEL", "yolo26n.pt")
+YOLO_IMAGE_SIZE = int(os.getenv("YOLO_IMAGE_SIZE", 1280))
+TARGET_CLASS_IDS = parse_class_ids(os.getenv("YOLO_TARGET_CLASSES", "0"))
 
 # Redis key names (with Laravel prefix)
 JOBS_KEY = f"{REDIS_PREFIX}yolo:jobs"
@@ -28,26 +41,32 @@ r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 model = YOLO(YOLO_MODEL)
 
 print(f"[YOLO Worker] Started. Redis={REDIS_HOST}:{REDIS_PORT}, Prefix={REDIS_PREFIX}")
-print(f"[YOLO Worker] Model loaded: {YOLO_MODEL}, confidence={CONFIDENCE_THRESHOLD}")
+print(
+    "[YOLO Worker] Model loaded: "
+    f"{YOLO_MODEL}, confidence={CONFIDENCE_THRESHOLD}, imgsz={YOLO_IMAGE_SIZE}, "
+    f"classes={TARGET_CLASS_IDS}"
+)
 print(f"[YOLO Worker] Waiting for jobs on '{JOBS_KEY}'...")
 
 
 def count_people(image_path: str) -> int:
-    """Run YOLOv8 inference and count only people (class_id=0)."""
+    """Run YOLO inference and count detections in the configured target classes."""
     if not os.path.exists(image_path):
         print(f"[YOLO Worker] File not found: {image_path}")
         return -1
 
-    results = model(image_path, verbose=False)
+    results = model(
+        image_path,
+        verbose=False,
+        conf=CONFIDENCE_THRESHOLD,
+        imgsz=YOLO_IMAGE_SIZE,
+        classes=TARGET_CLASS_IDS,
+    )
 
-    people = 0
-    for box in results[0].boxes:
-        cls_id = int(box.cls)
-        conf = float(box.conf)
-        if cls_id == PERSON_CLASS_ID and conf >= CONFIDENCE_THRESHOLD:
-            people += 1
+    if not results or results[0].boxes is None:
+        return 0
 
-    return people
+    return len(results[0].boxes)
 
 
 def process_job(job_data: dict) -> None:
