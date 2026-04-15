@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Pencil, Trash2, Plus, Search, RefreshCw } from 'lucide-vue-next';
+import { Pencil, Trash2, Plus, Search } from 'lucide-vue-next';
 import { Badge } from '@/components/ui/badge';
 import Pagination from '@/components/Pagination.vue';
 import { ref, watch } from 'vue';
@@ -65,16 +65,6 @@ const deleteUser = (id: number) => {
 };
 
 const { hasPermission } = usePermissions();
-
-const isSyncing = ref(false);
-
-const syncFromHemis = () => {
-    isSyncing.value = true;
-    router.post('/users/sync', {}, {
-        preserveScroll: true,
-        onFinish: () => { isSyncing.value = false; }
-    });
-};
 </script>
 
 <template>
@@ -95,10 +85,6 @@ const syncFromHemis = () => {
                     </p>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <Button v-if="hasPermission('manage-users')" variant="outline" @click="syncFromHemis" :disabled="isSyncing">
-                        <RefreshCw class="w-4 h-4 mr-2" :class="{ 'animate-spin': isSyncing }" />
-                        {{ isSyncing ? 'Sinxronlanmoqda...' : 'HEMISdan sinxronlash' }}
-                    </Button>
                     <Button v-if="hasPermission('manage-users')" as-child>
                         <Link :href="create().url">
                             <Plus class="w-4 h-4 mr-2" />

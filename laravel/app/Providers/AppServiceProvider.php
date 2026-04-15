@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\HemisIntegrations\HemisApiService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         // Super-admin bypasses all permission checks (standard Spatie pattern)
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super-admin') ? true : null;
