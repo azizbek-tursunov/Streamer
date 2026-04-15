@@ -8,10 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Crypt;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\MediaLibrary\MediaCollections\MediaCollection;
 
-class Camera extends Model
+class Camera extends Model implements HasMedia
 {
-    use HasFactory;
+    use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'name',
@@ -80,5 +85,57 @@ class Camera extends Model
         $path = ltrim($this->stream_path, '/');
 
         return "rtsp://{$auth}{$this->ip_address}:{$this->port}/{$path}";
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this
+            ->addMediaCollection('latest_snapshot')
+            ->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this
+            ->addMediaConversion('medium_webp')
+            ->format('webp')
+            ->fit(Fit::Max, 960, 540)
+            ->quality(82)
+            ->queued();
+    }
+
+    public function latestSnapshotMedia(): ?Media
+    {
+        return $this->getFirstMedia('latest_snapshot');
+    }
+
+    public function latestSnapshotUrl(): ?string
+    {
+        $media = $this->latestSnapshotMedia();
+
+        if (! $media) {
+            return null;
+        }
+
+        return $media->hasGeneratedConversion('medium_webp')
+            ? $media->getUrl('medium_webp')
+            : $media->getUrl();
+    }
+
+    public function latestSnapshotTimestamp(): ?int
+    {
+        $media = $this->latestSnapshotMedia();
+
+        if (! $media) {
+            return null;
+        }
+
+        $capturedAt = $media->getCustomProperty('captured_at');
+
+        if (is_numeric($capturedAt)) {
+            return (int) $capturedAt;
+        }
+
+        return $media->updated_at?->timestamp;
     }
 }

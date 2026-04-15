@@ -19,7 +19,7 @@ class AuditoriumController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = Auditorium::query()->with(['camera', 'faculties']);
+        $query = Auditorium::query()->with(['camera.media', 'faculties']);
 
         if ($request->search) {
             $query->where('name', 'like', '%'.$request->search.'%');
@@ -53,25 +53,7 @@ class AuditoriumController extends Controller
             ->get()
             ->keyBy('auditorium_code');
 
-        // Fetch snapshots — single directory scan instead of per-camera glob
         $cameraIds = $auditoriums->whereNotNull('camera_id')->pluck('camera_id')->unique();
-        $snapshots = [];
-        $snapshotDir = storage_path('app/public/snapshots');
-        $allFiles = glob($snapshotDir.'/camera_*.jpg');
-        $latestPerCamera = [];
-        foreach ($allFiles as $file) {
-            if (preg_match('/camera_(\d+)_/', basename($file), $m)) {
-                $camId = (int) $m[1];
-                if (!isset($latestPerCamera[$camId]) || filemtime($file) > filemtime($latestPerCamera[$camId])) {
-                    $latestPerCamera[$camId] = $file;
-                }
-            }
-        }
-        foreach ($cameraIds as $cameraId) {
-            if (isset($latestPerCamera[$cameraId])) {
-                $snapshots[$cameraId] = asset('storage/snapshots/'.basename($latestPerCamera[$cameraId]));
-            }
-        }
 
         // Fetch latest people counts per camera
         $peopleCounts = \App\Models\PeopleCount::whereIn('camera_id', $cameraIds)
@@ -82,10 +64,15 @@ class AuditoriumController extends Controller
             })
             ->pluck('people_count', 'camera_id');
 
-        $auditoriums->transform(function ($auditorium) use ($currentLessons, $snapshots, $peopleCounts) {
+        $auditoriums->transform(function ($auditorium) use ($currentLessons, $peopleCounts) {
             $auditorium->current_lesson = $currentLessons->get($auditorium->code);
-            if ($auditorium->camera_id && isset($snapshots[$auditorium->camera_id])) {
-                $auditorium->camera_snapshot = $snapshots[$auditorium->camera_id];
+            if ($auditorium->camera) {
+                $snapshotUrl = $auditorium->camera->latestSnapshotUrl();
+                $timestamp = $auditorium->camera->latestSnapshotTimestamp();
+
+                $auditorium->camera_snapshot = ($snapshotUrl && $timestamp)
+                    ? "{$snapshotUrl}?t={$timestamp}"
+                    : $snapshotUrl;
             }
             $auditorium->people_count = $auditorium->camera_id
                 ? ($peopleCounts[$auditorium->camera_id] ?? null)

@@ -19,6 +19,7 @@
         "league/oauth2-client": "^2.9",
         "maatwebsite/excel": "^3.1",
         "predis/predis": "^3.3",
+        "spatie/laravel-medialibrary": "*",
         "spatie/laravel-permission": "*"
     },
     "require-dev": {

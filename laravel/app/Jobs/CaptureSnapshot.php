@@ -6,6 +6,7 @@ use App\Models\Camera;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class CaptureSnapshot implements ShouldQueue
 {
@@ -39,7 +40,7 @@ class CaptureSnapshot implements ShouldQueue
 
         // Log::info("Snapshot: Starting HTTP ISAPI for Camera {$this->camera->id}", ['url' => $url]);
 
-        $http = \Illuminate\Support\Facades\Http::timeout(10)->sink($outputPath);
+        $http = Http::timeout(10)->sink($outputPath);
 
         if (! empty($this->camera->username)) {
             $http->withDigestAuth($this->camera->username, $this->camera->password ?? '');
@@ -52,14 +53,25 @@ class CaptureSnapshot implements ShouldQueue
                 if (filesize($outputPath) <= 1000) {
                     unlink($outputPath);
                     Log::error("Snapshot: HTTP returned a tiny file (likely auth error or XML) for Camera {$this->camera->id}");
+                    return;
                 }
+
+                SyncCameraSnapshotMedia::dispatch($this->camera->id, $outputPath, filemtime($outputPath));
             } else {
+                if (file_exists($outputPath)) {
+                    unlink($outputPath);
+                }
+
                 Log::error("Snapshot: Failed HTTP ISAPI for Camera {$this->camera->id}", [
                     'status' => $response->status(),
                     'error' => $response->body(),
                 ]);
             }
         } catch (\Exception $e) {
+            if (file_exists($outputPath)) {
+                unlink($outputPath);
+            }
+
             Log::error("Snapshot: Exception for Camera {$this->camera->id}", ['error' => $e->getMessage()]);
         }
     }
