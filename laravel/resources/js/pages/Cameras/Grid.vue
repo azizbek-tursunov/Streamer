@@ -63,16 +63,30 @@ const imgState = reactive<Record<number, 'loading' | 'loaded' | 'error'>>({});
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
+const extractTimestamp = (url?: string | null): number => {
+    if (!url) {
+        return 0;
+    }
+
+    try {
+        const parsedUrl = new URL(url, window.location.origin);
+        return Number(parsedUrl.searchParams.get('t') || 0);
+    } catch {
+        return 0;
+    }
+};
+
 // Initialize snapshot URLs from props
 const initializeSnapshots = () => {
     props.cameras.data.forEach(camera => {
         imgState[camera.id] = camera.snapshot_url ? 'loading' : 'error';
         if (camera.snapshot_url) {
+            const timestamp = extractTimestamp(camera.snapshot_url);
             snapshotUrls[camera.id] = {
                 url: camera.snapshot_url,
-                timestamp: Date.now()
+                timestamp
             };
-            cachedTimestamps[camera.id] = 0; // Will be updated on first poll
+            cachedTimestamps[camera.id] = timestamp;
         }
     });
 };
@@ -86,13 +100,22 @@ const pollSnapshots = async () => {
 
         Object.entries(data).forEach(([cameraId, info]) => {
             const id = parseInt(cameraId);
-            if (info && info.timestamp !== cachedTimestamps[id]) {
+            if (info) {
+                const nextUrl = `${info.url}?t=${info.timestamp}`;
+                const currentUrl = snapshotUrls[id]?.url || null;
+
+                if (info.timestamp === cachedTimestamps[id] && nextUrl === currentUrl) {
+                    return;
+                }
+
                 snapshotUrls[id] = {
-                    url: `${info.url}?t=${info.timestamp}`,
+                    url: nextUrl,
                     timestamp: info.timestamp
                 };
                 cachedTimestamps[id] = info.timestamp;
-                imgState[id] = 'loading'; // reset so skeleton shows briefly on update
+                if (nextUrl !== currentUrl) {
+                    imgState[id] = 'loading'; // reset so skeleton shows briefly on update
+                }
             }
         });
     } catch (error) {

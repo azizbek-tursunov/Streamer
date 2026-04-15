@@ -321,6 +321,19 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 let lessonsPollInterval: ReturnType<typeof setInterval> | null = null;
 let peopleCountsPollInterval: ReturnType<typeof setInterval> | null = null;
 
+const extractTimestamp = (url?: string | null): number => {
+    if (!url) {
+        return 0;
+    }
+
+    try {
+        const parsedUrl = new URL(url, window.location.origin);
+        return Number(parsedUrl.searchParams.get('t') || 0);
+    } catch {
+        return 0;
+    }
+};
+
 const pollSnapshots = async () => {
     try {
         const response = await fetch('/cameras/snapshots');
@@ -328,13 +341,22 @@ const pollSnapshots = async () => {
         
         Object.entries(data).forEach(([cameraIdStr, info]) => {
             const id = parseInt(cameraIdStr);
-            if (info && info.timestamp !== cachedTimestamps[id]) {
-                snapshotUrls[id] = `${info.url}?t=${info.timestamp}`;
+            if (info) {
+                const nextUrl = `${info.url}?t=${info.timestamp}`;
+                const currentUrl = snapshotUrls[id] || null;
+
+                if (info.timestamp === cachedTimestamps[id] && nextUrl === currentUrl) {
+                    return;
+                }
+
+                snapshotUrls[id] = nextUrl;
                 cachedTimestamps[id] = info.timestamp;
-                // Reset image state for auditoriums using this camera
-                props.auditoriums.forEach(a => {
-                    if (a.camera_id === id) imgState[a.id] = 'loading';
-                });
+                if (nextUrl !== currentUrl) {
+                    // Reset image state only when the image source actually changes
+                    props.auditoriums.forEach(a => {
+                        if (a.camera_id === id) imgState[a.id] = 'loading';
+                    });
+                }
             }
         });
     } catch (error) {
@@ -381,6 +403,10 @@ onMounted(() => {
     // Initialize imgState and activeLessons from props
     props.auditoriums.forEach(a => {
         imgState[a.id] = a.camera_snapshot ? 'loading' : 'error';
+        if (a.camera_id && a.camera_snapshot) {
+            snapshotUrls[a.camera_id] = a.camera_snapshot;
+            cachedTimestamps[a.camera_id] = extractTimestamp(a.camera_snapshot);
+        }
         if (a.current_lesson) {
             activeLessons[a.code] = a.current_lesson;
         }
