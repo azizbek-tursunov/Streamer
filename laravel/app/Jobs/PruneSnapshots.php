@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\PeopleCount;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -24,26 +25,26 @@ class PruneSnapshots implements ShouldQueue
     public function handle(): void
     {
         $snapshotDir = storage_path('app/public/snapshots');
-
-        if (! file_exists($snapshotDir)) {
-            return;
-        }
-
-        $files = glob("{$snapshotDir}/*.jpg");
-        $now = time();
         $retentionSeconds = 30 * 60; // 30 minutes
-
+        $pruneBefore = now()->subSeconds($retentionSeconds);
         $deletedCount = 0;
 
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                if ($now - filemtime($file) >= $retentionSeconds) {
+        if (file_exists($snapshotDir)) {
+            $files = glob("{$snapshotDir}/*.jpg");
+            $now = time();
+
+            foreach ($files as $file) {
+                if (is_file($file) && $now - filemtime($file) >= $retentionSeconds) {
                     unlink($file);
                     $deletedCount++;
                 }
             }
         }
 
-        Log::info("Snapshot Prune: Deleted {$deletedCount} old snapshots.");
+        $deletedPeopleCounts = PeopleCount::query()
+            ->where('counted_at', '<=', $pruneBefore)
+            ->delete();
+
+        Log::info("Snapshot Prune: Deleted {$deletedCount} old snapshots and {$deletedPeopleCounts} old people counts.");
     }
 }
