@@ -99,8 +99,10 @@ const cameraSearch = ref('');
 
 // Lesson Feedback State
 const showFeedbackDialog = ref(false);
+const selectedFeedbackAuditorium = ref<Auditorium | null>(null);
 const feedbackForm = useForm({
     auditorium_id: null as number | null,
+    faculty_id: null as number | null,
     lesson_name: '',
     employee_name: '',
     group_name: '',
@@ -110,9 +112,13 @@ const feedbackForm = useForm({
     message: '',
 });
 
-const openFeedbackDialog = (auditoriumId: number, lesson: any) => {
+const openFeedbackDialog = (auditorium: Auditorium, lesson: any) => {
+    const auditoriumFaculties = auditorium.faculties ?? [];
+
     feedbackForm.reset();
-    feedbackForm.auditorium_id = auditoriumId;
+    selectedFeedbackAuditorium.value = auditorium;
+    feedbackForm.auditorium_id = auditorium.id;
+    feedbackForm.faculty_id = auditoriumFaculties.length === 1 ? auditoriumFaculties[0].id : null;
     feedbackForm.lesson_name = lesson.subject_name;
     feedbackForm.employee_name = lesson.employee_name;
     feedbackForm.group_name = lesson.group_name;
@@ -128,6 +134,16 @@ const submitFeedback = () => {
         preserveScroll: true,
         onSuccess: () => {
             showFeedbackDialog.value = false;
+            selectedFeedbackAuditorium.value = null;
+        },
+        onError: () => {
+            if (feedbackForm.errors.faculty_id && selectedFeedbackAuditorium.value) {
+                const auditoriumFaculties = selectedFeedbackAuditorium.value.faculties ?? [];
+
+                if (auditoriumFaculties.length === 1) {
+                    feedbackForm.faculty_id = auditoriumFaculties[0].id;
+                }
+            }
         },
     });
 };
@@ -873,7 +889,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 <div class="flex items-center gap-2">
                                                     <button 
                                                         v-if="hasPermission('add-feedbacks')"
-                                                        @click.stop="openFeedbackDialog(item.id, activeLessons[item.code])"
+                                                        @click.stop="openFeedbackDialog(item, activeLessons[item.code])"
                                                         class="opacity-70 hover:opacity-100 hover:text-emerald-600 hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all bg-background border px-2 py-1 rounded-md flex items-center gap-1.5 cursor-pointer shadow-sm"
                                                         title="Darsni baholash"
                                                     >
@@ -1077,6 +1093,35 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                 <ThumbsDown class="h-6 w-6" />
                                 <span class="text-xs font-medium">Salbiy</span>
                             </button>
+                        </div>
+
+                        <div v-if="(selectedFeedbackAuditorium?.faculties?.length || 0) > 1" class="grid gap-2">
+                            <label class="text-sm font-medium">Fakultet</label>
+                            <Select
+                                :model-value="feedbackForm.faculty_id?.toString()"
+                                @update:model-value="(value) => feedbackForm.faculty_id = value ? parseInt(value) : null"
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Fakultetni tanlang" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        v-for="faculty in selectedFeedbackAuditorium?.faculties ?? []"
+                                        :key="faculty.id"
+                                        :value="faculty.id.toString()"
+                                    >
+                                        {{ faculty.name }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p v-if="feedbackForm.errors.faculty_id" class="text-sm text-destructive">
+                                {{ feedbackForm.errors.faculty_id }}
+                            </p>
+                        </div>
+
+                        <div v-else-if="(selectedFeedbackAuditorium?.faculties?.length || 0) === 1" class="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                            <span class="text-muted-foreground">Fakultet:</span>
+                            {{ selectedFeedbackAuditorium?.faculties?.[0]?.name }}
                         </div>
 
                         <div class="grid gap-2">
