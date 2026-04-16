@@ -12,6 +12,16 @@ defineProps<{
 
 const decodeLabel = (label: string) =>
     label.replace(/&laquo;/g, '\u00AB').replace(/&raquo;/g, '\u00BB').replace(/&amp;/g, '&');
+
+const normalizeHref = (href: string) => {
+    try {
+        const url = new URL(href, window.location.origin);
+
+        return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+        return href;
+    }
+};
 </script>
 
 <template>
@@ -27,7 +37,7 @@ const decodeLabel = (label: string) =>
                     class="mr-1 mb-1"
                     :class="{ 'border-primary': link.active }"
                 >
-                    <Link :href="link.url" preserve-scroll>{{ decodeLabel(link.label) }}</Link>
+                    <Link :href="normalizeHref(link.url)" preserve-scroll>{{ decodeLabel(link.label) }}</Link>
                 </Button>
             </template>
         </div>

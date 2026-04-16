@@ -87,13 +87,13 @@ const accordionRef = ref<any>(null);
 const isAssigning = ref(false);
 const selectedAuditoriums = ref<number[]>([]);
 const showFacultyDialog = ref(false);
-const selectedBulkFacultyId = ref<string>('');
+const selectedBulkFacultyId = ref<string>('none');
 const assigningFaculty = ref(false);
 
 // Camera Assignment State
 const showCameraDialog = ref(false);
 const selectedAuditorium = ref<Auditorium | null>(null);
-const selectedCameraId = ref<string>('');
+const selectedCameraId = ref<string>('none');
 const assigningCamera = ref(false);
 const cameraSearch = ref('');
 
@@ -278,13 +278,13 @@ const assignBulkFaculty = () => {
     assigningFaculty.value = true;
     router.put('/auditoriums/bulk-assign-faculty', {
         auditorium_ids: selectedAuditoriums.value,
-        faculty_id: selectedBulkFacultyId.value || null,
+        faculty_id: selectedBulkFacultyId.value !== 'none' ? parseInt(selectedBulkFacultyId.value) : null,
     }, {
         preserveScroll: true,
         onSuccess: () => {
             showFacultyDialog.value = false;
             selectedAuditoriums.value = [];
-            selectedBulkFacultyId.value = '';
+            selectedBulkFacultyId.value = 'none';
         },
         onFinish: () => {
             assigningFaculty.value = false;
@@ -429,7 +429,7 @@ onUnmounted(() => {
 
 const openCameraDialog = (auditorium: Auditorium) => {
     selectedAuditorium.value = auditorium;
-    selectedCameraId.value = auditorium.camera_id?.toString() || '';
+    selectedCameraId.value = auditorium.camera_id?.toString() || 'none';
     cameraSearch.value = '';
     showCameraDialog.value = true;
 };
@@ -447,7 +447,7 @@ const assignCamera = () => {
 
     assigningCamera.value = true;
     router.put(`/auditoriums/${selectedAuditorium.value.id}`, {
-        camera_id: selectedCameraId.value || null,
+        camera_id: selectedCameraId.value !== 'none' ? parseInt(selectedCameraId.value) : null,
     }, {
         preserveScroll: true,
         onSuccess: () => {
@@ -959,7 +959,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     <SelectValue placeholder="Kamerani tanlang" />
                                 </SelectTrigger>
                                 <SelectContent class="max-h-[300px]">
-                                    <SelectItem value="">
+                                    <SelectItem value="none">
                                         <span class="text-destructive font-medium">Kamerani o'chirish</span>
                                     </SelectItem>
                                     <SelectItem v-for="camera in filteredCameras" :key="camera.id" :value="camera.id.toString()">
@@ -993,7 +993,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     <SelectValue placeholder="Fakultetni tanlang" />
                                 </SelectTrigger>
                                 <SelectContent class="max-h-[300px]">
-                                    <SelectItem value="">
+                                    <SelectItem value="none">
                                         <span class="text-destructive font-medium">Barcha fakultetlarni olib tashlash</span>
                                     </SelectItem>
                                     <SelectItem v-for="faculty in faculties" :key="faculty.id" :value="faculty.id.toString()">

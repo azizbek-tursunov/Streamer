@@ -56,13 +56,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 // Dean assignment
-const selectedDeanId = ref<string>(props.dean?.id?.toString() ?? '');
+const selectedDeanId = ref<string>(props.dean?.id?.toString() ?? 'none');
 const savingDean = ref(false);
 
 const assignDean = () => {
     savingDean.value = true;
     router.put(`/faculties/${props.faculty.id}/dean`, {
-        dean_id: selectedDeanId.value ? parseInt(selectedDeanId.value) : null,
+        dean_id: selectedDeanId.value !== 'none' ? parseInt(selectedDeanId.value) : null,
     }, {
         preserveScroll: true,
         onFinish: () => {
@@ -178,7 +178,7 @@ const groupedByBuilding = computed(() => {
                                         <SelectValue placeholder="Dekanni tanlang" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">Tanlanmagan</SelectItem>
+                                        <SelectItem value="none">Tanlanmagan</SelectItem>
                                         <SelectItem v-for="candidate in deanCandidates" :key="candidate.id" :value="candidate.id.toString()">
                                             {{ candidate.name }}
                                         </SelectItem>
