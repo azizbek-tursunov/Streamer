@@ -32,7 +32,28 @@ export type AppPageProps<
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    notifications: {
+        unread_count: number;
+        recent: NotificationItem[];
+    };
 };
+
+export interface NotificationItem {
+    id: string;
+    type: string;
+    read_at: string | null;
+    created_at: string | null;
+    data: {
+        title?: string;
+        body?: string;
+        url?: string;
+        type_label?: string;
+        faculty_name?: string | null;
+        auditorium_name?: string | null;
+        lesson_name?: string | null;
+        message?: string | null;
+    };
+}
 
 export interface User {
     id: number;

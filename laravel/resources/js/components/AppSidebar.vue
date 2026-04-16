@@ -1,4 +1,3 @@
-```
 <script setup lang="ts">
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -18,9 +17,6 @@ import { urlIsActive } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import {
-    Map,
-    FolderOpen,
-    SquareChartGantt,
     Settings,
     Video,
     GraduationCap,
@@ -29,12 +25,7 @@ import {
     Folder,
 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
-import { index as usersIndex } from '@/routes/users';
-import { index as rolesIndex } from '@/routes/roles';
-import { index as permissionsIndex } from '@/routes/permissions';
-import { index as camerasIndex } from '@/routes/cameras';
 import { index as facultiesIndex } from '@/routes/faculties';
-import { index as auditoriumsIndex } from '@/actions/App/Http/Controllers/AuditoriumController';
 
 const page = usePage();
 
@@ -108,6 +99,7 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: '#',
             icon: GraduationCap,
             permissions: ['view-auditoriums', 'view-feedbacks', 'view-lesson-schedules'],
+            roles: ['deans'],
             isActive: ['/auditoriums', '/feedbacks', '/lesson-schedules'].some(path => urlIsActive(path, page.url)),
             items: [
                 {
@@ -119,6 +111,7 @@ const mainNavItems = computed<NavItem[]>(() => {
                     title: 'Dars tahlili',
                     href: '/feedbacks',
                     permissions: ['view-feedbacks'],
+                    roles: ['deans'],
                 },
                 {
                     title: 'Dars jadvali',

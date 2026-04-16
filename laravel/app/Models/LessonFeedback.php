@@ -16,6 +16,7 @@ class LessonFeedback extends Model
     protected $fillable = [
         'user_id',
         'auditorium_id',
+        'faculty_id',
         'lesson_name',
         'employee_name',
         'group_name',
@@ -34,5 +35,10 @@ class LessonFeedback extends Model
     public function auditorium(): BelongsTo
     {
         return $this->belongsTo(Auditorium::class);
+    }
+
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
     }
 }

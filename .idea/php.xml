@@ -15,6 +15,34 @@
       <phpcs_by_interpreter asDefaultInterpreter="true" interpreter_id="0931f057-d848-4774-aea2-4a4dc66c2f1d" timeout="30000" />
     </phpcs_settings>
   </component>
+  <component name="PhpIncludePathManager">
+    <include_path>
+      <path value="$PROJECT_DIR$/laravel/vendor/league/commonmark" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/uri" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/uri-interfaces" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/flysystem-local" />
+      <path value="$PROJECT_DIR$/laravel/vendor/spatie/laravel-package-tools" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/flysystem" />
+      <path value="$PROJECT_DIR$/laravel/vendor/spatie/laravel-permission" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/horizon" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/sail" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/serializable-closure" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/tinker" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/fortify" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/roster" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/telescope" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/prompts" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/wayfinder" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/boost" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/pail" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/framework" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/mcp" />
+      <path value="$PROJECT_DIR$/laravel/vendor/laravel/pint" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/config" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/mime-type-detection" />
+      <path value="$PROJECT_DIR$/laravel/vendor/league/oauth2-client" />
+    </include_path>
+  </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.2" />
   <component name="PhpStan">
     <PhpStan_settings>

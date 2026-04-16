@@ -14,6 +14,7 @@ class LessonFeedbackFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'faculty_id' => null,
             'lesson_name' => $this->faker->words(2, true),
             'employee_name' => $this->faker->name(),
             'group_name' => $this->faker->bothify('Group-##'),

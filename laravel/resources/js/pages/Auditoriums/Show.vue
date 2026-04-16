@@ -81,8 +81,12 @@ const whepUrl = computed(() => {
 });
 
 const showFeedbackDialog = ref(false);
+const facultyOptions = computed(() => props.auditorium.faculties ?? []);
+const requiresFacultySelection = computed(() => facultyOptions.value.length > 1);
+const hasFacultyAssignment = computed(() => facultyOptions.value.length > 0);
 const feedbackForm = useForm({
     auditorium_id: 0,
+    faculty_id: null as number | null,
     lesson_name: '',
     employee_name: '',
     group_name: '',
@@ -95,6 +99,7 @@ const feedbackForm = useForm({
 const openFeedbackDialog = (auditoriumId: number, lesson: any) => {
     feedbackForm.reset();
     feedbackForm.auditorium_id = auditoriumId;
+    feedbackForm.faculty_id = facultyOptions.value.length === 1 ? facultyOptions.value[0].id : null;
     feedbackForm.lesson_name = lesson.subject.name;
     feedbackForm.employee_name = lesson.employee.name;
     feedbackForm.group_name = lesson.group.name;
@@ -113,6 +118,18 @@ const submitFeedback = () => {
         },
     });
 };
+
+const canSubmitFeedback = computed(() => {
+    if (!hasFacultyAssignment.value) {
+        return false;
+    }
+
+    if (requiresFacultySelection.value && !feedbackForm.faculty_id) {
+        return false;
+    }
+
+    return !feedbackForm.processing;
+});
 </script>
 
 <template>
@@ -328,6 +345,31 @@ const submitFeedback = () => {
                 </DialogHeader>
                 
                 <form @submit.prevent="submitFeedback" class="grid gap-4 py-4">
+                    <div v-if="!hasFacultyAssignment" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                        Ushbu auditoriya hech qaysi fakultetga biriktirilmagan. Baholashdan oldin fakultet biriktiring.
+                    </div>
+
+                    <div v-else-if="requiresFacultySelection" class="grid gap-2">
+                        <label class="text-sm font-medium">Fakultet</label>
+                        <select
+                            v-model.number="feedbackForm.faculty_id"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            :disabled="feedbackForm.processing"
+                        >
+                            <option :value="null" disabled>Fakultetni tanlang</option>
+                            <option v-for="faculty in facultyOptions" :key="faculty.id" :value="faculty.id">
+                                {{ faculty.name }}
+                            </option>
+                        </select>
+                        <p v-if="feedbackForm.errors.faculty_id" class="text-sm text-destructive">
+                            {{ feedbackForm.errors.faculty_id }}
+                        </p>
+                    </div>
+
+                    <div v-else class="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">
+                        Fakultet: <span class="font-medium">{{ facultyOptions[0]?.name }}</span>
+                    </div>
+
                     <div class="flex justify-center gap-4 py-2">
                         <button 
                             type="button" 
@@ -357,6 +399,9 @@ const submitFeedback = () => {
                             class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="feedbackForm.processing"
                         ></textarea>
+                        <p v-if="feedbackForm.errors.message" class="text-sm text-destructive">
+                            {{ feedbackForm.errors.message }}
+                        </p>
                     </div>
                 </form>
                 
@@ -364,7 +409,7 @@ const submitFeedback = () => {
                     <Button type="button" variant="outline" @click="showFeedbackDialog = false" :disabled="feedbackForm.processing">
                         Bekor qilish
                     </Button>
-                    <Button type="button" @click="submitFeedback" :disabled="feedbackForm.processing">
+                    <Button type="button" @click="submitFeedback" :disabled="!canSubmitFeedback">
                         <RefreshCw v-if="feedbackForm.processing" class="mr-2 h-4 w-4 animate-spin" />
                         Jo'natish
                     </Button>

@@ -71,6 +71,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $deansRole->syncPermissions([
             'view-camera-grid',
             'view-auditoriums',
+            'view-feedbacks',
             'view-lesson-schedules',
         ]);
 

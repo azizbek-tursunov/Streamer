@@ -40,9 +40,12 @@ laravel/                    # Laravel application root
 │   ├── composables/        # Vue composables (usePermissions)
 │   └── layouts/            # AppLayout
 ├── routes/web.php          # All web routes
-├── mediamtx.yml            # MediaMTX streaming server config
+├── routes/settings.php     # Settings-area routes (profile, password, sessions, 2FA)
+├── mediamtx.yml.template   # MediaMTX config template (env vars substituted at container start)
 └── docker/
-    ├── nginx/default.conf  # Nginx config with FastCGI buffer tuning
+    ├── nginx/default.conf.template  # Nginx config template (MEDIAMTX_VIEWER_AUTH injected at start)
+    ├── nginx/docker-entrypoint.sh   # Runs envsubst on template before nginx starts
+    ├── mediamtx/docker-entrypoint.sh
     └── app/Dockerfile      # PHP-FPM container
 fastapi/                    # YOLO people counter (Python)
 ```
@@ -103,8 +106,15 @@ Key permissions: `view-cameras`, `manage-cameras`, `view-camera-grid`, `view-aud
 - Docker `env_file` values are cached at container creation — changing `.env` requires `docker compose up -d` to recreate the container.
 
 ### Streaming Snapshots
-- Snapshots are stored in `storage/app/public/snapshots/camera_{id}_*.jpg`.
+- Camera snapshots: `storage/app/public/snapshots/camera_{id}_*.jpg` — captured by `CaptureSnapshot` job.
+- Feedback snapshots: `storage/app/public/feedback_snapshots/feedback_{id}_cam{id}.jpg` — captured by `CaptureFeedbackSnapshot` job, which tries the camera's ISAPI endpoint first (`/ISAPI/Streaming/channels/101/picture`) and falls back to copying the latest camera snapshot.
 - Grid and snapshot endpoints use a single `glob()` scan of the directory to avoid per-camera lookups (prevents 502 timeouts).
+
+### Config Templates
+Both `mediamtx.yml.template` and `laravel/docker/nginx/default.conf.template` use `${ENV_VAR}` syntax. The respective docker entrypoints run `envsubst` at container start to produce the actual config files. When editing these files, use `${VAR}` not `$VAR` — unquoted dollar signs without braces will be treated as shell variables by envsubst and cleared.
+
+### Session Management
+`Settings/SessionController` reads directly from the `sessions` DB table (not a model). It renders `settings/Sessions.vue` with per-session device info (browser/platform/type parsed from user-agent) and lets users revoke individual or all-other sessions. Revoking all-other sessions requires password confirmation.
 
 ### UI Language
 The UI is in Uzbek (O'zbek). Flash messages and labels use Uzbek text.

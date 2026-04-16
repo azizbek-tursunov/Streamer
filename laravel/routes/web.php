@@ -70,10 +70,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // --- Feedbacks ---
-    Route::get('feedbacks', [\App\Http\Controllers\LessonFeedbackController::class, 'index'])->middleware('permission:view-feedbacks')->name('feedbacks.index');
-    Route::get('feedbacks/export', [\App\Http\Controllers\LessonFeedbackController::class, 'export'])->middleware('permission:view-feedbacks')->name('feedbacks.export');
+    Route::get('feedbacks', [\App\Http\Controllers\LessonFeedbackController::class, 'index'])->name('feedbacks.index');
+    Route::get('feedbacks/export', [\App\Http\Controllers\LessonFeedbackController::class, 'export'])->name('feedbacks.export');
     Route::post('feedbacks', [\App\Http\Controllers\LessonFeedbackController::class, 'store'])->middleware('permission:add-feedbacks')->name('feedbacks.store');
     Route::delete('feedbacks/{feedback}', [\App\Http\Controllers\LessonFeedbackController::class, 'destroy'])->middleware('role:super-admin|admin')->name('feedbacks.destroy');
+    Route::post('notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // --- Users, Roles, Permissions (admin-level) ---
     Route::middleware(['role:super-admin|admin'])->group(function () {
