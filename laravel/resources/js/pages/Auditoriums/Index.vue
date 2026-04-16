@@ -321,6 +321,35 @@ let pollInterval: ReturnType<typeof setInterval> | null = null;
 let lessonsPollInterval: ReturnType<typeof setInterval> | null = null;
 let peopleCountsPollInterval: ReturnType<typeof setInterval> | null = null;
 
+const preloadSnapshot = (cameraId: number, nextUrl: string, timestamp: number) => {
+    const img = new Image();
+
+    img.onload = () => {
+        snapshotUrls[cameraId] = nextUrl;
+        cachedTimestamps[cameraId] = timestamp;
+
+        props.auditoriums.forEach(a => {
+            if (a.camera_id === cameraId) {
+                imgState[a.id] = 'loaded';
+            }
+        });
+    };
+
+    img.onerror = () => {
+        const hasVisibleSnapshot = Boolean(snapshotUrls[cameraId]);
+
+        if (!hasVisibleSnapshot) {
+            props.auditoriums.forEach(a => {
+                if (a.camera_id === cameraId) {
+                    imgState[a.id] = 'error';
+                }
+            });
+        }
+    };
+
+    img.src = nextUrl;
+};
+
 const extractTimestamp = (url?: string | null): number => {
     if (!url) {
         return 0;
@@ -349,14 +378,18 @@ const pollSnapshots = async () => {
                     return;
                 }
 
-                snapshotUrls[id] = nextUrl;
-                cachedTimestamps[id] = info.timestamp;
                 if (nextUrl !== currentUrl) {
-                    // Reset image state only when the image source actually changes
+                    // Keep the previous image visible until the new file is confirmed loadable.
                     props.auditoriums.forEach(a => {
-                        if (a.camera_id === id) imgState[a.id] = 'loading';
+                        if (a.camera_id === id) {
+                            imgState[a.id] = currentUrl ? 'loaded' : 'loading';
+                        }
                     });
+                    preloadSnapshot(id, nextUrl, info.timestamp);
+                    return;
                 }
+
+                cachedTimestamps[id] = info.timestamp;
             }
         });
     } catch (error) {
@@ -402,7 +435,7 @@ onMounted(() => {
     
     // Initialize imgState and activeLessons from props
     props.auditoriums.forEach(a => {
-        imgState[a.id] = a.camera_snapshot ? 'loading' : 'error';
+        imgState[a.id] = a.camera_snapshot ? 'loaded' : 'error';
         if (a.camera_id && a.camera_snapshot) {
             snapshotUrls[a.camera_id] = a.camera_snapshot;
             cachedTimestamps[a.camera_id] = extractTimestamp(a.camera_snapshot);
@@ -751,12 +784,12 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                     <img
                                         :src="item.camera_id && snapshotUrls[item.camera_id] ? snapshotUrls[item.camera_id] : item.camera_snapshot"
                                         class="object-cover w-full h-full transition-opacity duration-300"
-                                        :class="{ 'opacity-0': imgState[item.id] === 'loading' }"
+                                        :class="{ 'opacity-0': imgState[item.id] === 'loading' && !(item.camera_id && snapshotUrls[item.camera_id]) }"
                                         alt="Camera Snapshot"
                                         loading="lazy"
                                         decoding="async"
                                         @load="imgState[item.id] = 'loaded'"
-                                        @error="imgState[item.id] = 'error'"
+                                        @error="imgState[item.id] = item.camera_id && snapshotUrls[item.camera_id] ? 'loaded' : 'error'"
                                     />
                                     <div class="absolute inset-0 bg-black/10 transition-colors" :class="!isAssigning && !isReordering ? 'group-hover/image:bg-transparent' : ''"></div>
                                     <div v-if="!isAssigning && !isReordering" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity">

@@ -53,7 +53,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Jonli Mozaika', href: '/cameras/grid' },
 ];
 
-// Smart polling: store snapshot URLs with timestamps
+// Smart polling: keep the last successfully loaded snapshot visible.
 // Key: cameraId, Value: { url, timestamp }
 const snapshotUrls = reactive<Record<number, SnapshotInfo | null>>({});
 const cachedTimestamps = reactive<Record<number, number>>({});
@@ -62,6 +62,27 @@ const cachedTimestamps = reactive<Record<number, number>>({});
 const imgState = reactive<Record<number, 'loading' | 'loaded' | 'error'>>({});
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+const preloadSnapshot = (cameraId: number, nextUrl: string, timestamp: number) => {
+    const img = new Image();
+
+    img.onload = () => {
+        snapshotUrls[cameraId] = {
+            url: nextUrl,
+            timestamp,
+        };
+        cachedTimestamps[cameraId] = timestamp;
+        imgState[cameraId] = 'loaded';
+    };
+
+    img.onerror = () => {
+        if (!snapshotUrls[cameraId]?.url) {
+            imgState[cameraId] = 'error';
+        }
+    };
+
+    img.src = nextUrl;
+};
 
 const extractTimestamp = (url?: string | null): number => {
     if (!url) {
@@ -79,7 +100,7 @@ const extractTimestamp = (url?: string | null): number => {
 // Initialize snapshot URLs from props
 const initializeSnapshots = () => {
     props.cameras.data.forEach(camera => {
-        imgState[camera.id] = camera.snapshot_url ? 'loading' : 'error';
+        imgState[camera.id] = camera.snapshot_url ? 'loaded' : 'error';
         if (camera.snapshot_url) {
             const timestamp = extractTimestamp(camera.snapshot_url);
             snapshotUrls[camera.id] = {
@@ -108,14 +129,13 @@ const pollSnapshots = async () => {
                     return;
                 }
 
-                snapshotUrls[id] = {
-                    url: nextUrl,
-                    timestamp: info.timestamp
-                };
-                cachedTimestamps[id] = info.timestamp;
                 if (nextUrl !== currentUrl) {
-                    imgState[id] = 'loading'; // reset so skeleton shows briefly on update
+                    imgState[id] = currentUrl ? 'loaded' : 'loading';
+                    preloadSnapshot(id, nextUrl, info.timestamp);
+                    return;
                 }
+
+                cachedTimestamps[id] = info.timestamp;
             }
         });
     } catch (error) {
@@ -202,10 +222,10 @@ onUnmounted(() => {
                             loading="lazy"
                             decoding="async"
                             class="h-full w-full object-cover transition-transform duration-300"
-                            :class="{ 'opacity-0': imgState[camera.id] === 'loading' }"
+                            :class="{ 'opacity-0': imgState[camera.id] === 'loading' && !snapshotUrls[camera.id]?.url }"
                             :style="{ transform: `rotate(${camera.rotation || 0}deg) ${Math.abs(camera.rotation || 0) % 180 === 90 ? 'scale(1.777)' : ''}` }"
                             @load="imgState[camera.id] = 'loaded'"
-                            @error="imgState[camera.id] = 'error'"
+                            @error="imgState[camera.id] = snapshotUrls[camera.id]?.url ? 'loaded' : 'error'"
                         />
                         <div v-if="imgState[camera.id] === 'error'" class="flex h-full w-full items-center justify-center bg-zinc-800">
                             <span class="text-xs text-zinc-500 p-4 text-center">Rasm yo'q</span>
