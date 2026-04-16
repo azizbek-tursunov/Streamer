@@ -25,28 +25,34 @@ class DispatchPeopleCounting implements ShouldQueue
      */
     public function handle(): void
     {
-        $cameras = Camera::where('is_active', true)->get();
+        $cameras = Camera::with('media')
+            ->where('is_active', true)
+            ->get();
         $dispatched = 0;
 
         foreach ($cameras as $camera) {
-            $snapshotDir = storage_path('app/public/snapshots');
-            $files = glob("{$snapshotDir}/camera_{$camera->id}_*.jpg");
+            $latestSnapshotPath = $camera->latestSnapshotMedia()?->getPath();
 
-            if (empty($files)) {
-                continue;
+            if (! $latestSnapshotPath || ! is_file($latestSnapshotPath)) {
+                $snapshotDir = storage_path('app/public/snapshots');
+                $files = glob("{$snapshotDir}/camera_{$camera->id}_*.jpg");
+
+                if (empty($files)) {
+                    continue;
+                }
+
+                // Fallback to raw snapshots only when stable media is missing.
+                usort($files, function ($a, $b) {
+                    return filemtime($b) - filemtime($a);
+                });
+
+                $latestSnapshotPath = $files[0];
             }
-
-            // Sort by modification time descending to get the latest snapshot
-            usort($files, function ($a, $b) {
-                return filemtime($b) - filemtime($a);
-            });
-
-            $latestFile = $files[0];
 
             // Push job to Redis for Python YOLO worker
             Redis::lpush('yolo:jobs', json_encode([
                 'camera_id' => $camera->id,
-                'image_path' => $latestFile,
+                'image_path' => $latestSnapshotPath,
                 'requested_at' => now()->toIso8601String(),
             ]));
 

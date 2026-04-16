@@ -80,7 +80,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./fastapi:/app
-      - ./laravel/storage/app/public/snapshots:/var/www/html/storage/app/public/snapshots:ro
+      - ./laravel/storage/app/public:/var/www/html/storage/app/public:ro
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379

@@ -55,13 +55,17 @@ def count_people(image_path: str) -> int:
         print(f"[YOLO Worker] File not found: {image_path}")
         return -1
 
-    results = model(
-        image_path,
-        verbose=False,
-        conf=CONFIDENCE_THRESHOLD,
-        imgsz=YOLO_IMAGE_SIZE,
-        classes=TARGET_CLASS_IDS,
-    )
+    try:
+        results = model(
+            image_path,
+            verbose=False,
+            conf=CONFIDENCE_THRESHOLD,
+            imgsz=YOLO_IMAGE_SIZE,
+            classes=TARGET_CLASS_IDS,
+        )
+    except Exception as exc:
+        print(f"[YOLO Worker] Image read failed for {image_path}: {exc}")
+        return -1
 
     if not results or results[0].boxes is None:
         return 0
