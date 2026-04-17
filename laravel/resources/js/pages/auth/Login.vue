@@ -20,7 +20,7 @@ defineProps<{
 <template>
     <AuthBase
         title="Tizimga kirish"
-        description="Email va parolingizni kiriting"
+        description="Kirish usulini tanlang"
     >
         <Head title="Kirish" />
 
@@ -38,6 +38,25 @@ defineProps<{
             class="flex flex-col gap-6"
         >
             <div class="grid gap-6">
+                <Button
+                    type="button"
+                    class="h-11 w-full"
+                    as="a"
+                    href="/hemis/redirect/employee"
+                >
+                    <img src="https://student.hemis.uz/favicon.ico" class="mr-2 h-4 w-4" alt="HEMIS" @error="($event.target as HTMLImageElement).style.display='none'" />
+                    HEMIS orqali kirish
+                </Button>
+
+                <div class="relative my-1">
+                    <div class="absolute inset-0 flex items-center">
+                        <span class="w-full border-t"></span>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-background px-2 text-muted-foreground">Yoki email orqali</span>
+                    </div>
+                </div>
+
                 <div class="grid gap-2">
                     <Label for="email">Elektron pochta</Label>
                     <Input
@@ -90,29 +109,10 @@ defineProps<{
                     :tabindex="4"
                     :disabled="processing"
                     data-test="login-button"
+                    variant="outline"
                 >
                     <Spinner v-if="processing" />
                     Tizimga kirish
-                </Button>
-
-                <div class="relative my-2">
-                    <div class="absolute inset-0 flex items-center">
-                        <span class="w-full border-t"></span>
-                    </div>
-                    <div class="relative flex justify-center text-xs uppercase">
-                        <span class="bg-background px-2 text-muted-foreground">Yoki ushbu orqali</span>
-                    </div>
-                </div>
-
-                <Button
-                    type="button"
-                    variant="outline"
-                    class="w-full"
-                    as="a"
-                    href="/hemis/redirect/employee"
-                >
-                    <img src="https://student.hemis.uz/favicon.ico" class="w-4 h-4 mr-2" alt="HEMIS" @error="($event.target as HTMLImageElement).style.display='none'" />
-                    HEMIS orqali kirish
                 </Button>
             </div>
 
