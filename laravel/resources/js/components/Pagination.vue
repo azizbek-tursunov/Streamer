@@ -8,6 +8,7 @@ defineProps<{
         label: string;
         active: boolean;
     }[];
+    hardReload?: boolean;
 }>();
 
 const decodeLabel = (label: string) =>
@@ -37,7 +38,8 @@ const normalizeHref = (href: string) => {
                     class="mr-1 mb-1"
                     :class="{ 'border-primary': link.active }"
                 >
-                    <Link :href="normalizeHref(link.url)">{{ decodeLabel(link.label) }}</Link>
+                    <a v-if="hardReload" :href="normalizeHref(link.url)">{{ decodeLabel(link.label) }}</a>
+                    <Link v-else :href="normalizeHref(link.url)">{{ decodeLabel(link.label) }}</Link>
                 </Button>
             </template>
         </div>

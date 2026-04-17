@@ -2,7 +2,7 @@
 import { reactive, computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -36,17 +36,29 @@ const currentPerPage = computed(() => props.cameras.per_page || 16);
 const selectedBuilding = ref(props.filters?.building || '');
 const gridContainer = ref<HTMLElement | null>(null);
 
+const buildGridUrl = (overrides: Record<string, string | number | null | undefined> = {}) => {
+    const params = new URLSearchParams(window.location.search);
+
+    Object.entries(overrides).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '' || value === 'all') {
+            params.delete(key);
+            return;
+        }
+
+        params.set(key, String(value));
+    });
+
+    const query = params.toString();
+    return query ? `/cameras/grid?${query}` : '/cameras/grid';
+};
+
 const changeGridSize = (size: number) => {
-    const params: Record<string, any> = { per_page: size };
-    if (selectedBuilding.value) params.building = selectedBuilding.value;
-    router.get('/cameras/grid', params, { preserveState: true, preserveScroll: true });
+    window.location.assign(buildGridUrl({ per_page: size, page: null, building: selectedBuilding.value || null }));
 };
 
 const changeBuilding = (value: string) => {
     selectedBuilding.value = value;
-    const params: Record<string, any> = { per_page: currentPerPage.value };
-    if (value && value !== 'all') params.building = value;
-    router.get('/cameras/grid', params, { preserveState: true, preserveScroll: true });
+    window.location.assign(buildGridUrl({ per_page: currentPerPage.value, page: null, building: value }));
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -275,11 +287,11 @@ onUnmounted(() => {
                         <!-- Live indicator -->
                         <div class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-pulse" v-if="camera.is_active" title="Live"></div>
 
-                        <Link
+                        <a
                             :href="`/cameras/${camera.id}`"
                             class="absolute inset-0 z-10 focus:ring-2 focus:ring-inset focus:ring-primary"
                             aria-label="Kamerani ochish"
-                        ></Link>
+                        ></a>
                     </div>
 
                     <!-- Card Footer -->
@@ -297,14 +309,14 @@ onUnmounted(() => {
                         Hozirda faol kameralar mavjud emas.
                     </p>
                     <Button as-child variant="outline" class="mt-4">
-                        <Link href="/cameras">Kameralarni Boshqarish</Link>
+                        <a href="/cameras">Kameralarni Boshqarish</a>
                     </Button>
                 </div>
             </div>
 
             <!-- Pagination -->
             <div class="mt-4 pb-4 px-4" v-if="cameras.data.length > 0">
-                <Pagination :links="cameras.links" />
+                <Pagination :links="cameras.links" hard-reload />
             </div>
         </div>
     </AppLayout>
