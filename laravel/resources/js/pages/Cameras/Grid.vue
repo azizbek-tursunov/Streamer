@@ -56,36 +56,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Jonli Mozaika', href: '/cameras/grid' },
 ];
 
-// Smart polling: keep the last successfully loaded snapshot visible.
-// Key: cameraId, Value: { url, timestamp }
 const snapshotUrls = reactive<Record<number, SnapshotInfo | null>>({});
 const cachedTimestamps = reactive<Record<number, number>>({});
 
-// Per-camera image state: 'loading' | 'loaded' | 'error'
-const imgState = reactive<Record<number, 'loading' | 'loaded' | 'error'>>({});
+const imgState = reactive<Record<number, 'loaded' | 'error'>>({});
 
 let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-const preloadSnapshot = (cameraId: number, nextUrl: string, timestamp: number) => {
-    const img = new Image();
-
-    img.onload = () => {
-        snapshotUrls[cameraId] = {
-            url: nextUrl,
-            timestamp,
-        };
-        cachedTimestamps[cameraId] = timestamp;
-        imgState[cameraId] = 'loaded';
-    };
-
-    img.onerror = () => {
-        if (!snapshotUrls[cameraId]?.url) {
-            imgState[cameraId] = 'error';
-        }
-    };
-
-    img.src = nextUrl;
-};
 
 const extractTimestamp = (url?: string | null): number => {
     if (!url) {
@@ -136,8 +112,11 @@ const pollSnapshots = async () => {
                 }
 
                 if (nextUrl !== currentUrl) {
-                    imgState[id] = currentUrl ? 'loaded' : 'loading';
-                    preloadSnapshot(id, nextUrl, info.timestamp);
+                    snapshotUrls[id] = {
+                        url: nextUrl,
+                        timestamp: info.timestamp,
+                    };
+                    cachedTimestamps[id] = info.timestamp;
                     return;
                 }
 
@@ -252,22 +231,15 @@ onUnmounted(() => {
                     class="relative bg-black group overflow-hidden rounded-lg flex flex-col"
                 >
                     <div class="relative aspect-video w-full overflow-hidden">
-                        <!-- Skeleton shimmer while loading -->
-                        <div
-                            v-if="imgState[camera.id] === 'loading'"
-                            class="absolute inset-0 bg-zinc-800 animate-pulse"
-                        />
-
                         <img
                             v-if="camera.displaySnapshotUrl && imgState[camera.id] !== 'error'"
                             :src="camera.displaySnapshotUrl"
                             :alt="camera.name"
                             decoding="async"
                             class="h-full w-full object-cover transition-transform duration-300"
-                            :class="{ 'opacity-0': imgState[camera.id] === 'loading' && !snapshotUrls[camera.id]?.url }"
                             :style="{ transform: `rotate(${camera.rotation || 0}deg) ${Math.abs(camera.rotation || 0) % 180 === 90 ? 'scale(1.777)' : ''}` }"
                             @load="imgState[camera.id] = 'loaded'"
-                            @error="imgState[camera.id] = snapshotUrls[camera.id]?.url ? 'loaded' : 'error'"
+                            @error="imgState[camera.id] = 'error'"
                         />
                         <div v-if="imgState[camera.id] === 'error'" class="flex h-full w-full items-center justify-center bg-zinc-800">
                             <span class="text-xs text-zinc-500 p-4 text-center">Rasm yo'q</span>
