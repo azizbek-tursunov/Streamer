@@ -74,6 +74,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const search = ref(props.filters.search || '');
 const selectedFaculty = ref<string>(props.filters.faculty_id?.toString() || 'all');
 const selectedType = ref<string | null>(null);
+const selectedScenarioFilter = ref<'lesson_zero_people' | 'people_no_lesson' | null>(null);
 const showInactive = ref(false);
 const syncing = ref(false);
 
@@ -175,10 +176,27 @@ const filteredAuditoriums = computed(() => {
     if (selectedType.value) {
         result = result.filter(a => a.auditoriumType?.code === selectedType.value);
     }
+    if (selectedScenarioFilter.value === 'lesson_zero_people') {
+        result = result.filter(a => Boolean(activeLessons[a.code]) && (a.camera_id ? (peopleCounts[a.camera_id] ?? a.people_count ?? 0) === 0 : true));
+    }
+    if (selectedScenarioFilter.value === 'people_no_lesson') {
+        result = result.filter(a => !activeLessons[a.code] && Boolean(a.camera_id) && (peopleCounts[a.camera_id!] ?? a.people_count ?? 0) > 0);
+    }
     return result;
 });
 
 const inactiveCount = computed(() => props.auditoriums.filter(a => !a.active).length);
+const lessonZeroPeopleCount = computed(() => props.auditoriums.filter(a => {
+    if (!a.active) return false;
+    if (selectedType.value && a.auditoriumType?.code !== selectedType.value) return false;
+    return Boolean(activeLessons[a.code]) && (a.camera_id ? (peopleCounts[a.camera_id] ?? a.people_count ?? 0) === 0 : true);
+}).length);
+const peopleNoLessonCount = computed(() => props.auditoriums.filter(a => {
+    if (!a.active) return false;
+    if (selectedType.value && a.auditoriumType?.code !== selectedType.value) return false;
+    if (!a.camera_id) return false;
+    return !activeLessons[a.code] && (peopleCounts[a.camera_id] ?? a.people_count ?? 0) > 0;
+}).length);
 
 // Group by building
 // Using reactive to allow in-place sorting and updates
@@ -314,6 +332,10 @@ const totalCapacity = computed(() => filteredAuditoriums.value.reduce((sum, a) =
 
 const toggleType = (code: string) => {
     selectedType.value = selectedType.value === code ? null : code;
+};
+
+const toggleScenarioFilter = (code: 'lesson_zero_people' | 'people_no_lesson') => {
+    selectedScenarioFilter.value = selectedScenarioFilter.value === code ? null : code;
 };
 
 const syncFromApi = () => {
@@ -678,6 +700,28 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                         @click="selectedType = null"
                     >
                         Tozalash
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-medium text-muted-foreground mr-1">Holat:</span>
+                    <button
+                        class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-all cursor-pointer"
+                        :class="selectedScenarioFilter === 'lesson_zero_people'
+                            ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                            : 'bg-background hover:bg-muted border-border text-muted-foreground hover:text-foreground'"
+                        @click="toggleScenarioFilter('lesson_zero_people')"
+                    >
+                        Dars bor, odam yo'q ({{ lessonZeroPeopleCount }})
+                    </button>
+                    <button
+                        class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-all cursor-pointer"
+                        :class="selectedScenarioFilter === 'people_no_lesson'
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : 'bg-background hover:bg-muted border-border text-muted-foreground hover:text-foreground'"
+                        @click="toggleScenarioFilter('people_no_lesson')"
+                    >
+                        Odam bor, dars yo'q ({{ peopleNoLessonCount }})
                     </button>
                 </div>
 

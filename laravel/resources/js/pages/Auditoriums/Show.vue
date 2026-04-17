@@ -25,9 +25,9 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: "Ma'lumotnomalar", href: '#' },
+    { title: "O'quv jarayoni", href: '#' },
     { title: 'Auditoriyalar', href: '/auditoriums' },
-    { title: props.auditorium.name, href: `/auditoriums/${props.auditorium.code}` },
+    { title: props.auditorium.name, href: `/auditoriums/${props.auditorium.id}` },
 ];
 
 const currentTime = ref(Date.now());
@@ -273,6 +273,7 @@ const canSubmitFeedback = computed(() => {
                                         <div class="flex flex-col">
                                             <span class="text-xs text-muted-foreground">Xonada (AI)</span>
                                             <span class="font-bold text-primary">{{ props.people_count }} kishi</span>
+                                            <span class="text-[11px] text-muted-foreground">AI xato qilishi mumkin, tavsiyaviy qiymatga ega.</span>
                                         </div>
                                     </div>
                                     <div class="flex items-start gap-3">
@@ -292,6 +293,7 @@ const canSubmitFeedback = computed(() => {
                                 <div v-if="props.people_count !== null && auditorium.camera_id" class="mt-4 flex flex-col items-center">
                                     <span class="text-3xl font-bold text-primary">{{ props.people_count }}</span>
                                     <span class="text-xs text-muted-foreground mt-0.5">kishi (AI)</span>
+                                    <span class="mt-1 text-[11px] text-muted-foreground text-center">AI xato qilishi mumkin, tavsiyaviy qiymatga ega.</span>
                                 </div>
                             </div>
                         </CardContent>
