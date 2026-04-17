@@ -8,6 +8,7 @@ defineProps<{
         label: string;
         active: boolean;
     }[];
+    preserveScroll?: boolean;
 }>();
 
 const decodeLabel = (label: string) =>
@@ -37,7 +38,7 @@ const normalizeHref = (href: string) => {
                     class="mr-1 mb-1"
                     :class="{ 'border-primary': link.active }"
                 >
-                    <Link :href="normalizeHref(link.url)">{{ decodeLabel(link.label) }}</Link>
+                    <Link :href="normalizeHref(link.url)" :preserve-scroll="preserveScroll ?? true">{{ decodeLabel(link.label) }}</Link>
                 </Button>
             </template>
         </div>

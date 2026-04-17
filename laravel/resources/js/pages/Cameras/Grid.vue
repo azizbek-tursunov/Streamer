@@ -2,7 +2,7 @@
 import { reactive, computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -32,6 +32,8 @@ const props = defineProps<{
 
 const gridSizes = [16, 24, 32] as const;
 const currentPerPage = computed(() => props.cameras.per_page || 16);
+const page = usePage();
+const pageKey = computed(() => page.url);
 
 const selectedBuilding = ref(props.filters?.building || '');
 const gridContainer = ref<HTMLElement | null>(null);
@@ -39,14 +41,14 @@ const gridContainer = ref<HTMLElement | null>(null);
 const changeGridSize = (size: number) => {
     const params: Record<string, any> = { per_page: size };
     if (selectedBuilding.value) params.building = selectedBuilding.value;
-    router.get('/cameras/grid', params, { preserveState: true, preserveScroll: true });
+    router.get('/cameras/grid', params, { preserveState: false, preserveScroll: false });
 };
 
 const changeBuilding = (value: string) => {
     selectedBuilding.value = value;
     const params: Record<string, any> = { per_page: currentPerPage.value };
     if (value && value !== 'all') params.building = value;
-    router.get('/cameras/grid', params, { preserveState: true, preserveScroll: true });
+    router.get('/cameras/grid', params, { preserveState: false, preserveScroll: false });
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -206,7 +208,7 @@ onUnmounted(() => {
     <Head title="Jonli Mozaika" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4">
+        <div :key="pageKey" class="flex h-full flex-1 flex-col gap-4">
             <!-- Toolbar -->
             <div class="flex items-center justify-between gap-4 px-4 pt-4 flex-wrap">
                 <div class="flex items-center gap-3">
@@ -260,7 +262,6 @@ onUnmounted(() => {
                             v-if="camera.displaySnapshotUrl && imgState[camera.id] !== 'error'"
                             :src="camera.displaySnapshotUrl"
                             :alt="camera.name"
-                            loading="lazy"
                             decoding="async"
                             class="h-full w-full object-cover transition-transform duration-300"
                             :class="{ 'opacity-0': imgState[camera.id] === 'loading' && !snapshotUrls[camera.id]?.url }"
@@ -304,7 +305,7 @@ onUnmounted(() => {
 
             <!-- Pagination -->
             <div class="mt-4 pb-4 px-4" v-if="cameras.data.length > 0">
-                <Pagination :links="cameras.links" />
+                <Pagination :links="cameras.links" :preserve-scroll="false" />
             </div>
         </div>
     </AppLayout>
