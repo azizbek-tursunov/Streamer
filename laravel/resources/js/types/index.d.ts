@@ -15,13 +15,11 @@ export interface NavItem {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
     isActive?: boolean;
-    hardReload?: boolean;
     permissions?: string[];
     roles?: string[];
     items?: {
         title: string;
         href: string;
-        hardReload?: boolean;
         permissions?: string[];
         roles?: string[];
     }[];

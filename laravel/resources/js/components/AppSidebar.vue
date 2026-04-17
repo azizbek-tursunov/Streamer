@@ -90,7 +90,6 @@ const mainNavItems = computed<NavItem[]>(() => {
                 {
                     title: 'Mozaika',
                     href: '/cameras/grid',
-                    hardReload: true,
                     permissions: ['view-camera-grid'],
                 },
             ],
