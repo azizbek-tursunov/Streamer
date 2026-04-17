@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { reactive, computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
@@ -37,9 +37,6 @@ const pageKey = computed(() => page.url);
 
 const selectedBuilding = ref(props.filters?.building || '');
 const gridContainer = ref<HTMLElement | null>(null);
-const visibleImages = reactive<Record<number, boolean>>({});
-const imageElements = new Map<number, HTMLImageElement>();
-let imageObserver: IntersectionObserver | null = null;
 
 const changeGridSize = (size: number) => {
     const params: Record<string, any> = { per_page: size };
@@ -94,45 +91,6 @@ const initializeSnapshots = () => {
     });
 };
 
-const setupLazyLoading = async () => {
-    await nextTick();
-
-    const eagerIds = new Set(props.cameras.data.slice(0, 6).map((camera) => camera.id));
-
-    props.cameras.data.forEach((camera) => {
-        if (!camera.snapshot_url) {
-            visibleImages[camera.id] = false;
-            return;
-        }
-
-        if (eagerIds.has(camera.id)) {
-            visibleImages[camera.id] = true;
-            return;
-        }
-
-        visibleImages[camera.id] = false;
-        const element = imageElements.get(camera.id);
-        if (element && imageObserver) {
-            imageObserver.observe(element);
-        }
-    });
-};
-
-const registerImageElement = (cameraId: number, element: Element | null) => {
-    if (!(element instanceof HTMLImageElement)) {
-        imageElements.delete(cameraId);
-        return;
-    }
-
-    imageElements.set(cameraId, element);
-
-    if (visibleImages[cameraId] || !imageObserver) {
-        return;
-    }
-
-    imageObserver.observe(element);
-};
-
 // Poll for new snapshots - only update if timestamp changed
 // Snapshots are captured every 5 min, so polling every 2 min is sufficient
 const pollSnapshots = async () => {
@@ -179,27 +137,7 @@ const camerasWithSnapshots = computed(() => {
 });
 
 onMounted(() => {
-    imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (!entry.isIntersecting) {
-                return;
-            }
-
-            const cameraId = Number((entry.target as HTMLElement).dataset.cameraId);
-            if (cameraId) {
-                visibleImages[cameraId] = true;
-            }
-
-            imageObserver?.unobserve(entry.target);
-        });
-    }, {
-        root: gridContainer.value,
-        rootMargin: '300px 0px',
-        threshold: 0.01,
-    });
-
     initializeSnapshots();
-    setupLazyLoading();
     // Poll immediately, then every 30 seconds
     pollSnapshots();
     pollInterval = setInterval(pollSnapshots, 30000);
@@ -232,7 +170,6 @@ watch(
         });
 
         initializeSnapshots();
-        setupLazyLoading();
         pollSnapshots();
         gridContainer.value?.scrollTo({ top: 0, behavior: 'auto' });
     },
@@ -243,10 +180,6 @@ onUnmounted(() => {
     if (pollInterval) {
         clearInterval(pollInterval);
     }
-
-    imageObserver?.disconnect();
-    imageObserver = null;
-    imageElements.clear();
 });
 </script>
 
@@ -298,15 +231,8 @@ onUnmounted(() => {
                     class="relative bg-black group overflow-hidden rounded-lg flex flex-col"
                 >
                     <div class="relative aspect-video w-full overflow-hidden">
-                        <div
-                            v-if="camera.displaySnapshotUrl && !visibleImages[camera.id]"
-                            class="absolute inset-0 bg-zinc-800 animate-pulse"
-                        />
-
                         <img
-                            v-if="camera.displaySnapshotUrl && imgState[camera.id] !== 'error' && visibleImages[camera.id]"
-                            :ref="(el) => registerImageElement(camera.id, el)"
-                            :data-camera-id="camera.id"
+                            v-if="camera.displaySnapshotUrl && imgState[camera.id] !== 'error'"
                             :src="camera.displaySnapshotUrl"
                             :alt="camera.name"
                             decoding="async"
@@ -314,12 +240,6 @@ onUnmounted(() => {
                             :style="{ transform: `rotate(${camera.rotation || 0}deg) ${Math.abs(camera.rotation || 0) % 180 === 90 ? 'scale(1.777)' : ''}` }"
                             @load="imgState[camera.id] = 'loaded'"
                             @error="imgState[camera.id] = 'error'"
-                        />
-                        <div
-                            v-else-if="camera.displaySnapshotUrl && imgState[camera.id] !== 'error'"
-                            :ref="(el) => registerImageElement(camera.id, el)"
-                            :data-camera-id="camera.id"
-                            class="absolute inset-0"
                         />
                         <div v-if="imgState[camera.id] === 'error'" class="flex h-full w-full items-center justify-center bg-zinc-800">
                             <span class="text-xs text-zinc-500 p-4 text-center">Rasm yo'q</span>
