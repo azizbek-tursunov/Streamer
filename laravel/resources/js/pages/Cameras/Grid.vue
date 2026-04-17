@@ -34,6 +34,7 @@ const gridSizes = [16, 24, 32] as const;
 const currentPerPage = computed(() => props.cameras.per_page || 16);
 
 const selectedBuilding = ref(props.filters?.building || '');
+const gridContainer = ref<HTMLElement | null>(null);
 
 const changeGridSize = (size: number) => {
     const params: Record<string, any> = { per_page: size };
@@ -189,6 +190,7 @@ watch(
 
         initializeSnapshots();
         pollSnapshots();
+        gridContainer.value?.scrollTo({ top: 0, behavior: 'auto' });
     },
     { deep: true }
 );
@@ -237,7 +239,11 @@ onUnmounted(() => {
             </div>
 
             <!-- CCTV Grid -->
-            <div v-if="camerasWithSnapshots.length > 0" class="grid flex-1 content-start grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 p-4 overflow-auto">
+            <div
+                v-if="camerasWithSnapshots.length > 0"
+                ref="gridContainer"
+                class="grid flex-1 content-start grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 p-4 overflow-auto"
+            >
                 <div
                     v-for="camera in camerasWithSnapshots"
                     :key="camera.id"
