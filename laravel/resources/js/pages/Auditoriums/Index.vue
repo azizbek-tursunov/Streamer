@@ -712,7 +712,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             : 'bg-background hover:bg-muted border-border text-muted-foreground hover:text-foreground'"
                         @click="toggleScenarioFilter('lesson_zero_people')"
                     >
-                        Dars bor, odam yo'q ({{ lessonZeroPeopleCount }})
+                        Dars mashg'ulotlari o'tilmayotganlar xonalar ({{ lessonZeroPeopleCount }})
                     </button>
                     <button
                         class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-all cursor-pointer"
@@ -721,7 +721,7 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                             : 'bg-background hover:bg-muted border-border text-muted-foreground hover:text-foreground'"
                         @click="toggleScenarioFilter('people_no_lesson')"
                     >
-                        Odam bor, dars yo'q ({{ peopleNoLessonCount }})
+                        Dars mashg'ulotlari belgilanmagan xonalar ({{ peopleNoLessonCount }})
                     </button>
                 </div>
 
