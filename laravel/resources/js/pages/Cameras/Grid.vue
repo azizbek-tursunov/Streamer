@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted, onUnmounted } from 'vue';
+import { reactive, computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Camera, BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -117,6 +117,9 @@ const initializeSnapshots = () => {
 const pollSnapshots = async () => {
     try {
         const response = await fetch('/cameras/snapshots');
+        if (!response.ok) {
+            return;
+        }
         const data: Record<number, SnapshotInfo | null> = await response.json();
 
         Object.entries(data).forEach(([cameraId, info]) => {
@@ -157,6 +160,38 @@ onMounted(() => {
     pollSnapshots();
     pollInterval = setInterval(pollSnapshots, 30000);
 });
+
+watch(
+    () => props.cameras.data.map((camera) => ({
+        id: camera.id,
+        snapshot_url: camera.snapshot_url,
+    })),
+    (cameras) => {
+        const activeIds = new Set(cameras.map((camera) => camera.id));
+
+        Object.keys(snapshotUrls).forEach((id) => {
+            if (!activeIds.has(Number(id))) {
+                delete snapshotUrls[Number(id)];
+            }
+        });
+
+        Object.keys(cachedTimestamps).forEach((id) => {
+            if (!activeIds.has(Number(id))) {
+                delete cachedTimestamps[Number(id)];
+            }
+        });
+
+        Object.keys(imgState).forEach((id) => {
+            if (!activeIds.has(Number(id))) {
+                delete imgState[Number(id)];
+            }
+        });
+
+        initializeSnapshots();
+        pollSnapshots();
+    },
+    { deep: true }
+);
 
 onUnmounted(() => {
     if (pollInterval) {
