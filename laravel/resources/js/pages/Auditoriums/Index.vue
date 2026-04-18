@@ -3,7 +3,7 @@ import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue';
 import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router, usePage, useForm } from '@inertiajs/vue3';
-import { BreadcrumbItem, Auditorium, Camera, Faculty } from '@/types';
+import { BreadcrumbItem, Auditorium, Camera, Faculty, Anomaly } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -47,6 +47,7 @@ import {
     ThumbsUp,
     ThumbsDown,
     MessageSquareText,
+    TriangleAlert,
 } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 import { useSortable } from '@vueuse/integrations/useSortable';
@@ -97,6 +98,28 @@ const selectedAuditorium = ref<Auditorium | null>(null);
 const selectedCameraId = ref<string>('none');
 const assigningCamera = ref(false);
 const cameraSearch = ref('');
+
+const anomalyLabels: Record<string, string> = {
+    lesson_no_people: "Dars bor, odam yo'q",
+    people_no_lesson: "Odam bor, dars yo'q",
+    camera_offline_during_lesson: 'Dars paytida kamera uzilgan',
+    stale_people_count: 'AI sanog\'i eskirgan',
+    stale_snapshot: 'Snapshot eskirgan',
+};
+
+const anomalyBadgeClass = (type: string) => {
+    if (type === 'lesson_no_people' || type === 'camera_offline_during_lesson') {
+        return 'border-red-200 bg-red-50 text-red-700';
+    }
+
+    if (type === 'people_no_lesson') {
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+    }
+
+    return 'border-slate-200 bg-slate-50 text-slate-700';
+};
+
+const anomalyLabel = (anomaly: Anomaly) => anomalyLabels[anomaly.type] ?? anomaly.type;
 
 // Lesson Feedback State
 const showFeedbackDialog = ref(false);
@@ -925,6 +948,17 @@ const successMessage = computed(() => (page.props.flash as Record<string, string
                                                 <GraduationCap class="h-2.5 w-2.5 text-primary/70 shrink-0" />
                                                 <span class="truncate">{{ fac.name }}</span>
                                             </div>
+                                        </div>
+                                        <div v-if="item.open_anomalies?.length" class="flex flex-wrap gap-1.5 pt-1">
+                                            <span
+                                                v-for="anomaly in item.open_anomalies"
+                                                :key="anomaly.id"
+                                                class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium"
+                                                :class="anomalyBadgeClass(anomaly.type)"
+                                            >
+                                                <TriangleAlert class="h-3 w-3" />
+                                                {{ anomalyLabel(anomaly) }}
+                                            </span>
                                         </div>
 
                                         <div v-if="activeLessons[item.code]" class="mt-2 p-2.5 bg-primary/5 rounded-md border border-primary/20">

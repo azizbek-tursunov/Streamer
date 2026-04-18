@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Anomaly;
 use App\Models\Camera;
 use App\Models\Hemis\Auditorium;
 use App\Models\PeopleCount;
@@ -64,7 +65,14 @@ class AuditoriumController extends Controller
             })
             ->pluck('people_count', 'camera_id');
 
-        $auditoriums->transform(function ($auditorium) use ($currentLessons, $peopleCounts) {
+        $openAnomalies = Anomaly::query()
+            ->open()
+            ->whereIn('auditorium_id', $auditoriums->pluck('id'))
+            ->orderByDesc('detected_at')
+            ->get()
+            ->groupBy('auditorium_id');
+
+        $auditoriums->transform(function ($auditorium) use ($currentLessons, $peopleCounts, $openAnomalies) {
             $auditorium->current_lesson = $currentLessons->get($auditorium->code);
             if ($auditorium->camera) {
                 $snapshotUrl = $auditorium->camera->latestSnapshotUrl();
@@ -77,6 +85,17 @@ class AuditoriumController extends Controller
             $auditorium->people_count = $auditorium->camera_id
                 ? ($peopleCounts[$auditorium->camera_id] ?? null)
                 : null;
+            $auditorium->open_anomalies = ($openAnomalies->get($auditorium->id) ?? collect())
+                ->take(3)
+                ->map(fn (Anomaly $anomaly) => [
+                    'id' => $anomaly->id,
+                    'type' => $anomaly->type,
+                    'status' => $anomaly->status,
+                    'detected_at' => $anomaly->detected_at?->toIso8601String(),
+                    'payload' => $anomaly->payload,
+                ])
+                ->values()
+                ->all();
             return $auditorium;
         });
 
@@ -139,11 +158,26 @@ class AuditoriumController extends Controller
                 ->value('people_count')
             : null;
 
+        $openAnomalies = Anomaly::query()
+            ->open()
+            ->where('auditorium_id', $auditorium->id)
+            ->orderByDesc('detected_at')
+            ->get()
+            ->map(fn (Anomaly $anomaly) => [
+                'id' => $anomaly->id,
+                'type' => $anomaly->type,
+                'status' => $anomaly->status,
+                'detected_at' => $anomaly->detected_at?->toIso8601String(),
+                'payload' => $anomaly->payload,
+            ])
+            ->values();
+
         return Inertia::render('Auditoriums/Show', [
             'auditorium' => $auditorium,
             'schedule' => $lessons,
             'now' => now()->timestamp,
             'people_count' => $peopleCount,
+            'anomalies' => $openAnomalies,
         ]);
     }
 

@@ -15,11 +15,13 @@ export interface NavItem {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
     isActive?: boolean;
+    badge?: number | string | null;
     permissions?: string[];
     roles?: string[];
     items?: {
         title: string;
         href: string;
+        badge?: number | string | null;
         permissions?: string[];
         roles?: string[];
     }[];
@@ -35,6 +37,10 @@ export type AppPageProps<
     notifications: {
         unread_count: number;
         recent: NotificationItem[];
+    };
+    anomalyAlerts: {
+        open_count: number;
+        recent: AnomalyAlertItem[];
     };
 };
 
@@ -53,6 +59,15 @@ export interface NotificationItem {
         lesson_name?: string | null;
         message?: string | null;
     };
+}
+
+export interface AnomalyAlertItem {
+    id: number;
+    type: string;
+    detected_at: string | null;
+    auditorium_name?: string | null;
+    building_name?: string | null;
+    url: string;
 }
 
 export interface User {
@@ -139,6 +154,15 @@ export interface Auditorium {
     current_lesson?: any | null;
     people_count?: number | null;
     faculties?: Faculty[];
+    open_anomalies?: Anomaly[];
+}
+
+export interface Anomaly {
+    id: number;
+    type: string;
+    status: string;
+    detected_at?: string | null;
+    payload?: Record<string, unknown> | null;
 }
 
 export interface LessonPair {

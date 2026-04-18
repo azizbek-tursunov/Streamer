@@ -52,6 +52,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('auditoriums/active-lessons', [\App\Http\Controllers\AuditoriumController::class, 'activeLessons'])->middleware('throttle:30,1')->name('auditoriums.active-lessons');
         Route::get('auditoriums/people-counts', [\App\Http\Controllers\AuditoriumController::class, 'peopleCounts'])->middleware('throttle:30,1')->name('auditoriums.people-counts');
         Route::get('auditoriums/{auditorium}', [\App\Http\Controllers\AuditoriumController::class, 'show'])->name('auditoriums.show');
+        Route::get('anomalies', [\App\Http\Controllers\AnomalyController::class, 'index'])->name('anomalies.index');
+        Route::get('anomalies/{anomaly}', [\App\Http\Controllers\AnomalyController::class, 'show'])->name('anomalies.show');
+        Route::post('anomalies/{anomaly}/status', [\App\Http\Controllers\AnomalyController::class, 'updateStatus'])->name('anomalies.update-status');
     });
     Route::post('auditoriums/sync', [\App\Http\Controllers\AuditoriumController::class, 'sync'])->middleware('permission:sync-auditoriums')->name('auditoriums.sync');
     Route::put('auditoriums/reorder', [\App\Http\Controllers\AuditoriumController::class, 'reorder'])->middleware('permission:view-auditoriums')->name('auditoriums.reorder');

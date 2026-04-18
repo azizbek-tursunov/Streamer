@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { BreadcrumbItem, Auditorium, Lesson } from '@/types';
+import { BreadcrumbItem, Auditorium, Lesson, Anomaly } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,13 +15,14 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { Calendar, Clock, User, Users, BookOpen, MapPin, VideoOff, MessageSquareText, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-vue-next';
+import { Calendar, Clock, User, Users, BookOpen, MapPin, VideoOff, MessageSquareText, ThumbsUp, ThumbsDown, RefreshCw, TriangleAlert } from 'lucide-vue-next';
 
 const props = defineProps<{
     auditorium: Auditorium;
     schedule: Lesson[];
     now: number;
     people_count: number | null;
+    anomalies: Anomaly[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -31,6 +32,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const currentTime = ref(Date.now());
+
+const anomalyLabels: Record<string, string> = {
+    lesson_no_people: "Dars bor, odam yo'q",
+    people_no_lesson: "Odam bor, dars yo'q",
+    camera_offline_during_lesson: 'Dars paytida kamera uzilgan',
+    stale_people_count: 'AI sanog\'i eskirgan',
+    stale_snapshot: 'Snapshot eskirgan',
+};
+
+const anomalyTone = (type: string) => {
+    if (type === 'lesson_no_people' || type === 'camera_offline_during_lesson') {
+        return 'border-red-200 bg-red-50 text-red-700';
+    }
+
+    if (type === 'people_no_lesson') {
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+    }
+
+    return 'border-slate-200 bg-slate-50 text-slate-700';
+};
 
 let timer: number;
 onMounted(() => {
@@ -146,6 +167,17 @@ const canSubmitFeedback = computed(() => {
                         {{ auditorium.auditoriumType.name }}
                     </span>
                 </p>
+                <div v-if="anomalies.length" class="mt-3 flex flex-wrap gap-2">
+                    <span
+                        v-for="anomaly in anomalies"
+                        :key="anomaly.id"
+                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium"
+                        :class="anomalyTone(anomaly.type)"
+                    >
+                        <TriangleAlert class="h-3.5 w-3.5" />
+                        {{ anomalyLabels[anomaly.type] ?? anomaly.type }}
+                    </span>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

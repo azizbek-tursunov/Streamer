@@ -47,6 +47,12 @@ const page = usePage();
                                         <SidebarMenuSubButton as-child :is-active="urlIsActive(subItem.href, page.url)">
                                             <Link :href="subItem.href">
                                                 <span>{{ subItem.title }}</span>
+                                                <span
+                                                    v-if="subItem.badge"
+                                                    class="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                                                >
+                                                    {{ subItem.badge }}
+                                                </span>
                                             </Link>
                                         </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
@@ -65,6 +71,12 @@ const page = usePage();
                         <Link :href="item.href">
                             <component :is="item.icon" />
                             <span>{{ item.title }}</span>
+                            <span
+                                v-if="item.badge"
+                                class="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                            >
+                                {{ item.badge }}
+                            </span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -32,6 +32,7 @@ const page = usePage();
 const mainNavItems = computed<NavItem[]>(() => {
     const userPermissions = page.props.auth?.user?.permissions || [];
     const userRoles = page.props.auth?.user?.roles || [];
+    const openAnomalyCount = page.props.anomalyAlerts?.open_count || 0;
     
     // Admin checking or global super-admin check
     const isSuperAdmin = userRoles.includes('super-admin') || userPermissions.length > 20;
@@ -106,6 +107,12 @@ const mainNavItems = computed<NavItem[]>(() => {
                     title: 'Auditoriyalar',
                     href: '/auditoriums',
                     permissions: ['view-auditoriums'],
+                },
+                {
+                    title: 'Anomaliyalar',
+                    href: '/anomalies',
+                    permissions: ['view-auditoriums'],
+                    badge: openAnomalyCount || null,
                 },
                 {
                     title: 'Dars tahlili',

@@ -2,12 +2,18 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Anomaly;
+use App\Services\AuditoriumAccessService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public function __construct(
+        private readonly AuditoriumAccessService $auditoriumAccessService,
+    ) {}
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -77,6 +83,30 @@ class HandleInertiaRequests extends Middleware
                     ->values(),
             ] : [
                 'unread_count' => 0,
+                'recent' => [],
+            ],
+            'anomalyAlerts' => fn () => $request->user() ? [
+                'open_count' => $this->auditoriumAccessService
+                    ->visibleAnomaliesQuery($request->user())
+                    ->where('status', Anomaly::STATUS_OPEN)
+                    ->count(),
+                'recent' => $this->auditoriumAccessService
+                    ->visibleAnomaliesQuery($request->user())
+                    ->where('status', Anomaly::STATUS_OPEN)
+                    ->latest('detected_at')
+                    ->limit(6)
+                    ->get()
+                    ->map(fn (Anomaly $anomaly) => [
+                        'id' => $anomaly->id,
+                        'type' => $anomaly->type,
+                        'detected_at' => $anomaly->detected_at?->toIso8601String(),
+                        'auditorium_name' => $anomaly->auditorium?->name,
+                        'building_name' => $anomaly->auditorium?->building['name'] ?? null,
+                        'url' => route('anomalies.show', $anomaly),
+                    ])
+                    ->values(),
+            ] : [
+                'open_count' => 0,
                 'recent' => [],
             ],
         ];

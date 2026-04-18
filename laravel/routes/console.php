@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\CaptureSnapshot;
+use App\Jobs\DetectAuditoriumAnomalies;
 use App\Jobs\DispatchPeopleCounting;
 use App\Jobs\PruneSnapshots;
 use App\Jobs\SyncLessonSchedules;
@@ -26,6 +27,9 @@ Schedule::call(function () {
 
 // Count people via YOLO every 5 minutes
 Schedule::job(new DispatchPeopleCounting)->everyFiveMinutes();
+
+// Detect current room anomalies after people counts refresh
+Schedule::job(new DetectAuditoriumAnomalies)->everyFiveMinutes();
 
 // Prune old snapshots every hour
 Schedule::job(new PruneSnapshots)->hourly();

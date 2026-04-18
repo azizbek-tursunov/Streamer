@@ -41,6 +41,11 @@ class Auditorium extends Model
         return $this->belongsToMany(\App\Models\Faculty::class, 'auditorium_faculty')->withTimestamps();
     }
 
+    public function anomalies()
+    {
+        return $this->hasMany(\App\Models\Anomaly::class);
+    }
+
     /**
      * @return array{code: string, name: string}|null
      */
