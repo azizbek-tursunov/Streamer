@@ -108,3 +108,67 @@ test('lesson no people anomaly resolves when people appear', function () {
         ->where('status', Anomaly::STATUS_RESOLVED)
         ->exists())->toBeTrue();
 });
+
+test('people without lesson creates people no lesson anomaly', function () {
+    $camera = Camera::factory()->create(['is_active' => true]);
+
+    $auditorium = Auditorium::create([
+        'code' => 503,
+        'name' => 'A-503',
+        'auditorium_type_code' => '11',
+        'auditorium_type_name' => "Ma'ruza",
+        'building_id' => 1,
+        'building_name' => 'Main Building',
+        'volume' => 45,
+        'active' => true,
+        'camera_id' => $camera->id,
+    ]);
+
+    PeopleCount::create([
+        'camera_id' => $camera->id,
+        'people_count' => 9,
+        'snapshot_path' => 'snapshots/test-nine.jpg',
+        'counted_at' => now(config('app.timezone')),
+    ]);
+
+    app(AnomalyDetectionService::class)->syncCurrentAnomalies();
+
+    expect(Anomaly::query()
+        ->where('auditorium_id', $auditorium->id)
+        ->where('type', Anomaly::TYPE_PEOPLE_NO_LESSON)
+        ->where('status', Anomaly::STATUS_OPEN)
+        ->exists())->toBeTrue();
+});
+
+test('stale snapshot anomalies are resolved and no longer tracked', function () {
+    $camera = Camera::factory()->create(['is_active' => true]);
+
+    $auditorium = Auditorium::create([
+        'code' => 504,
+        'name' => 'A-504',
+        'auditorium_type_code' => '11',
+        'auditorium_type_name' => "Ma'ruza",
+        'building_id' => 1,
+        'building_name' => 'Main Building',
+        'volume' => 45,
+        'active' => true,
+        'camera_id' => $camera->id,
+    ]);
+
+    Anomaly::create([
+        'type' => Anomaly::TYPE_STALE_SNAPSHOT,
+        'status' => Anomaly::STATUS_OPEN,
+        'auditorium_id' => $auditorium->id,
+        'camera_id' => $camera->id,
+        'detected_at' => now(config('app.timezone'))->subMinutes(30),
+        'last_seen_at' => now(config('app.timezone'))->subMinutes(20),
+    ]);
+
+    app(AnomalyDetectionService::class)->syncCurrentAnomalies();
+
+    expect(Anomaly::query()
+        ->where('auditorium_id', $auditorium->id)
+        ->where('type', Anomaly::TYPE_STALE_SNAPSHOT)
+        ->where('status', Anomaly::STATUS_RESOLVED)
+        ->exists())->toBeTrue();
+});

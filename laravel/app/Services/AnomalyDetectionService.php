@@ -7,6 +7,7 @@ use App\Models\Hemis\Auditorium;
 use App\Models\LessonSchedule;
 use App\Models\PeopleCount;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 
 class AnomalyDetectionService
 {
@@ -18,25 +19,50 @@ class AnomalyDetectionService
     public function syncCurrentAnomalies(): array
     {
         $now = now(config('app.timezone'));
-
-        Anomaly::query()
-            ->where('type', Anomaly::TYPE_STALE_PEOPLE_COUNT)
-            ->where('status', Anomaly::STATUS_OPEN)
-            ->update([
-                'status' => Anomaly::STATUS_RESOLVED,
-                'resolved_at' => $now,
-                'last_seen_at' => $now,
-            ]);
+        $this->resolveRetiredAnomalies($now);
 
         $auditoriums = Auditorium::query()
             ->with(['camera.media'])
             ->where('active', true)
             ->get();
 
+        return $this->syncAuditoriums($auditoriums, $now);
+    }
+
+    /**
+     * @return array{detected:int,resolved:int}
+     */
+    public function syncForCamera(int $cameraId): array
+    {
+        $now = now(config('app.timezone'));
+        $this->resolveRetiredAnomalies($now);
+
+        $auditoriums = Auditorium::query()
+            ->with(['camera.media'])
+            ->where('active', true)
+            ->where('camera_id', $cameraId)
+            ->get();
+
+        if ($auditoriums->isEmpty()) {
+            return [
+                'detected' => 0,
+                'resolved' => 0,
+            ];
+        }
+
+        return $this->syncAuditoriums($auditoriums, $now);
+    }
+
+    /**
+     * @return array{detected:int,resolved:int}
+     */
+    private function syncAuditoriums(Collection $auditoriums, CarbonInterface $now): array
+    {
         $currentLessons = LessonSchedule::query()
             ->where('lesson_date', $now->toDateString())
-            ->where('start_timestamp', '<=', $now)
-            ->where('end_timestamp', '>=', $now)
+            ->where('start_timestamp', '<=', $now->copy()->addMinutes(5))
+            ->where('end_timestamp', '>=', $now->copy()->subMinutes(5))
+            ->whereIn('auditorium_code', $auditoriums->pluck('code'))
             ->get()
             ->keyBy('auditorium_code');
 
@@ -66,20 +92,6 @@ class AnomalyDetectionService
 
             $peopleCountFresh = $peopleCount?->counted_at !== null
                 && $peopleCount->counted_at->gte($now->copy()->subMinutes(15));
-
-            if ($camera && ! $snapshotFresh) {
-                $detected += $this->openOrRefresh(
-                    $activeKeys,
-                    Anomaly::TYPE_STALE_SNAPSHOT,
-                    $auditorium,
-                    $lesson,
-                    [
-                        'snapshot_timestamp' => $snapshotTimestamp,
-                        'stale_after_minutes' => self::SNAPSHOT_STALE_MINUTES,
-                    ],
-                    $now
-                );
-            }
 
             if ($lesson && $camera && ! $snapshotFresh) {
                 $detected += $this->openOrRefresh(
@@ -126,12 +138,31 @@ class AnomalyDetectionService
             }
         }
 
-        $resolved = $this->resolveMissingOpenAnomalies($activeKeys, $now);
+        $resolved = $this->resolveMissingOpenAnomalies(
+            $activeKeys,
+            $auditoriums->pluck('id')->all(),
+            $now
+        );
 
         return [
             'detected' => $detected,
             'resolved' => $resolved,
         ];
+    }
+
+    private function resolveRetiredAnomalies(CarbonInterface $now): void
+    {
+        Anomaly::query()
+            ->whereIn('type', [
+                Anomaly::TYPE_STALE_PEOPLE_COUNT,
+                Anomaly::TYPE_STALE_SNAPSHOT,
+            ])
+            ->where('status', Anomaly::STATUS_OPEN)
+            ->update([
+                'status' => Anomaly::STATUS_RESOLVED,
+                'resolved_at' => $now,
+                'last_seen_at' => $now,
+            ]);
     }
 
     private function openOrRefresh(
@@ -173,17 +204,17 @@ class AnomalyDetectionService
         return $wasNew ? 1 : 0;
     }
 
-    private function resolveMissingOpenAnomalies(array $activeKeys, CarbonInterface $now): int
+    private function resolveMissingOpenAnomalies(array $activeKeys, array $auditoriumIds, CarbonInterface $now): int
     {
         $resolved = 0;
 
         Anomaly::query()
             ->open()
+            ->whereIn('auditorium_id', $auditoriumIds)
             ->whereIn('type', [
                 Anomaly::TYPE_LESSON_NO_PEOPLE,
                 Anomaly::TYPE_PEOPLE_NO_LESSON,
                 Anomaly::TYPE_CAMERA_OFFLINE_DURING_LESSON,
-                Anomaly::TYPE_STALE_SNAPSHOT,
             ])
             ->get()
             ->each(function (Anomaly $anomaly) use ($activeKeys, $now, &$resolved) {

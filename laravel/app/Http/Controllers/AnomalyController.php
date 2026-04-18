@@ -146,7 +146,7 @@ class AnomalyController extends Controller
             'user_id' => $request->user()?->id,
             'from_status' => $fromStatus,
             'to_status' => $status,
-            'note' => $validated['note'] ?: null,
+            'note' => $validated['note'] ?? null,
         ]);
 
         $message = match ($status) {
@@ -202,7 +202,6 @@ class AnomalyController extends Controller
             ['value' => Anomaly::TYPE_LESSON_NO_PEOPLE, 'label' => "Dars bor, odam yo'q"],
             ['value' => Anomaly::TYPE_PEOPLE_NO_LESSON, 'label' => "Odam bor, dars yo'q"],
             ['value' => Anomaly::TYPE_CAMERA_OFFLINE_DURING_LESSON, 'label' => 'Dars paytida kamera uzilgan'],
-            ['value' => Anomaly::TYPE_STALE_SNAPSHOT, 'label' => 'Snapshot eskirgan'],
         ];
     }
 }

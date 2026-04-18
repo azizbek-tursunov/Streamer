@@ -69,7 +69,6 @@ const anomalyLabels: Record<string, string> = {
     lesson_no_people: "Dars bor, odam yo'q",
     people_no_lesson: "Odam bor, dars yo'q",
     camera_offline_during_lesson: 'Dars paytida kamera uzilgan',
-    stale_snapshot: 'Snapshot eskirgan',
 };
 
 const isDean = computed(() => (page.props.auth?.user?.roles || []).includes('deans'));

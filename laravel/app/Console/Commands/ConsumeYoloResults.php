@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\PeopleCount;
+use App\Services\AnomalyDetectionService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
@@ -13,7 +14,7 @@ class ConsumeYoloResults extends Command
 
     protected $description = 'Continuously consume YOLO people counting results from Redis';
 
-    public function handle(): void
+    public function handle(AnomalyDetectionService $anomalyDetectionService): void
     {
         $this->info('YOLO consumer started. Waiting for results...');
 
@@ -40,6 +41,8 @@ class ConsumeYoloResults extends Command
                 'snapshot_path' => $data['snapshot_path'] ?? '',
                 'counted_at' => $data['counted_at'] ?? now(),
             ]);
+
+            $anomalyDetectionService->syncForCamera((int) $data['camera_id']);
 
             $this->line("Camera {$data['camera_id']}: {$data['people_count']} people detected");
         }
