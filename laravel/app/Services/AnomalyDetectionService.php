@@ -11,7 +11,6 @@ use Carbon\CarbonInterface;
 class AnomalyDetectionService
 {
     private const SNAPSHOT_STALE_MINUTES = 15;
-    private const PEOPLE_COUNT_STALE_MINUTES = 15;
 
     /**
      * @return array{detected:int,resolved:int}
@@ -19,6 +18,15 @@ class AnomalyDetectionService
     public function syncCurrentAnomalies(): array
     {
         $now = now(config('app.timezone'));
+
+        Anomaly::query()
+            ->where('type', Anomaly::TYPE_STALE_PEOPLE_COUNT)
+            ->where('status', Anomaly::STATUS_OPEN)
+            ->update([
+                'status' => Anomaly::STATUS_RESOLVED,
+                'resolved_at' => $now,
+                'last_seen_at' => $now,
+            ]);
 
         $auditoriums = Auditorium::query()
             ->with(['camera.media'])
@@ -57,7 +65,7 @@ class AnomalyDetectionService
                 && $snapshotTimestamp >= $now->copy()->subMinutes(self::SNAPSHOT_STALE_MINUTES)->timestamp;
 
             $peopleCountFresh = $peopleCount?->counted_at !== null
-                && $peopleCount->counted_at->gte($now->copy()->subMinutes(self::PEOPLE_COUNT_STALE_MINUTES));
+                && $peopleCount->counted_at->gte($now->copy()->subMinutes(15));
 
             if ($camera && ! $snapshotFresh) {
                 $detected += $this->openOrRefresh(
@@ -68,21 +76,6 @@ class AnomalyDetectionService
                     [
                         'snapshot_timestamp' => $snapshotTimestamp,
                         'stale_after_minutes' => self::SNAPSHOT_STALE_MINUTES,
-                    ],
-                    $now
-                );
-            }
-
-            if ($camera && ! $peopleCountFresh) {
-                $detected += $this->openOrRefresh(
-                    $activeKeys,
-                    Anomaly::TYPE_STALE_PEOPLE_COUNT,
-                    $auditorium,
-                    $lesson,
-                    [
-                        'people_count' => $peopleCount?->people_count,
-                        'counted_at' => $peopleCount?->counted_at?->toIso8601String(),
-                        'stale_after_minutes' => self::PEOPLE_COUNT_STALE_MINUTES,
                     ],
                     $now
                 );
@@ -190,7 +183,6 @@ class AnomalyDetectionService
                 Anomaly::TYPE_LESSON_NO_PEOPLE,
                 Anomaly::TYPE_PEOPLE_NO_LESSON,
                 Anomaly::TYPE_CAMERA_OFFLINE_DURING_LESSON,
-                Anomaly::TYPE_STALE_PEOPLE_COUNT,
                 Anomaly::TYPE_STALE_SNAPSHOT,
             ])
             ->get()
