@@ -39,7 +39,10 @@ class ConsumeYoloResults extends Command
                 'camera_id' => $data['camera_id'],
                 'people_count' => $data['people_count'],
                 'snapshot_path' => $data['snapshot_path'] ?? '',
-                'counted_at' => $data['counted_at'] ?? now(),
+                // Freshness checks should use the moment Laravel received the result.
+                // The worker emits UTC ISO timestamps, but this column is used
+                // operationally for local recency windows in anomaly detection.
+                'counted_at' => now(config('app.timezone')),
             ]);
 
             $anomalyDetectionService->syncForCamera((int) $data['camera_id']);
