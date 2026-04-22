@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import { usePermissions } from '@/composables/usePermissions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem, Auditorium, Lesson, Anomaly } from '@/types';
 import VideoPlayer from '@/components/VideoPlayer.vue';
@@ -24,6 +25,8 @@ const props = defineProps<{
     people_count: number | null;
     anomalies: Anomaly[];
 }>();
+
+const { hasPermission } = usePermissions();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: "O'quv jarayoni", href: '#' },
@@ -213,7 +216,8 @@ const canSubmitFeedback = computed(() => {
                                     <Clock class="h-5 w-5 text-primary" />
                                     Hozirgi dars
                                 </div>
-                                <button 
+                                <button
+                                    v-if="hasPermission('add-feedbacks')"
                                     @click.stop="openFeedbackDialog(auditorium.id, currentLesson)"
                                     class="opacity-90 hover:opacity-100 hover:text-emerald-600 hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all bg-background border px-2 py-1.5 rounded-md flex items-center gap-1.5 cursor-pointer shadow-sm text-foreground"
                                     title="Darsni baholash"
@@ -264,8 +268,8 @@ const canSubmitFeedback = computed(() => {
                                     </span>
                                     {{ currentLesson ? 'Hozirgi dars' : 'Ayni paytda dars yo\'q' }}
                                 </div>
-                                <button 
-                                    v-if="currentLesson"
+                                <button
+                                    v-if="currentLesson && hasPermission('add-feedbacks')"
                                     @click.stop="openFeedbackDialog(auditorium.id, currentLesson)"
                                     class="opacity-90 hover:opacity-100 hover:text-emerald-600 hover:border-emerald-500/30 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all bg-background border px-2 py-1 rounded-md flex items-center gap-1.5 cursor-pointer shadow-sm text-foreground"
                                     title="Darsni baholash"
