@@ -30,11 +30,7 @@ class AuditoriumController extends Controller
             $query->whereHas('faculties', fn ($q) => $q->where('faculties.id', $request->faculty_id));
         }
 
-        // Deans only see auditoriums assigned to their faculty
         $user = auth()->user();
-        if ($user->hasRole('deans') && $user->faculty_id) {
-            $query->whereHas('faculties', fn ($q) => $q->where('faculties.id', $user->faculty_id));
-        }
 
         // Regular users only see auditoriums that have a camera assigned.
         // IT-technicians, admins, and super-admins see all (so they can assign cameras).
