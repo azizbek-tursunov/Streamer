@@ -3,11 +3,12 @@
 use App\Models\Camera;
 use App\Models\User;
 use App\Services\MediaMtxService;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
-    $this->withoutMiddleware();
+    $this->withoutMiddleware(ValidateCsrfToken::class);
 });
 
 function cameraUser(array $permissions): User
