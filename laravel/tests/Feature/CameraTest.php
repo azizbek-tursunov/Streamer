@@ -62,6 +62,56 @@ test('can update camera', function () {
     $this->assertDatabaseHas('cameras', ['id' => $camera->id, 'name' => 'Updated Camera']);
 });
 
+test('can save youtube stream key url without starting stream', function () {
+    $user = User::factory()->create();
+    $camera = Camera::factory()->create([
+        'is_streaming_to_youtube' => false,
+        'youtube_url' => null,
+    ]);
+
+    $this->mock(MediaMtxService::class, function ($mock) {
+        $mock->shouldNotReceive('updatePath');
+    });
+
+    $response = $this
+        ->actingAs($user)
+        ->put("/cameras/{$camera->id}/youtube", [
+            'youtube_url' => 'rtmp://a.rtmp.youtube.com/live2/abcd-1234-efgh-5678',
+        ]);
+
+    $response->assertRedirect();
+    $this->assertDatabaseHas('cameras', [
+        'id' => $camera->id,
+        'youtube_url' => 'rtmp://a.rtmp.youtube.com/live2/abcd-1234-efgh-5678',
+        'is_streaming_to_youtube' => false,
+    ]);
+});
+
+test('saving youtube url resyncs mediamtx while already streaming', function () {
+    $user = User::factory()->create();
+    $camera = Camera::factory()->create([
+        'is_streaming_to_youtube' => true,
+        'youtube_url' => 'rtmp://a.rtmp.youtube.com/live2/old-key',
+    ]);
+
+    $this->mock(MediaMtxService::class, function ($mock) {
+        $mock->shouldReceive('updatePath')->once();
+    });
+
+    $response = $this
+        ->actingAs($user)
+        ->put("/cameras/{$camera->id}/youtube", [
+            'youtube_url' => 'rtmps://a.rtmps.youtube.com/live2/new-key',
+        ]);
+
+    $response->assertRedirect();
+    $this->assertDatabaseHas('cameras', [
+        'id' => $camera->id,
+        'youtube_url' => 'rtmps://a.rtmps.youtube.com/live2/new-key',
+        'is_streaming_to_youtube' => true,
+    ]);
+});
+
 test('can search cameras', function () {
     $user = User::factory()->create();
     Camera::factory()->create(['name' => 'Alpha Cam']);

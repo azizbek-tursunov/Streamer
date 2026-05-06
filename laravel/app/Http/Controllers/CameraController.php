@@ -235,16 +235,20 @@ class CameraController extends Controller
     public function updateYoutube(Request $request, Camera $camera): RedirectResponse
     {
         $validated = $request->validate([
-            'youtube_url' => 'nullable|url',
-            'is_streaming_to_youtube' => 'boolean',
+            'youtube_url' => 'nullable|string|url:rtmp,rtmps',
+            'is_streaming_to_youtube' => 'sometimes|boolean',
         ]);
+
+        $wasStreaming = $camera->is_streaming_to_youtube;
 
         $camera->update($validated);
 
-        if ($validated['is_streaming_to_youtube']) {
-            $this->mediaMtxApi->startYoutubeRestream($camera);
-        } else {
-            $this->mediaMtxApi->stopYoutubeRestream($camera);
+        if ($wasStreaming || array_key_exists('is_streaming_to_youtube', $validated)) {
+            try {
+                $this->mediaMtx->updatePath($camera);
+            } catch (\Exception $e) {
+                return back()->with('error', 'YouTube sozlamalari saqlandi, lekin MediaMTX sinxronizatsiyasi xato berdi: '.$e->getMessage());
+            }
         }
 
         return back()->with('success', 'YouTube sozlamalari saqlandi');

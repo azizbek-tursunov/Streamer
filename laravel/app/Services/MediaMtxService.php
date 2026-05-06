@@ -113,11 +113,12 @@ class MediaMtxService
         ];
 
         if ($camera->is_streaming_to_youtube && $camera->youtube_url) {
-            // YouTube RTMP push starts when stream is ready, uses already-transcoded AAC audio
+            // YouTube RTMP/FLV requires AAC audio; the local stream uses Opus for browser playback.
             $safeYtUrl = escapeshellarg($camera->youtube_url);
             $ytCmd = "/usr/bin/ffmpeg -hide_banner -loglevel warning"
-                ." -i rtsp://{$safeMtxUser}:{$safeMtxPass}@127.0.0.1:8554/{$pathName}"
-                ." -c copy -f flv {$safeYtUrl}";
+                ." -rtsp_transport tcp -i rtsp://{$safeMtxUser}:{$safeMtxPass}@127.0.0.1:8554/{$pathName}"
+                ." -c:v copy -c:a aac -ar 44100 -b:a 128k"
+                ." -f flv {$safeYtUrl}";
             $payload['runOnReady'] = "sh -c '{$ytCmd} > /tmp/yt_{$camera->id}.log 2>&1'";
             $payload['runOnReadyRestart'] = true;
         }
