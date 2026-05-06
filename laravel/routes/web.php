@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- Users, Roles, Permissions (admin-level) ---
     Route::middleware(['role:super-admin|admin'])->group(function () {
+        Route::get('system/youtube-streams', [\App\Http\Controllers\YoutubeStreamMonitorController::class, 'index'])->name('system.youtube-streams');
         Route::resource('users', \App\Http\Controllers\UserController::class);
         Route::resource('roles', \App\Http\Controllers\RoleController::class);
         Route::resource('permissions', \App\Http\Controllers\PermissionController::class);

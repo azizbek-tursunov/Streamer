@@ -84,6 +84,39 @@ class MediaMtxService
         }
     }
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public function listPathStates(): array
+    {
+        $states = [];
+        $page = 0;
+        $pageCount = 1;
+
+        do {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/paths/list", [
+                'page' => $page,
+            ]);
+
+            if ($response->failed()) {
+                throw new RuntimeException('Failed to list MediaMTX paths: '.$response->body());
+            }
+
+            $data = $response->json();
+            $pageCount = max((int) ($data['pageCount'] ?? 1), 1);
+
+            foreach (($data['items'] ?? []) as $item) {
+                if (isset($item['name'])) {
+                    $states[$item['name']] = $item;
+                }
+            }
+
+            $page++;
+        } while ($page < $pageCount);
+
+        return $states;
+    }
+
     private function buildPayload(Camera $camera): array
     {
         $pathName = $this->getPathName($camera);

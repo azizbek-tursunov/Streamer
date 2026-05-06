@@ -145,8 +145,12 @@ const mainNavItems = computed<NavItem[]>(() => {
             href: '#',
             icon: FolderKey,
             permissions: ['manage-users'],
-            isActive: ['/users', '/roles', '/permissions'].some(path => urlIsActive(path, page.url)),
+            isActive: ['/system/youtube-streams', '/users', '/roles', '/permissions'].some(path => urlIsActive(path, page.url)),
             items: [
+                {
+                    title: 'YouTube Efirlar',
+                    href: '/system/youtube-streams',
+                },
                 {
                     title: 'Foydalanuvchilar',
                     href: '/users',
