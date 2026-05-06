@@ -3,10 +3,29 @@
 use App\Models\Camera;
 use App\Models\User;
 use App\Services\MediaMtxService;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Permission;
+
+beforeEach(function () {
+    $this->withoutMiddleware(VerifyCsrfToken::class);
+});
+
+function cameraUser(array $permissions): User
+{
+    $user = User::factory()->create();
+
+    foreach ($permissions as $permission) {
+        Permission::findOrCreate($permission);
+    }
+
+    $user->givePermissionTo($permissions);
+
+    return $user;
+}
 
 test('cameras page is displayed', function () {
-    $user = User::factory()->create();
+    $user = cameraUser(['view-cameras']);
 
     $response = $this
         ->actingAs($user)
@@ -19,7 +38,7 @@ test('cameras page is displayed', function () {
 });
 
 test('can create camera', function () {
-    $user = User::factory()->create();
+    $user = cameraUser(['manage-cameras']);
 
     // Mock the service
     $this->mock(MediaMtxService::class, function ($mock) {
@@ -42,7 +61,7 @@ test('can create camera', function () {
 });
 
 test('can update camera', function () {
-    $user = User::factory()->create();
+    $user = cameraUser(['manage-cameras']);
     $camera = Camera::factory()->create();
 
     $this->mock(MediaMtxService::class, function ($mock) {
@@ -63,7 +82,7 @@ test('can update camera', function () {
 });
 
 test('can save youtube stream key url without starting stream', function () {
-    $user = User::factory()->create();
+    $user = cameraUser(['manage-cameras']);
     $camera = Camera::factory()->create([
         'is_streaming_to_youtube' => false,
         'youtube_url' => null,
@@ -88,7 +107,7 @@ test('can save youtube stream key url without starting stream', function () {
 });
 
 test('saving youtube url resyncs mediamtx while already streaming', function () {
-    $user = User::factory()->create();
+    $user = cameraUser(['manage-cameras']);
     $camera = Camera::factory()->create([
         'is_streaming_to_youtube' => true,
         'youtube_url' => 'rtmp://a.rtmp.youtube.com/live2/old-key',
@@ -113,7 +132,7 @@ test('saving youtube url resyncs mediamtx while already streaming', function () 
 });
 
 test('can search cameras', function () {
-    $user = User::factory()->create();
+    $user = cameraUser(['view-cameras']);
     Camera::factory()->create(['name' => 'Alpha Cam']);
     Camera::factory()->create(['name' => 'Beta Cam']);
 
