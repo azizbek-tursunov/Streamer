@@ -35,14 +35,20 @@ test('admin can view youtube stream monitor', function () {
         $mock->shouldReceive('getPathName')->andReturnUsing(fn (Camera $camera) => "cam_{$camera->id}");
     });
 
-    $this
+    $response = $this
         ->actingAs($user)
-        ->get('/system/youtube-streams')
+        ->get('/system/youtube-streams');
+
+    $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('System/YoutubeStreams')
             ->where('stats.pushing', 1)
-            ->where('streams.0.id', $camera->id)
-            ->where('streams.0.status', 'pushing')
         );
+
+    $streams = collect($response->viewData('page')['props']['streams']);
+    $stream = $streams->firstWhere('id', $camera->id);
+
+    expect($stream)->not->toBeNull()
+        ->and($stream['status'])->toBe('pushing');
 });
